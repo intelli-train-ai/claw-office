@@ -18,4 +18,9 @@ export async function register() {
   if (proxyUrl) {
     console.log(`[instrumentation] Proxy detected: ${proxyUrl} (per-adapter injection, not global undici)`);
   }
+
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { initRuntimeLog } = await import('@/lib/runtime-log');
+    initRuntimeLog();
+  }
 }
