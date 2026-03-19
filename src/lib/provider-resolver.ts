@@ -499,6 +499,17 @@ function buildResolution(
   const envOverrides = safeParseJson(provider.env_overrides_json || provider.extra_env);
   let roleModels = safeParseJson(provider.role_models_json) as RoleModels;
 
+  // Fall back to catalog preset's defaultRoleModels when DB has no role mappings.
+  // This ensures sdkProxyOnly providers (MiniMax, Xiaomi MiMo, etc.) get correct
+  // ANTHROPIC_MODEL / ANTHROPIC_DEFAULT_*_MODEL env vars even when role_models_json
+  // was saved as '{}' by the preset connect dialog.
+  if (!roleModels.default && !roleModels.sonnet) {
+    const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
+    if (preset?.defaultRoleModels) {
+      roleModels = { ...preset.defaultRoleModels, ...roleModels };
+    }
+  }
+
   // Get available models: DB provider_models take priority, then catalog defaults
   let availableModels = getDefaultModelsForProvider(protocol, provider.base_url);
   try {
@@ -591,8 +602,9 @@ function inferProtocolFromProvider(provider: ApiProvider): Protocol {
 }
 
 function inferAuthStyleFromProvider(provider: ApiProvider): AuthStyle {
-  // Check preset match first
-  const preset = findPresetForLegacy(provider.base_url, provider.provider_type);
+  // Check preset match first — pass protocol to avoid cross-protocol fuzzy mismatches
+  const protocol = inferProtocolFromProvider(provider);
+  const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
   if (preset) return preset.authStyle;
 
   return inferAuthStyleFromLegacy(provider.provider_type, provider.extra_env);

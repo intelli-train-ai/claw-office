@@ -251,20 +251,22 @@ export const VENDOR_PRESETS: VendorPreset[] = [
     descriptionZh: 'MiniMax 编程套餐 — 中国区',
     protocol: 'anthropic',
     authStyle: 'auth_token',
-    baseUrl: 'https://api.minimaxi.com/anthropic/v1',
+    baseUrl: 'https://api.minimaxi.com/anthropic',
     defaultEnvOverrides: {
       API_TIMEOUT_MS: '3000000',
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
       ANTHROPIC_AUTH_TOKEN: '',
-      ANTHROPIC_MODEL: 'MiniMax-M2.7',
-      ANTHROPIC_DEFAULT_SONNET_MODEL: 'MiniMax-M2.7',
-      ANTHROPIC_DEFAULT_OPUS_MODEL: 'MiniMax-M2.7',
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'MiniMax-M2.5',
     },
     defaultModels: [
-      { modelId: 'MiniMax-M2.7', displayName: 'MiniMax-M2.7', role: 'default' },
-      { modelId: 'MiniMax-M2.5', displayName: 'MiniMax-M2.5' },
+      { modelId: 'sonnet', upstreamModelId: 'MiniMax-M2.7', displayName: 'MiniMax-M2.7', role: 'default' },
+      { modelId: 'MiniMax-M2.5', upstreamModelId: 'MiniMax-M2.5', displayName: 'MiniMax-M2.5' },
     ],
+    defaultRoleModels: {
+      default: 'MiniMax-M2.7',
+      sonnet: 'MiniMax-M2.7',
+      opus: 'MiniMax-M2.7',
+      haiku: 'MiniMax-M2.5',
+    },
     fields: ['api_key'],
     iconKey: 'minimax',
     sdkProxyOnly: true,
@@ -283,15 +285,17 @@ export const VENDOR_PRESETS: VendorPreset[] = [
       API_TIMEOUT_MS: '3000000',
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
       ANTHROPIC_AUTH_TOKEN: '',
-      ANTHROPIC_MODEL: 'MiniMax-M2.7',
-      ANTHROPIC_DEFAULT_SONNET_MODEL: 'MiniMax-M2.7',
-      ANTHROPIC_DEFAULT_OPUS_MODEL: 'MiniMax-M2.7',
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'MiniMax-M2.5',
     },
     defaultModels: [
-      { modelId: 'MiniMax-M2.7', displayName: 'MiniMax-M2.7', role: 'default' },
-      { modelId: 'MiniMax-M2.5', displayName: 'MiniMax-M2.5' },
+      { modelId: 'sonnet', upstreamModelId: 'MiniMax-M2.7', displayName: 'MiniMax-M2.7', role: 'default' },
+      { modelId: 'MiniMax-M2.5', upstreamModelId: 'MiniMax-M2.5', displayName: 'MiniMax-M2.5' },
     ],
+    defaultRoleModels: {
+      default: 'MiniMax-M2.7',
+      sonnet: 'MiniMax-M2.7',
+      opus: 'MiniMax-M2.7',
+      haiku: 'MiniMax-M2.5',
+    },
     fields: ['api_key'],
     iconKey: 'minimax',
     sdkProxyOnly: true,
@@ -310,6 +314,32 @@ export const VENDOR_PRESETS: VendorPreset[] = [
     defaultModels: [],  // User must specify model_names
     fields: ['api_key', 'model_names'],
     iconKey: 'volcengine',
+    sdkProxyOnly: true,
+  },
+
+  // ── Xiaomi MiMo ──
+  {
+    key: 'xiaomi-mimo',
+    name: 'Xiaomi MiMo',
+    description: 'Xiaomi MiMo Coding Plan — MiMo-V2-Pro',
+    descriptionZh: '小米 MiMo 编程套餐 — MiMo-V2-Pro',
+    protocol: 'anthropic',
+    authStyle: 'auth_token',
+    baseUrl: 'https://api.xiaomimimo.com/anthropic',
+    defaultEnvOverrides: {
+      ANTHROPIC_AUTH_TOKEN: '',
+    },
+    defaultModels: [
+      { modelId: 'sonnet', upstreamModelId: 'mimo-v2-pro', displayName: 'MiMo-V2-Pro', role: 'default' },
+    ],
+    defaultRoleModels: {
+      default: 'mimo-v2-pro',
+      sonnet: 'mimo-v2-pro',
+      opus: 'mimo-v2-pro',
+      haiku: 'mimo-v2-pro',
+    },
+    fields: ['api_key'],
+    iconKey: 'xiaomi-mimo',
     sdkProxyOnly: true,
   },
 
@@ -463,6 +493,7 @@ export function inferProtocolFromLegacy(
       'minimaxi.com', 'minimax.io',     // MiniMax
       'volces.com', 'volcengine.com',   // Volcengine
       'dashscope.aliyuncs.com',         // Bailian
+      'xiaomimimo.com',                 // Xiaomi MiMo
     ];
     const urlLower = baseUrl.toLowerCase();
     if (anthropicUrls.some(u => urlLower.includes(u))) {
@@ -500,8 +531,11 @@ export function inferAuthStyleFromLegacy(
 /**
  * Find a matching vendor preset for a legacy provider.
  * Matches by base_url first, then by provider_type.
+ * When `protocol` is provided, fuzzy (hostname) matching is restricted to
+ * presets with the same protocol to avoid misclassifying cross-protocol
+ * providers that share the same host (e.g. dashscope OpenAI-compatible vs Bailian Anthropic).
  */
-export function findPresetForLegacy(baseUrl: string, providerType: string): VendorPreset | undefined {
+export function findPresetForLegacy(baseUrl: string, providerType: string, protocol?: Protocol): VendorPreset | undefined {
   // Exact base_url match (most specific)
   if (baseUrl) {
     const match = VENDOR_PRESETS.find(p => p.baseUrl === baseUrl);
@@ -512,6 +546,7 @@ export function findPresetForLegacy(baseUrl: string, providerType: string): Vend
     const urlLower = baseUrl.toLowerCase();
     const fuzzy = VENDOR_PRESETS.find(p => {
       if (!p.baseUrl) return false;
+      if (protocol && p.protocol !== protocol) return false;
       try {
         const presetHost = new URL(p.baseUrl).hostname;
         return urlLower.includes(presetHost);
@@ -541,12 +576,28 @@ export function getDefaultModelsForProvider(
   protocol: Protocol,
   baseUrl: string,
 ): CatalogModel[] {
-  // Try to find a preset by base_url
+  // Try to find a preset by exact base_url
   const preset = VENDOR_PRESETS.find(p => p.baseUrl && p.baseUrl === baseUrl);
   if (preset) {
     // Preset matched — return its models even if empty (e.g. Volcengine
     // requires users to specify their own model names, so defaultModels is []).
     return preset.defaultModels;
+  }
+
+  // Fuzzy match: legacy providers may have old URLs (e.g. minimaxi.com/anthropic/v1
+  // before the /v1 suffix was removed). Match by domain substring against presets,
+  // but only when the protocol matches to avoid misclassifying custom OpenAI-compatible
+  // providers that share the same host (e.g. dashscope.aliyuncs.com/compatible-mode/v1).
+  if (baseUrl) {
+    const urlLower = baseUrl.toLowerCase();
+    const fuzzy = VENDOR_PRESETS.find(p => {
+      if (!p.baseUrl || p.protocol !== protocol) return false;
+      try {
+        const presetHost = new URL(p.baseUrl).hostname;
+        return urlLower.includes(presetHost);
+      } catch { return false; }
+    });
+    if (fuzzy) return fuzzy.defaultModels;
   }
 
   // Protocol-based defaults (only when no preset matched)

@@ -391,7 +391,7 @@ async function runProviderProbe(): Promise<ProbeResult> {
       // Check if a matched preset provides its own model names (not ANTHROPIC_DEFAULT_MODELS).
       // If the preset has sdkProxyOnly or has its own models, the preset itself handles naming.
       // But for generic anthropic-thirdparty or unmatched presets, warn.
-      const matchedPreset = findPresetForLegacy(p.base_url, p.provider_type);
+      const matchedPreset = findPresetForLegacy(p.base_url, p.provider_type, protocol as Protocol);
       const presetHandlesModels = matchedPreset && (
         matchedPreset.key === 'anthropic-official' ||
         matchedPreset.defaultRoleModels?.default ||
@@ -408,7 +408,7 @@ async function runProviderProbe(): Promise<ProbeResult> {
     }
 
     // Check B: sdkProxyOnly provider warning
-    const matchedPreset = findPresetForLegacy(p.base_url, p.provider_type);
+    const matchedPreset = findPresetForLegacy(p.base_url, p.provider_type, protocol as Protocol);
     if (matchedPreset?.sdkProxyOnly) {
       findings.push({
         severity: 'ok',

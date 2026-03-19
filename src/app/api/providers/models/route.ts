@@ -151,7 +151,7 @@ export async function GET() {
         }
         // Add each role model to the list (default role first, so it appears at the top)
         for (const entry of roleEntries) {
-          if (!rawModels.some(m => m.value === entry.id)) {
+          if (!rawModels.some(m => m.value === entry.id || m.upstreamModelId === entry.id)) {
             const label = entry.role === 'default' ? entry.id : `${entry.id} (${entry.role})`;
             rawModels.unshift({ value: entry.id, label });
           }
@@ -159,10 +159,12 @@ export async function GET() {
       } catch { /* ignore */ }
 
       // Legacy: inject ANTHROPIC_MODEL from env overrides if not already present
+      // Also check upstreamModelId to avoid duplicates (e.g. catalog has modelId='sonnet'
+      // with upstreamModelId='mimo-v2-pro', and env has ANTHROPIC_MODEL='mimo-v2-pro')
       try {
         const envOverrides = provider.env_overrides_json || provider.extra_env || '{}';
         const envObj = JSON.parse(envOverrides);
-        if (envObj.ANTHROPIC_MODEL && !rawModels.some(m => m.value === envObj.ANTHROPIC_MODEL)) {
+        if (envObj.ANTHROPIC_MODEL && !rawModels.some(m => m.value === envObj.ANTHROPIC_MODEL || m.upstreamModelId === envObj.ANTHROPIC_MODEL)) {
           rawModels.unshift({ value: envObj.ANTHROPIC_MODEL, label: envObj.ANTHROPIC_MODEL });
         }
       } catch { /* ignore */ }
@@ -176,7 +178,7 @@ export async function GET() {
       });
 
       // Detect SDK-proxy-only providers via preset match
-      const preset = findPresetForLegacy(provider.base_url, provider.provider_type);
+      const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
       const sdkProxyOnly = preset?.sdkProxyOnly === true;
 
       groups.push({

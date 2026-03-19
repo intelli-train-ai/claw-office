@@ -14,6 +14,7 @@ import Bedrock from "@lobehub/icons/es/Bedrock";
 import Google from "@lobehub/icons/es/Google";
 import Volcengine from "@lobehub/icons/es/Volcengine";
 import Bailian from "@lobehub/icons/es/Bailian";
+import XiaomiMiMo from "@lobehub/icons/es/XiaomiMiMo";
 
 // ---------------------------------------------------------------------------
 // Brand icon resolver
@@ -34,6 +35,8 @@ export function getProviderIcon(name: string, baseUrl: string): ReactNode {
     return <Volcengine size={18} />;
   if (url.includes("dashscope") || lower.includes("bailian") || lower.includes("百炼") || lower.includes("aliyun"))
     return <Bailian size={18} />;
+  if (url.includes("xiaomimimo") || lower.includes("mimo") || lower.includes("小米"))
+    return <XiaomiMiMo size={18} />;
   if (lower.includes("bedrock")) return <Bedrock size={18} />;
   if (lower.includes("vertex") || lower.includes("google")) return <Google size={18} />;
   if (lower.includes("aws")) return <Aws size={18} />;
@@ -171,8 +174,8 @@ export const QUICK_PRESETS: QuickPreset[] = [
     icon: <Minimax size={18} />,
     provider_type: "anthropic",
     protocol: "anthropic",
-    base_url: "https://api.minimaxi.com/anthropic/v1",
-    extra_env: '{"API_TIMEOUT_MS":"3000000","CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":"1","ANTHROPIC_AUTH_TOKEN":"","ANTHROPIC_MODEL":"MiniMax-M2.5","ANTHROPIC_DEFAULT_SONNET_MODEL":"MiniMax-M2.5","ANTHROPIC_DEFAULT_OPUS_MODEL":"MiniMax-M2.5","ANTHROPIC_DEFAULT_HAIKU_MODEL":"MiniMax-M2.5"}',
+    base_url: "https://api.minimaxi.com/anthropic",
+    extra_env: '{"API_TIMEOUT_MS":"3000000","CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":"1","ANTHROPIC_AUTH_TOKEN":""}',
     fields: ["api_key"],
   },
   {
@@ -184,7 +187,7 @@ export const QUICK_PRESETS: QuickPreset[] = [
     provider_type: "anthropic",
     protocol: "anthropic",
     base_url: "https://api.minimax.io/anthropic",
-    extra_env: '{"API_TIMEOUT_MS":"3000000","CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":"1","ANTHROPIC_AUTH_TOKEN":"","ANTHROPIC_MODEL":"MiniMax-M2.5","ANTHROPIC_DEFAULT_SONNET_MODEL":"MiniMax-M2.5","ANTHROPIC_DEFAULT_OPUS_MODEL":"MiniMax-M2.5","ANTHROPIC_DEFAULT_HAIKU_MODEL":"MiniMax-M2.5"}',
+    extra_env: '{"API_TIMEOUT_MS":"3000000","CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":"1","ANTHROPIC_AUTH_TOKEN":""}',
     fields: ["api_key"],
   },
   {
@@ -198,6 +201,18 @@ export const QUICK_PRESETS: QuickPreset[] = [
     base_url: "https://ark.cn-beijing.volces.com/api/coding",
     extra_env: '{"ANTHROPIC_AUTH_TOKEN":""}',
     fields: ["api_key", "model_names"],
+  },
+  {
+    key: "xiaomi-mimo",
+    name: "Xiaomi MiMo",
+    description: "Xiaomi MiMo Coding Plan — MiMo-V2-Pro",
+    descriptionZh: "小米 MiMo 编程套餐 — MiMo-V2-Pro",
+    icon: <XiaomiMiMo size={18} />,
+    provider_type: "anthropic",
+    protocol: "anthropic",
+    base_url: "https://api.xiaomimimo.com/anthropic",
+    extra_env: '{"ANTHROPIC_AUTH_TOKEN":""}',
+    fields: ["api_key"],
   },
   {
     key: "bailian",
