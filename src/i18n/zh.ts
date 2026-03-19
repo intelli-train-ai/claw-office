@@ -1120,6 +1120,17 @@ const zh: Record<TranslationKey, string> = {
   'error.selectDirectory': '选择目录',
   'error.openSetup': '打开设置',
 
+  // ── Share / Replay ──────────────────────────────────────────
+  'share.copyLink': '分享回放',
+  'share.linkCopied': '回放链接已复制',
+  'share.noMessages': '没有消息可分享',
+  'share.replayTitle': '对话回放',
+  'share.replayOf': '回放: {title}',
+  'share.generatedBy': '由 CodePilot 生成',
+  'share.skipReplay': '跳过回放',
+  'share.startReplay': '开始回放',
+  'share.sessionNotFound': '会话不存在',
+
   // ── Widget (Generative UI) ────────────────────────────────
   'widget.loading': '渲染组件中...',
   'widget.streaming': '正在渲染可视化',

@@ -19,12 +19,14 @@ import { usePanel } from "@/hooks/usePanel";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useClientPlatform } from '@/hooks/useClientPlatform';
 import { showToast } from '@/hooks/useToast';
+import { ShareButton } from "@/components/chat/ShareButton";
 
 export function UnifiedTopBar() {
   const {
     sessionTitle,
     setSessionTitle,
     sessionId,
+    streamingSessionId,
     workingDirectory,
     fileTreeOpen,
     setFileTreeOpen,
@@ -176,6 +178,8 @@ export function UnifiedTopBar() {
         >
           {isChatRoute && (
             <>
+              <ShareButton sessionId={sessionId} disabled={!!streamingSessionId} />
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

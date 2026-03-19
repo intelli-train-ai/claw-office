@@ -408,6 +408,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const imageGenValue = useImageGenState();
   const batchImageGenValue = useBatchImageGenState();
 
+  // Share/replay routes render without chrome (no nav rail, no panels)
+  const isShareRoute = pathname.startsWith("/share/");
+  if (isShareRoute) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <div className="h-screen overflow-hidden">
+          {children}
+        </div>
+        <Toaster />
+      </TooltipProvider>
+    );
+  }
+
   return (
     <UpdateContext.Provider value={updateContextValue}>
       <PanelContext.Provider value={panelContextValue}>
