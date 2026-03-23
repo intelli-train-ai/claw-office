@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { scanDirectory, isPathSafe, isRootPath } from '@/lib/files';
@@ -57,6 +58,69 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json<ErrorResponse>(
       { error: error instanceof Error ? error.message : 'Failed to scan directory' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Delete a file or directory.
+ * Requires `filePath` and `baseDir` — the file must be inside baseDir.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { filePath, baseDir } = await request.json();
+
+    if (!filePath || !baseDir) {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Missing filePath or baseDir' },
+        { status: 400 }
+      );
+    }
+
+    const resolvedPath = path.resolve(filePath);
+    const resolvedBase = path.resolve(baseDir);
+
+    if (isRootPath(resolvedBase)) {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Cannot use filesystem root as base directory' },
+        { status: 403 }
+      );
+    }
+
+    // Prevent deleting the project root itself
+    if (resolvedPath === resolvedBase) {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Cannot delete the project root' },
+        { status: 403 }
+      );
+    }
+
+    // Must be inside baseDir
+    if (!isPathSafe(resolvedBase, resolvedPath)) {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Path is outside the project scope' },
+        { status: 403 }
+      );
+    }
+
+    const stat = await fs.stat(resolvedPath);
+    if (stat.isDirectory()) {
+      await fs.rm(resolvedPath, { recursive: true, force: true });
+    } else {
+      await fs.unlink(resolvedPath);
+    }
+
+    return NextResponse.json({ deleted: resolvedPath });
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'File not found' },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json<ErrorResponse>(
+      { error: 'Failed to delete' },
       { status: 500 }
     );
   }

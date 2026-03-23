@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodePilot API Tester</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #141416;
+    --surface2: #1c1c20;
+    --border: #2a2a30;
+    --text: #e4e4e7;
+    --text2: #a1a1aa;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+    --pink: #ec4899;
+    --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    background: var(--bg); color: var(--text);
+    display: flex; height: 100vh; overflow: hidden;
+  }
+  .sidebar {
+    width: 340px; min-width: 340px; background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h1 {
+    font-size: 15px; font-weight: 600; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sidebar-header h1::before {
+    content: ''; display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .context-bar {
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    font-size: 11px; color: var(--text2); background: var(--surface);
+  }
+  .ctx-row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .ctx-label { color: var(--text2); }
+  .ctx-value {
+    color: var(--cyan); max-width: 180px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; font-family: inherit;
+  }
+  .ctx-value.missing { color: var(--orange); }
+  .ctx-value.ok { color: var(--green); }
+  .ctx-input {
+    background: var(--bg2); color: var(--green); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 4px; font-family: inherit; font-size: 11px;
+    width: 180px; outline: none;
+  }
+  .ctx-input:focus { border-color: var(--cyan); }
+  .ctx-input::placeholder { color: var(--text2); opacity: .5; }
+  .ctx-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .ctx-btn {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text2); padding: 3px 10px; cursor: pointer; font-size: 10px;
+    font-family: inherit; transition: all .2s;
+  }
+  .ctx-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ctx-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .search-box {
+    width: 100%; padding: 8px 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: inherit; font-size: 12px;
+    outline: none; transition: border-color .2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .sidebar-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .category { margin-bottom: 4px; }
+  .category-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text2); padding: 8px 8px 4px;
+    cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;
+  }
+  .category-title .arrow { transition: transform .2s; font-size: 10px; }
+  .category.collapsed .arrow { transform: rotate(-90deg); }
+  .category.collapsed .category-items { display: none; }
+  .endpoint-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    border-radius: 6px; cursor: pointer; font-size: 12px; transition: background .15s;
+  }
+  .endpoint-item:hover { background: var(--surface2); }
+  .endpoint-item.active { background: var(--accent); color: #fff; }
+  .method-badge {
+    font-size: 9px; font-weight: 700; padding: 2px 5px;
+    border-radius: 3px; min-width: 40px; text-align: center; flex-shrink: 0;
+  }
+  .method-GET { background: rgba(34,197,94,.15); color: var(--green); }
+  .method-POST { background: rgba(59,130,246,.15); color: var(--blue); }
+  .method-PUT { background: rgba(245,158,11,.15); color: var(--orange); }
+  .method-PATCH { background: rgba(236,72,153,.15); color: var(--pink); }
+  .method-DELETE { background: rgba(239,68,68,.15); color: var(--red); }
+  .endpoint-item.active .method-badge { background: rgba(255,255,255,.2); color: #fff; }
+  .endpoint-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .request-bar {
+    display: flex; gap: 8px; padding: 16px;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .method-select {
+    padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--accent); font-family: inherit;
+    font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
+  }
+  .url-input {
+    flex: 1; padding: 8px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: inherit; font-size: 13px;
+    outline: none; transition: border-color .2s;
+  }
+  .url-input:focus { border-color: var(--accent); }
+  .send-btn {
+    padding: 8px 24px; background: var(--accent); border: none;
+    border-radius: var(--radius); color: #fff; font-family: inherit;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: background .2s;
+  }
+  .send-btn:hover { background: var(--accent-hover); }
+  .send-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .panels { flex: 1; display: flex; overflow: hidden; }
+  .panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .panel + .panel { border-left: 1px solid var(--border); }
+  .panel-header {
+    padding: 10px 16px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; color: var(--text2);
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-tabs { display: flex; gap: 2px; }
+  .panel-tab {
+    padding: 4px 10px; font-size: 11px; background: none; border: none;
+    color: var(--text2); cursor: pointer; border-radius: 4px;
+    font-family: inherit; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .panel-tab.active { background: var(--surface2); color: var(--text); }
+  .panel-body { flex: 1; overflow: auto; padding: 12px 16px; }
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  textarea.body-editor {
+    width: 100%; height: 100%; min-height: 200px; background: transparent;
+    border: none; color: var(--text); font-family: inherit; font-size: 12px;
+    line-height: 1.6; resize: none; outline: none; tab-size: 2;
+  }
+  .params-editor { display: flex; flex-direction: column; gap: 6px; }
+  .param-row { display: flex; gap: 6px; align-items: center; }
+  .param-row input {
+    flex: 1; padding: 6px 10px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-family: inherit; font-size: 12px; outline: none;
+  }
+  .param-row input:focus { border-color: var(--accent); }
+  .param-row button {
+    background: none; border: none; color: var(--red);
+    cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;
+  }
+  .add-param-btn {
+    background: none; border: 1px dashed var(--border); border-radius: 4px;
+    color: var(--text2); padding: 6px; cursor: pointer; font-family: inherit;
+    font-size: 12px; transition: border-color .2s, color .2s; margin-top: 6px;
+  }
+  .add-param-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .response-meta { display: flex; gap: 12px; align-items: center; font-size: 11px; }
+  .status-badge { padding: 2px 8px; border-radius: 3px; font-weight: 700; }
+  .status-2xx { background: rgba(34,197,94,.15); color: var(--green); }
+  .status-3xx { background: rgba(6,182,212,.15); color: var(--cyan); }
+  .status-4xx { background: rgba(245,158,11,.15); color: var(--orange); }
+  .status-5xx { background: rgba(239,68,68,.15); color: var(--red); }
+  .response-time { color: var(--text2); }
+  pre.response-body {
+    font-size: 12px; line-height: 1.6; white-space: pre-wrap;
+    word-break: break-all; color: var(--text);
+  }
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; color: var(--text2);
+    font-size: 13px; gap: 8px;
+  }
+  .empty-state .icon { font-size: 32px; opacity: .3; }
+  .hidden { display: none !important; }
+  .sse-event { padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .sse-event:last-child { border-bottom: none; }
+  .sse-event-type { font-size: 10px; font-weight: 700; color: var(--cyan); margin-bottom: 2px; }
+  .tag { font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; flex-shrink: 0; }
+  .tag-safe { background: rgba(34,197,94,.1); color: var(--green); }
+  .tag-write { background: rgba(239,68,68,.15); color: var(--red); }
+  .tag-sse { background: rgba(6,182,212,.15); color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>CodePilot API Tester</h1>
+    <input class="search-box" id="search" placeholder="Search endpoints..." autocomplete="off">
+  </div>
+  <div class="context-bar" id="contextBar">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-weight:600;text-transform:uppercase;letter-spacing:.05em">Test Context</span>
+    </div>
+    <div class="ctx-row"><span class="ctx-label">Status:</span><span class="ctx-value missing" id="ctxStatus">initializing...</span></div>
+    <div class="ctx-row"><span class="ctx-label">Session:</span><input class="ctx-input" id="ctxSession" placeholder="session id" oninput="onCtxEdit('sessionId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">Provider:</span><input class="ctx-input" id="ctxProvider" placeholder="provider id" oninput="onCtxEdit('providerId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">User Msg:</span><input class="ctx-input" id="ctxUserMsg" placeholder="user message id" oninput="onCtxEdit('userMessageId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">Asst Msg:</span><input class="ctx-input" id="ctxAsstMsg" placeholder="assistant message id" oninput="onCtxEdit('assistantMessageId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">Task:</span><input class="ctx-input" id="ctxTask" placeholder="task id" oninput="onCtxEdit('taskId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">Tag:</span><input class="ctx-input" id="ctxTag" placeholder="tag id" oninput="onCtxEdit('tagId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">Permission:</span><input class="ctx-input" id="ctxPermission" placeholder="permission request id" oninput="onCtxEdit('permissionRequestId', this.value)"></div>
+    <div class="ctx-row"><span class="ctx-label">Work Dir:</span><input class="ctx-input" id="ctxWorkDir" placeholder="/path/to/dir" oninput="onCtxEdit('workDir', this.value)"></div>
+    <div class="ctx-actions">
+      <button class="ctx-btn" onclick="seedData()">Re-seed Data</button>
+      <button class="ctx-btn danger" onclick="cleanData()">Clean Up</button>
+    </div>
+  </div>
+  <div class="sidebar-list" id="endpointList"></div>
+</div>
+
+<div class="main">
+  <div class="request-bar">
+    <select class="method-select" id="methodSelect">
+      <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+    </select>
+    <input class="url-input" id="urlInput" placeholder="/api/health" value="/api/health">
+    <button class="send-btn" id="sendBtn">Send</button>
+  </div>
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Request</span>
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tab="body" onclick="switchReqTab(this)">Body</button>
+          <button class="panel-tab" data-tab="params" onclick="switchReqTab(this)">Params</button>
+          <button class="panel-tab" data-tab="headers" onclick="switchReqTab(this)">Headers</button>
+        </div>
+      </div>
+      <div class="panel-body" id="reqBodyTab">
+        <textarea class="body-editor" id="bodyEditor" placeholder="Request body (JSON)...">{}</textarea>
+      </div>
+      <div class="panel-body hidden" id="reqParamsTab">
+        <div class="params-editor" id="paramsEditor"></div>
+        <button class="add-param-btn" onclick="addParamRow()">+ Add Parameter</button>
+      </div>
+      <div class="panel-body hidden" id="reqHeadersTab">
+        <div class="params-editor" id="headersEditor"></div>
+        <button class="add-param-btn" onclick="addHeaderRow()">+ Add Header</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Response</span>
+        <div class="response-meta" id="responseMeta"></div>
+      </div>
+      <div class="panel-body" id="responseBody">
+        <div class="empty-state">
+          <div class="icon">&#x2197;</div>
+          <div>Click any endpoint and hit Send — all data pre-filled</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Context from seed endpoint ──
+var CTX = {
+  sessionId: '', userMessageId: '', assistantMessageId: '',
+  providerId: '', taskId: '', tagId: '', mediaId: '0', jobId: '0',
+  permissionRequestId: '', workDir: '/tmp', skillNames: [],
+};
+
+// ── Seed: call /api/api-test/seed to create example data ──
+async function seedData() {
+  setStatus('seeding...');
+  try {
+    var r = await fetch('/api/api-test/seed');
+    var d = await r.json();
+    if (!d.ok) { setStatus('seed failed: ' + (d.error || 'unknown'), true); return; }
+    var c = d.context;
+    CTX.sessionId = c.sessionId;
+    CTX.userMessageId = c.userMessageId;
+    CTX.assistantMessageId = c.assistantMessageId;
+    CTX.providerId = c.providerId;
+    CTX.taskId = c.taskId;
+    CTX.tagId = c.tagId;
+    CTX.mediaId = c.mediaId || '0';
+    CTX.jobId = c.jobId || '0';
+    CTX.workDir = c.workingDirectory || '/tmp';
+    CTX.skillNames = c.skillNames || [];
+    CTX.permissionRequestId = c.permissionRequestId || '';
+
+    document.getElementById('ctxSession').value = CTX.sessionId;
+    document.getElementById('ctxProvider').value = CTX.providerId;
+    document.getElementById('ctxUserMsg').value = CTX.userMessageId;
+    document.getElementById('ctxAsstMsg').value = CTX.assistantMessageId;
+    document.getElementById('ctxTask').value = CTX.taskId;
+    document.getElementById('ctxTag').value = CTX.tagId;
+    document.getElementById('ctxPermission').value = CTX.permissionRequestId;
+    document.getElementById('ctxWorkDir').value = CTX.workDir;
+    setStatus('ready', false, true);
+
+    buildEndpoints();
+    renderSidebar(document.getElementById('search').value);
+  } catch (e) {
+    setStatus('seed error: ' + e.message, true);
+  }
+}
+
+async function cleanData() {
+  try {
+    await fetch('/api/api-test/seed', { method: 'DELETE' });
+    setStatus('cleaned — click Re-seed to recreate');
+    ['ctxSession','ctxProvider','ctxUserMsg','ctxAsstMsg','ctxTask','ctxTag','ctxPermission','ctxWorkDir'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+  } catch (e) {
+    setStatus('clean error: ' + e.message, true);
+  }
+}
+
+function onCtxEdit(key, value) {
+  CTX[key] = value;
+  buildEndpoints();
+  renderSidebar(document.getElementById('search').value);
+  // If an endpoint is selected, re-select it to refresh the body
+  if (activeEndpoint >= 0 && activeEndpoint < ENDPOINTS.length) {
+    selectEndpoint(activeEndpoint);
+  }
+}
+
+function setStatus(text, isError, isOk) {
+  var el = document.getElementById('ctxStatus');
+  el.textContent = text;
+  el.className = 'ctx-value' + (isError ? ' missing' : isOk ? ' ok' : '');
+}
+
+// ── Build all endpoints with pre-filled context ──
+var ENDPOINTS = [];
+
+function buildEndpoints() {
+  var s = CTX.sessionId;
+  var p = CTX.providerId;
+  var um = CTX.userMessageId;
+  var am = CTX.assistantMessageId;
+  var tk = CTX.taskId;
+  var tg = CTX.tagId;
+  var me = CTX.mediaId;
+  var jb = CTX.jobId;
+  var wd = CTX.workDir;
+  var pr = CTX.permissionRequestId;
+  var sn = CTX.skillNames.length > 0 ? CTX.skillNames[0] : '__apitest__skill';
+
+  ENDPOINTS = [
+    // ── System ──
+    { cat: 'System', method: 'GET', path: '/api/health', desc: 'Health check', safe: true },
+    { cat: 'System', method: 'GET', path: '/api/claude-status', desc: 'Claude SDK status', safe: true },
+    { cat: 'System', method: 'GET', path: '/api/app/updates', desc: 'Check for updates', safe: true },
+
+    // ── Sessions ──
+    { cat: 'Sessions', method: 'GET', path: '/api/chat/sessions', desc: 'List all sessions', safe: true },
+    { cat: 'Sessions', method: 'GET', path: '/api/chat/sessions/' + s, desc: 'Get test session', safe: true },
+    { cat: 'Sessions', method: 'GET', path: '/api/chat/sessions/' + s + '/messages', desc: 'Get session messages', safe: true, params: { limit: '20' } },
+    { cat: 'Sessions', method: 'POST', path: '/api/chat/sessions', desc: 'Create new session',
+      body: { working_directory: wd, title: 'Created by API Tester', mode: 'code' } },
+    { cat: 'Sessions', method: 'PATCH', path: '/api/chat/sessions/' + s, desc: 'Rename test session',
+      body: { title: '__apitest__session (renamed)' } },
+    { cat: 'Sessions', method: 'DELETE', path: '/api/chat/sessions/' + s, desc: 'Delete test session', warn: true },
+
+    // ── Chat ──
+    { cat: 'Chat', method: 'POST', path: '/api/chat', desc: 'Stream chat (SSE)', sse: true,
+      body: { session_id: s, content: 'Say "API test OK" in one sentence.' } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/interrupt', desc: 'Interrupt conversation',
+      body: { sessionId: s } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/messages', desc: 'Save message to DB',
+      body: { session_id: s, role: 'user', content: 'Message saved via API Tester at ' + new Date().toISOString() } },
+    { cat: 'Chat', method: 'PUT', path: '/api/chat/messages', desc: 'Update message content',
+      body: { message_id: um, content: 'Updated via API Tester at ' + new Date().toISOString() } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/model', desc: 'Set model for session',
+      body: { sessionId: s, model: 'claude-sonnet-4-20250514' } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/mode', desc: 'Switch to plan mode',
+      body: { sessionId: s, mode: 'plan' } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/permission', desc: 'Resolve permission (allow)',
+      body: { permissionRequestId: pr, decision: { behavior: 'allow', updatedPermissions: [] } } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/rewind', desc: 'Rewind (dry run)',
+      body: { sessionId: s, userMessageId: um, dryRun: true } },
+    { cat: 'Chat', method: 'POST', path: '/api/chat/structured', desc: 'Structured JSON query',
+      body: { prompt: 'What is 2+2? Return the answer as JSON.', outputFormat: { type: 'json_schema', schema: { type: 'object', properties: { answer: { type: 'number' } }, required: ['answer'] } } } },
+
+    // ── Claude Sessions ──
+    { cat: 'Claude Sessions', method: 'GET', path: '/api/claude-sessions', desc: 'List SDK sessions', safe: true },
+
+    // ── Files ──
+    { cat: 'Files', method: 'GET', path: '/api/files', desc: 'Scan directory tree', safe: true,
+      params: { dir: wd, depth: '2' } },
+    { cat: 'Files', method: 'GET', path: '/api/files/browse', desc: 'Browse directory', safe: true,
+      params: { dir: wd } },
+    { cat: 'Files', method: 'GET', path: '/api/files/preview', desc: 'Preview package.json', safe: true,
+      params: { path: wd + '/package.json', maxLines: '30' } },
+    { cat: 'Files', method: 'GET', path: '/api/files/raw', desc: 'Raw package.json', safe: true,
+      params: { path: wd + '/package.json' } },
+    { cat: 'Files', method: 'POST', path: '/api/files/open', desc: 'Open in explorer',
+      body: { path: wd } },
+
+    // ── Providers ──
+    { cat: 'Providers', method: 'GET', path: '/api/providers', desc: 'List all providers', safe: true },
+    { cat: 'Providers', method: 'GET', path: '/api/providers/models', desc: 'List models', safe: true },
+    { cat: 'Providers', method: 'GET', path: '/api/providers/' + p, desc: 'Get test provider', safe: true },
+    { cat: 'Providers', method: 'PUT', path: '/api/providers/' + p, desc: 'Update provider name',
+      body: { name: '__apitest__provider (updated)' } },
+    { cat: 'Providers', method: 'POST', path: '/api/providers/' + p + '/activate', desc: 'Toggle activate',
+      body: { active: false } },
+    { cat: 'Providers', method: 'POST', path: '/api/providers', desc: 'Create new provider',
+      body: { name: '__apitest__provider2', provider_type: 'anthropic', api_key: 'sk-ant-test-new', base_url: '' } },
+    { cat: 'Providers', method: 'DELETE', path: '/api/providers/' + p, desc: 'Delete test provider', warn: true },
+
+    // ── SDK ──
+    { cat: 'SDK', method: 'GET', path: '/api/sdk/account', desc: 'Account info', safe: true,
+      params: { providerId: 'env' } },
+
+    // ── Settings ──
+    { cat: 'Settings', method: 'GET', path: '/api/settings/app', desc: 'App settings', safe: true },
+    { cat: 'Settings', method: 'GET', path: '/api/settings', desc: 'Claude settings.json', safe: true },
+    { cat: 'Settings', method: 'GET', path: '/api/settings/workspace', desc: 'Workspace status', safe: true },
+    { cat: 'Settings', method: 'PUT', path: '/api/settings/workspace', desc: 'Configure workspace',
+      body: { path: wd } },
+
+    // ── Bridge ──
+    { cat: 'Bridge', method: 'GET', path: '/api/bridge', desc: 'Bridge status', safe: true },
+    { cat: 'Bridge', method: 'GET', path: '/api/bridge/channels', desc: 'List channels', safe: true },
+    { cat: 'Bridge', method: 'GET', path: '/api/bridge/settings', desc: 'Bridge settings', safe: true },
+
+    // ── Platform Settings ──
+    { cat: 'Platform', method: 'GET', path: '/api/settings/discord', desc: 'Discord settings', safe: true },
+    { cat: 'Platform', method: 'GET', path: '/api/settings/feishu', desc: 'Feishu settings', safe: true },
+    { cat: 'Platform', method: 'GET', path: '/api/settings/qq', desc: 'QQ settings', safe: true },
+    { cat: 'Platform', method: 'GET', path: '/api/settings/telegram', desc: 'Telegram settings', safe: true },
+
+    // ── Plugins & MCP ──
+    { cat: 'Plugins', method: 'GET', path: '/api/plugins', desc: 'List discovered skills', safe: true },
+    { cat: 'Plugins', method: 'GET', path: '/api/plugins/mcp', desc: 'MCP server configs', safe: true },
+    { cat: 'Plugins', method: 'GET', path: '/api/plugins/mcp/status', desc: 'MCP status', safe: true,
+      params: { sessionId: s } },
+
+    // ── Skills ──
+    { cat: 'Skills', method: 'GET', path: '/api/skills', desc: 'List all skills', safe: true },
+    { cat: 'Skills', method: 'GET', path: '/api/skills/' + encodeURIComponent(sn), desc: 'Get skill: ' + sn, safe: true },
+    { cat: 'Skills', method: 'POST', path: '/api/skills', desc: 'Create test skill',
+      body: { name: '__apitest__skill', content: '# Test Skill\\nCreated by API Tester.', scope: 'global' } },
+    { cat: 'Skills', method: 'PUT', path: '/api/skills/__apitest__skill', desc: 'Update test skill',
+      body: { content: '# Updated Test Skill\\nModified by API Tester.' } },
+    { cat: 'Skills', method: 'DELETE', path: '/api/skills/__apitest__skill', desc: 'Delete test skill', warn: true },
+    { cat: 'Skills', method: 'POST', path: '/api/skills/search', desc: 'Search skills',
+      body: { query: 'test', skills: [{ name: 'example', description: 'An example skill' }] } },
+
+    // ── Marketplace ──
+    { cat: 'Marketplace', method: 'GET', path: '/api/skills/marketplace/search', desc: 'Search marketplace', safe: true,
+      params: { q: 'git', limit: '5' } },
+    { cat: 'Marketplace', method: 'GET', path: '/api/skills/marketplace/readme', desc: 'Get skill readme', safe: true,
+      params: { skillId: 'commit' } },
+
+    // ── Media ──
+    { cat: 'Media', method: 'GET', path: '/api/media/gallery', desc: 'List images', safe: true,
+      params: { limit: '10', offset: '0' } },
+    { cat: 'Media', method: 'GET', path: '/api/media/tags', desc: 'List tags', safe: true },
+    { cat: 'Media', method: 'POST', path: '/api/media/tags', desc: 'Create a tag',
+      body: { name: '__apitest__tag2', color: '#ec4899' } },
+    { cat: 'Media', method: 'GET', path: '/api/media/' + me, desc: 'Get media detail', safe: true },
+    { cat: 'Media', method: 'PUT', path: '/api/media/' + me + '/favorite', desc: 'Toggle favorite' },
+    { cat: 'Media', method: 'PUT', path: '/api/media/' + me + '/tags', desc: 'Set media tags',
+      body: { tags: [] } },
+    { cat: 'Media', method: 'DELETE', path: '/api/media/tags/' + tg, desc: 'Delete test tag', warn: true },
+
+    // ── Media Jobs ──
+    { cat: 'Media Jobs', method: 'GET', path: '/api/media/jobs', desc: 'List jobs', safe: true, params: { limit: '10' } },
+    { cat: 'Media Jobs', method: 'GET', path: '/api/media/jobs/' + jb, desc: 'Get job detail', safe: true },
+
+    // ── Tasks ──
+    { cat: 'Tasks', method: 'GET', path: '/api/tasks', desc: 'Get session tasks', safe: true,
+      params: { session_id: s } },
+    { cat: 'Tasks', method: 'POST', path: '/api/tasks', desc: 'Create task',
+      body: { session_id: s, title: 'New task from API Tester', description: 'Auto-created test task' } },
+    { cat: 'Tasks', method: 'PATCH', path: '/api/tasks/' + tk, desc: 'Mark task in-progress',
+      body: { status: 'in_progress' } },
+    { cat: 'Tasks', method: 'PUT', path: '/api/tasks', desc: 'Bulk sync tasks',
+      body: { session_id: s, todos: [{ id: 'synced-1', title: 'Synced task', status: 'pending' }] } },
+    { cat: 'Tasks', method: 'DELETE', path: '/api/tasks/' + tk, desc: 'Delete task', warn: true },
+
+    // ── Usage ──
+    { cat: 'Usage', method: 'GET', path: '/api/usage/stats', desc: 'Token usage stats', safe: true,
+      params: { days: '7' } },
+
+    // ── Workspace ──
+    { cat: 'Workspace', method: 'GET', path: '/api/workspace/checkin', desc: 'Check-in questions', safe: true },
+    { cat: 'Workspace', method: 'GET', path: '/api/workspace/onboarding', desc: 'Onboarding questions', safe: true },
+    { cat: 'Workspace', method: 'GET', path: '/api/workspace/index', desc: 'Index stats', safe: true },
+    { cat: 'Workspace', method: 'GET', path: '/api/workspace/search', desc: 'Search workspace', safe: true,
+      params: { q: 'test', limit: '5' } },
+    { cat: 'Workspace', method: 'GET', path: '/api/workspace/latest-session', desc: 'Latest session', safe: true,
+      params: { workingDirectory: wd } },
+    { cat: 'Workspace', method: 'GET', path: '/api/workspace/inspect', desc: 'Inspect path', safe: true,
+      params: { path: wd } },
+    { cat: 'Workspace', method: 'POST', path: '/api/workspace/session', desc: 'Get/create ws session',
+      body: { mode: 'code', model: '' } },
+    { cat: 'Workspace', method: 'POST', path: '/api/workspace/index', desc: 'Reindex workspace' },
+
+    // ── Seed (meta) ──
+    { cat: 'Seed', method: 'GET', path: '/api/api-test/seed', desc: 'Create test data', safe: true },
+    { cat: 'Seed', method: 'DELETE', path: '/api/api-test/seed', desc: 'Clean test data', warn: true },
+  ];
+}
+
+// ── State ──
+var activeEndpoint = null;
+var abortController = null;
+
+// ── Render sidebar ──
+function renderSidebar(filter) {
+  filter = filter || '';
+  var list = document.getElementById('endpointList');
+  var lf = filter.toLowerCase();
+  var grouped = {};
+
+  ENDPOINTS.forEach(function(ep, i) {
+    if (filter && ep.path.toLowerCase().indexOf(lf) === -1 && ep.desc.toLowerCase().indexOf(lf) === -1 && ep.cat.toLowerCase().indexOf(lf) === -1) return;
+    if (!grouped[ep.cat]) grouped[ep.cat] = [];
+    grouped[ep.cat].push(Object.assign({}, ep, { index: i }));
+  });
+
+  list.innerHTML = '';
+  Object.keys(grouped).forEach(function(cat) {
+    var items = grouped[cat];
+    var div = document.createElement('div');
+    div.className = 'category';
+    var titleDiv = document.createElement('div');
+    titleDiv.className = 'category-title';
+    titleDiv.innerHTML = '<span class="arrow">&#x25BE;</span> ' + cat + ' <span style="opacity:.4">(' + items.length + ')</span>';
+    titleDiv.onclick = function() { div.classList.toggle('collapsed'); };
+    div.appendChild(titleDiv);
+
+    var container = document.createElement('div');
+    container.className = 'category-items';
+    items.forEach(function(ep) {
+      var item = document.createElement('div');
+      item.className = 'endpoint-item' + (activeEndpoint === ep.index ? ' active' : '');
+      var badge = '<span class="method-badge method-' + ep.method + '">' + ep.method + '</span>';
+      var tags = '';
+      if (ep.sse) tags += '<span class="tag tag-sse">SSE</span>';
+      if (ep.warn) tags += '<span class="tag tag-write">WRITE</span>';
+      else if (ep.safe) tags += '<span class="tag tag-safe">SAFE</span>';
+      item.innerHTML = badge + '<span class="endpoint-path" title="' + ep.path + '">' + ep.desc + '</span>' + tags;
+      item.onclick = function() { selectEndpoint(ep.index); };
+      container.appendChild(item);
+    });
+    div.appendChild(container);
+    list.appendChild(div);
+  });
+}
+
+function selectEndpoint(index) {
+  activeEndpoint = index;
+  var ep = ENDPOINTS[index];
+  document.getElementById('methodSelect').value = ep.method;
+  document.getElementById('urlInput').value = ep.path;
+  document.getElementById('bodyEditor').value = ep.body ? JSON.stringify(ep.body, null, 2) : '{}';
+  var pe = document.getElementById('paramsEditor');
+  pe.innerHTML = '';
+  if (ep.params) {
+    Object.keys(ep.params).forEach(function(k) { addParamRow(k, ep.params[k]); });
+  }
+  renderSidebar(document.getElementById('search').value);
+}
+
+function addParamRow(key, value) {
+  var editor = document.getElementById('paramsEditor');
+  var row = document.createElement('div');
+  row.className = 'param-row';
+  row.innerHTML = '<input placeholder="Key" value="' + (key||'') + '"><input placeholder="Value" value="' + (value||'') + '"><button onclick="this.parentElement.remove()">\u00d7</button>';
+  editor.appendChild(row);
+}
+function addHeaderRow(key, value) {
+  var editor = document.getElementById('headersEditor');
+  var row = document.createElement('div');
+  row.className = 'param-row';
+  row.innerHTML = '<input placeholder="Key" value="' + (key||'') + '"><input placeholder="Value" value="' + (value||'') + '"><button onclick="this.parentElement.remove()">\u00d7</button>';
+  editor.appendChild(row);
+}
+function getParams() {
+  var params = {};
+  document.querySelectorAll('#paramsEditor .param-row').forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    if (inputs[0].value) params[inputs[0].value] = inputs[1].value;
+  });
+  return params;
+}
+function getHeaders() {
+  var headers = {};
+  document.querySelectorAll('#headersEditor .param-row').forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    if (inputs[0].value) headers[inputs[0].value] = inputs[1].value;
+  });
+  return headers;
+}
+function switchReqTab(btn) {
+  btn.parentElement.querySelectorAll('.panel-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  ['reqBodyTab', 'reqParamsTab', 'reqHeadersTab'].forEach(function(id) { document.getElementById(id).classList.add('hidden'); });
+  var map = { body: 'reqBodyTab', params: 'reqParamsTab', headers: 'reqHeadersTab' };
+  document.getElementById(map[btn.dataset.tab]).classList.remove('hidden');
+}
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Send request ──
+async function sendRequest() {
+  var method = document.getElementById('methodSelect').value;
+  var url = document.getElementById('urlInput').value;
+  var bodyStr = document.getElementById('bodyEditor').value;
+  var params = getParams();
+  var customHeaders = getHeaders();
+  var meta = document.getElementById('responseMeta');
+  var respBody = document.getElementById('responseBody');
+  var btn = document.getElementById('sendBtn');
+
+  var qs = new URLSearchParams(params).toString();
+  if (qs) url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
+
+  var ep = activeEndpoint !== null ? ENDPOINTS[activeEndpoint] : null;
+  var isSSE = ep && ep.sse;
+
+  meta.innerHTML = '<span style="color:var(--text2)">Sending...</span>';
+  respBody.innerHTML = '';
+  btn.disabled = true;
+
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+  var start = performance.now();
+
+  try {
+    var fetchOpts = {
+      method: method,
+      signal: abortController.signal,
+      headers: Object.assign({ 'Content-Type': 'application/json' }, customHeaders),
+    };
+    if (method !== 'GET' && method !== 'DELETE') {
+      fetchOpts.body = bodyStr;
+    }
+
+    var res = await fetch(url, fetchOpts);
+    var elapsed = Math.round(performance.now() - start);
+    var sc = res.status < 300 ? '2xx' : res.status < 400 ? '3xx' : res.status < 500 ? '4xx' : '5xx';
+    meta.innerHTML = '<span class="status-badge status-' + sc + '">' + res.status + ' ' + res.statusText + '</span><span class="response-time">' + elapsed + 'ms</span>';
+
+    if (isSSE && res.ok && (res.headers.get('content-type') || '').indexOf('text/event-stream') !== -1) {
+      respBody.innerHTML = '<div id="sseContainer" style="max-height:100%;overflow:auto"></div>';
+      var container = document.getElementById('sseContainer');
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = '';
+      btn.textContent = 'Stop'; btn.disabled = false;
+      btn.onclick = function() { abortController.abort(); };
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop();
+        var currentEvent = '';
+        for (var j = 0; j < lines.length; j++) {
+          var line = lines[j];
+          if (line.indexOf('event:') === 0) currentEvent = line.slice(6).trim();
+          else if (line.indexOf('data:') === 0) {
+            var data = line.slice(5).trim();
+            var d = document.createElement('div');
+            d.className = 'sse-event';
+            var formatted = data;
+            try { formatted = JSON.stringify(JSON.parse(data), null, 2); } catch(e) {}
+            d.innerHTML = (currentEvent ? '<div class="sse-event-type">' + currentEvent + '</div>' : '') + '<pre class="response-body">' + escapeHtml(formatted) + '</pre>';
+            container.appendChild(d);
+            container.scrollTop = container.scrollHeight;
+          }
+        }
+      }
+      btn.textContent = 'Send'; btn.onclick = sendRequest;
+    } else {
+      var ct = res.headers.get('content-type') || '';
+      var text = await res.text();
+      if (ct.indexOf('json') !== -1) {
+        try { text = JSON.stringify(JSON.parse(text), null, 2); } catch(e) {}
+      }
+      respBody.innerHTML = '<pre class="response-body">' + escapeHtml(text) + '</pre>';
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      meta.innerHTML = '<span style="color:var(--orange)">Aborted</span>';
+    } else {
+      var elapsed2 = Math.round(performance.now() - start);
+      meta.innerHTML = '<span class="status-badge status-5xx">Error</span><span class="response-time">' + elapsed2 + 'ms</span>';
+      respBody.innerHTML = '<pre class="response-body" style="color:var(--red)">' + escapeHtml(err.message) + '</pre>';
+    }
+  }
+  btn.textContent = 'Send'; btn.onclick = sendRequest; btn.disabled = false;
+}
+
+// ── Init ──
+document.getElementById('search').addEventListener('input', function(e) { renderSidebar(e.target.value); });
+document.getElementById('sendBtn').addEventListener('click', sendRequest);
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendRequest();
+});
+
+buildEndpoints();
+renderSidebar();
+seedData(); // Auto-seed on page load
+</script>
+</body>
+</html>

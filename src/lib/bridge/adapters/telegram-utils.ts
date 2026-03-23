@@ -7,6 +7,44 @@
 
 const TELEGRAM_API = 'https://api.telegram.org';
 
+// ── Proxy-aware fetch for Telegram API ──────────────────────────
+// Node.js native fetch ignores HTTP_PROXY env vars, and undici ProxyAgent
+// is incompatible with some proxies (Clash, V2Ray). We use node-fetch +
+// https-proxy-agent as a reliable alternative.
+
+let _cachedFetch: typeof globalThis.fetch | null = null;
+
+async function buildProxyFetch(): Promise<typeof globalThis.fetch> {
+  if (_cachedFetch) return _cachedFetch;
+
+  const proxyUrl =
+    process.env.HTTPS_PROXY || process.env.HTTP_PROXY ||
+    process.env.https_proxy || process.env.http_proxy;
+
+  if (proxyUrl) {
+    try {
+      const { HttpsProxyAgent } = await import('https-proxy-agent');
+      const nodeFetch = (await import('node-fetch')).default;
+      const agent = new HttpsProxyAgent(proxyUrl);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _cachedFetch = ((url: any, init?: any) => nodeFetch(url, { ...init, agent })) as any;
+      console.log(`[telegram-utils] Using proxy ${proxyUrl} for Telegram API`);
+      return _cachedFetch!;
+    } catch {
+      // proxy modules not available, fall through
+    }
+  }
+
+  _cachedFetch = globalThis.fetch;
+  return _cachedFetch;
+}
+
+/** Proxy-aware fetch — use this for all Telegram API calls. */
+export async function telegramFetch(url: string, init?: RequestInit): Promise<Response> {
+  const pf = await buildProxyFetch();
+  return pf(url, init);
+}
+
 export interface TelegramSendResult {
   ok: boolean;
   messageId?: string;
@@ -41,7 +79,7 @@ export async function callTelegramApi(
 ): Promise<TelegramSendResult> {
   try {
     const url = `${TELEGRAM_API}/bot${botToken}/${method}`;
-    const res = await fetch(url, {
+    const res = await telegramFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),

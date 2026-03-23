@@ -39,6 +39,8 @@ export {
   FileZip,
   Folder,
   FolderOpen,
+  FolderPlus,
+  UploadSimple,
   Funnel,
   GameController,
   Gear,
@@ -87,6 +89,7 @@ export {
   GitCommit,
   CloudArrowUp,
   ArrowsInLineVertical,
+  ShareNetwork,
 } from "@phosphor-icons/react";
 
 export type { Icon, IconProps } from "@phosphor-icons/react";

@@ -28,10 +28,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Claude CLI ≤2.x only supports text/json/stream-json, not json_schema.
+    // Downgrade json_schema → json to avoid "invalid format" exit code 1.
+    const effectiveFormat = outputFormat.type === 'json_schema'
+      ? { type: 'json' as const }
+      : outputFormat;
+
+    // Strip CLAUDECODE env to avoid nested-session detection
+    const cleanEnv = { ...process.env };
+    delete cleanEnv.CLAUDECODE;
+
     const queryOptions: Partial<Options> = {
       cwd: options?.cwd || process.cwd(),
       model: options?.model,
-      outputFormat,
+      outputFormat: effectiveFormat,
+      env: cleanEnv as Record<string, string>,
     };
 
     // Collect the result message which contains structured_output

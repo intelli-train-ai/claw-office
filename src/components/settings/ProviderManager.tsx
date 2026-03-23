@@ -482,34 +482,6 @@ export function ProviderManager() {
             ))}
           </div>
 
-          {/* Media Providers */}
-          <div className="mt-4 pt-3 border-t border-border/30">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              {t('provider.mediaProviders')}
-            </h4>
-            {QUICK_PRESETS.filter((p) => p.category === "media").map((preset) => (
-              <div
-                key={preset.key}
-                className="flex items-center gap-3 py-2.5 px-1 border-b border-border/30 last:border-b-0"
-              >
-                <div className="shrink-0 w-[22px] flex justify-center">{preset.icon}</div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium">{preset.name}</span>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {isZh ? preset.descriptionZh : preset.description}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="shrink-0 gap-1"
-                  onClick={() => handleOpenPresetDialog(preset)}
-                >
-                  + {t('provider.connect')}
-                </Button>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 

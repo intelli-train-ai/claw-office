@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Feishu Card Streaming Controller
  *
@@ -84,7 +85,7 @@ class FeishuCardStreamController implements CardStreamController {
         },
       };
 
-      const createResp = await (this.client as any).cardkit.v2.card.create({
+      const createResp = await this.client.cardkit.v1.card.create({
         data: { type: 'card_json', data: JSON.stringify(cardBody) },
       });
       const cardId = createResp?.data?.card_id;
@@ -169,8 +170,8 @@ class FeishuCardStreamController implements CardStreamController {
 
     try {
       state.sequence++;
-      await (this.client as any).cardkit.v2.card.streamContent({
-        path: { card_id: state.cardId },
+      await this.client.cardkit.v1.cardElement.content({
+        path: { card_id: state.cardId, element_id: 'streaming_content' },
         data: { content, sequence: state.sequence },
       });
       state.lastUpdateAt = Date.now();
@@ -221,11 +222,11 @@ class FeishuCardStreamController implements CardStreamController {
     }
 
     try {
-      // Close streaming mode
+      // Close streaming mode via card settings
       state.sequence++;
-      await (this.client as any).cardkit.v2.card.setStreamingMode({
+      await this.client.cardkit.v1.card.settings({
         path: { card_id: state.cardId },
-        data: { streaming_mode: false, sequence: state.sequence },
+        data: { settings: JSON.stringify({ streaming_mode: false }), sequence: state.sequence },
       });
 
       // Build final card elements
@@ -288,9 +289,9 @@ class FeishuCardStreamController implements CardStreamController {
       };
 
       state.sequence++;
-      await (this.client as any).cardkit.v2.card.update({
+      await this.client.cardkit.v1.card.update({
         path: { card_id: state.cardId },
-        data: { type: 'card_json', data: JSON.stringify(finalCard), sequence: state.sequence },
+        data: { card: { type: 'card_json', data: JSON.stringify(finalCard) }, sequence: state.sequence },
       });
     } catch (err: any) {
       console.error(LOG_TAG, 'Finalize failed:', err?.message || err);

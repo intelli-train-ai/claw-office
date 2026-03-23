@@ -94,7 +94,7 @@ function UpdateCard() {
                     className="h-auto p-0 text-xs text-muted-foreground"
                     onClick={() => setShowDialog(true)}
                   >
-                    {t('gallery.viewDetails')}
+                    {t('settings.viewRelease')}
                   </Button>
                 )}
               </div>

@@ -342,8 +342,13 @@ export function ChatListPanel({ open, width }: ChatListPanelProps) {
       className="hidden h-full shrink-0 flex-col overflow-hidden bg-sidebar/80 backdrop-blur-xl lg:flex"
       style={{ width: width ?? 240 }}
     >
-      {/* Header - extra top padding for macOS traffic lights */}
-      <div className="flex h-12 shrink-0 items-center justify-between px-3 mt-5">
+      {/* Logo */}
+      <div className="flex shrink-0 items-center px-3 mt-5 mb-1">
+        <img src="/logo.png" alt="CodePilot" className="h-6 object-contain" />
+      </div>
+
+      {/* Header */}
+      <div className="flex h-10 shrink-0 items-center justify-between px-3">
         <ConnectionStatus />
       </div>
 
