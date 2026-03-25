@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getRuntimeArchitectureInfo } from "@/lib/platform";
 import { selectRecommendedReleaseAsset, type ReleaseAsset } from "@/lib/update-release";
 
-const GITHUB_REPO = "op7418/CodePilot";
+const GITHUB_REPO = "intelli-train-ai/CodePilot";
 
 function compareSemver(a: string, b: string): number {
   const pa = a.replace(/^v/, "").split(".").map(Number);

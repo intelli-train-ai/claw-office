@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "author": {
-    "name": "op7418",
+    "name": "intelli-train-ai",
     "email": "7418@openclaw.ai"
   },
   "description": "A native desktop GUI client for Claude Code",

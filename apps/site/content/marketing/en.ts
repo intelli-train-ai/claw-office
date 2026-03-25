@@ -140,7 +140,7 @@ export const en: MarketingContent = {
       },
     ],
     githubCta: 'Star on GitHub',
-    githubUrl: 'https://github.com/op7418/CodePilot',
+    githubUrl: 'https://github.com/intelli-train-ai/CodePilot',
   },
   faq: {
     title: 'Frequently asked questions.',
@@ -229,7 +229,7 @@ export const en: MarketingContent = {
   footer: {
     copyright: '\u00a9 2026 CodePilot',
     links: [
-      { text: 'GitHub', url: 'https://github.com/op7418/CodePilot' },
+      { text: 'GitHub', url: 'https://github.com/intelli-train-ai/CodePilot' },
       { text: 'Docs', url: '/docs' },
       { text: 'Download', url: '/download' },
     ],
