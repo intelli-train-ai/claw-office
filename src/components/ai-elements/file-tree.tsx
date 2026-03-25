@@ -14,6 +14,7 @@ import {
   File,
   CaretRight,
   Plus,
+  Trash,
 } from "@phosphor-icons/react";
 import {
   createContext,
@@ -29,6 +30,7 @@ interface FileTreeContextType {
   selectedPath?: string;
   onSelect?: (path: string) => void;
   onAdd?: (path: string) => void;
+  onDelete?: (path: string, isDirectory: boolean) => void;
 }
 
 // Default noop for context default value
@@ -47,6 +49,7 @@ export type FileTreeProps = HTMLAttributes<HTMLDivElement> & {
   selectedPath?: string;
   onSelect?: (path: string) => void;
   onAdd?: (path: string) => void;
+  onDelete?: (path: string, isDirectory: boolean) => void;
   onExpandedChange?: (expanded: Set<string>) => void;
 };
 
@@ -56,6 +59,7 @@ export const FileTree = ({
   selectedPath,
   onSelect,
   onAdd,
+  onDelete,
   onExpandedChange,
   className,
   children,
@@ -79,8 +83,8 @@ export const FileTree = ({
   );
 
   const contextValue = useMemo(
-    () => ({ expandedPaths, onAdd, onSelect, selectedPath, togglePath }),
-    [expandedPaths, onAdd, onSelect, selectedPath, togglePath]
+    () => ({ expandedPaths, onAdd, onDelete, onSelect, selectedPath, togglePath }),
+    [expandedPaths, onAdd, onDelete, onSelect, selectedPath, togglePath]
   );
 
   return (
@@ -114,22 +118,36 @@ const FileTreeFolderContext = createContext<FileTreeFolderContextType>({
 export type FileTreeFolderProps = HTMLAttributes<HTMLDivElement> & {
   path: string;
   name: string;
+  onExpand?: () => void;
 };
 
 export const FileTreeFolder = ({
   path,
   name,
+  onExpand,
   className,
   children,
   ...props
 }: FileTreeFolderProps) => {
-  const { expandedPaths, togglePath } =
+  const { expandedPaths, togglePath, onDelete } =
     useContext(FileTreeContext);
   const isExpanded = expandedPaths.has(path);
 
   const handleToggle = useCallback(() => {
     togglePath(path);
-  }, [togglePath, path]);
+    if (!expandedPaths.has(path)) {
+      // Will be expanded after toggle
+      onExpand?.();
+    }
+  }, [togglePath, path, expandedPaths, onExpand]);
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete?.(path, true);
+    },
+    [onDelete, path]
+  );
 
   const folderContextValue = useMemo(
     () => ({ isExpanded, name, path }),
@@ -140,7 +158,7 @@ export const FileTreeFolder = ({
     <FileTreeFolderContext.Provider value={folderContextValue}>
       <Collapsible onOpenChange={handleToggle} open={isExpanded}>
         <div
-          className={cn("", className)}
+          className={cn("group/folder", className)}
           role="treeitem"
           {...props}
         >
@@ -173,6 +191,16 @@ export const FileTreeFolder = ({
                 )}
               </FileTreeIcon>
               <FileTreeName>{name}</FileTreeName>
+              {onDelete && (
+                <button
+                  type="button"
+                  className="ml-auto flex size-5 shrink-0 items-center justify-center rounded opacity-0 transition-opacity hover:bg-destructive/10 group-hover/folder:opacity-100"
+                  onClick={handleDelete}
+                  title="Delete"
+                >
+                  <Trash size={12} className="text-destructive" />
+                </button>
+              )}
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -208,7 +236,7 @@ export const FileTreeFile = ({
   children,
   ...props
 }: FileTreeFileProps) => {
-  const { selectedPath, onSelect, onAdd } = useContext(FileTreeContext);
+  const { selectedPath, onSelect, onAdd, onDelete } = useContext(FileTreeContext);
   const isSelected = selectedPath === path;
 
   const handleClick = useCallback(() => {
@@ -230,6 +258,14 @@ export const FileTreeFile = ({
       onAdd?.(path);
     },
     [onAdd, path]
+  );
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete?.(path, false);
+    },
+    [onDelete, path]
   );
 
   const fileContextValue = useMemo(() => ({ name, path }), [name, path]);
@@ -254,15 +290,29 @@ export const FileTreeFile = ({
               {icon ?? <File size={16} className="text-muted-foreground" />}
             </FileTreeIcon>
             <FileTreeName>{name}</FileTreeName>
-            {onAdd && (
-              <button
-                type="button"
-                className="ml-auto flex size-5 shrink-0 items-center justify-center rounded opacity-0 transition-opacity hover:bg-muted group-hover/file:opacity-100"
-                onClick={handleAdd}
-                title="Add to chat"
-              >
-                <Plus size={12} className="text-muted-foreground" />
-              </button>
+            {(onAdd || onDelete) && (
+              <span className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/file:opacity-100">
+                {onAdd && (
+                  <button
+                    type="button"
+                    className="flex size-5 items-center justify-center rounded hover:bg-muted"
+                    onClick={handleAdd}
+                    title="Add to chat"
+                  >
+                    <Plus size={12} className="text-muted-foreground" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    className="flex size-5 items-center justify-center rounded hover:bg-destructive/10"
+                    onClick={handleDelete}
+                    title="Delete"
+                  >
+                    <Trash size={12} className="text-destructive" />
+                  </button>
+                )}
+              </span>
             )}
           </>
         )}

@@ -8,7 +8,6 @@ import { MessageInput } from '@/components/chat/MessageInput';
 import { ChatComposerActionBar } from '@/components/chat/ChatComposerActionBar';
 import { ModeIndicator } from '@/components/chat/ModeIndicator';
 import { ChatPermissionSelector } from '@/components/chat/ChatPermissionSelector';
-import { ImageGenToggle } from '@/components/chat/ImageGenToggle';
 import { PermissionPrompt } from '@/components/chat/PermissionPrompt';
 import { ChatEmptyState } from '@/components/chat/ChatEmptyState';
 import { ErrorBanner } from '@/components/ui/error-banner';
@@ -176,7 +175,7 @@ export default function NewChatPage() {
     });
 
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []); // Run once on mount to validate initial values
 
   // Initialize workingDir from localStorage (or setup default), validating the path exists
@@ -571,7 +570,7 @@ export default function NewChatPage() {
                   try {
                     const statusData = JSON.parse(event.data);
                     if (statusData.session_id) {
-                      setStatusText(`Connected (${statusData.model || 'claude'})`);
+                      setStatusText(`Connected (${statusData.display_model || statusData.requested_model || statusData.model || 'claude'})`);
                       setTimeout(() => setStatusText(undefined), 2000);
                     } else if (statusData.notification) {
                       setStatusText(statusData.message || statusData.title || undefined);
@@ -774,7 +773,7 @@ export default function NewChatPage() {
         onEffortChange={setSelectedEffort}
       />
       <ChatComposerActionBar
-        left={<><ModeIndicator mode={mode} onModeChange={setMode} disabled={isStreaming} /><ImageGenToggle /></>}
+        left={<ModeIndicator mode={mode} onModeChange={setMode} disabled={isStreaming} />}
         center={
           <ChatPermissionSelector
             permissionProfile={permissionProfile}

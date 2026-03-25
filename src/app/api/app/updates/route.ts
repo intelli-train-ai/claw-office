@@ -19,13 +19,17 @@ export async function GET() {
     const currentVersion = process.env.NEXT_PUBLIC_APP_VERSION || "0.0.0";
     const runtimeInfo = getRuntimeArchitectureInfo();
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
       {
         headers: { Accept: "application/vnd.github.v3+json" },
         next: { revalidate: 300 },
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeout);
 
     if (!res.ok) {
       return NextResponse.json(

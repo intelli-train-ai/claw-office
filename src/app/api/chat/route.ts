@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
       sessionId: session_id,
       sdkSessionId: session.sdk_session_id || undefined,
       model: resolved.upstreamModel || resolved.model || effectiveModel,
+      modelDisplayName: resolved.modelDisplayName || effectiveModel,
       systemPrompt: finalSystemPrompt,
       workingDirectory: session.sdk_cwd || session.working_directory || undefined,
       abortController,

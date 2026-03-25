@@ -24,9 +24,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useImageGen } from '@/hooks/useImageGen';
-import { PENDING_KEY, setRefImages, deleteRefImages } from '@/lib/image-ref-store';
-import { IMAGE_AGENT_SYSTEM_PROMPT } from '@/lib/constants/image-agent-prompt';
 import { dataUrlToFileAttachment } from '@/lib/file-utils';
 import { usePopoverState } from '@/hooks/usePopoverState';
 import { useProviderModels } from '@/hooks/useProviderModels';
@@ -73,7 +70,6 @@ export function MessageInput({
   sdkInitMeta,
 }: MessageInputProps) {
   const { t, locale } = useTranslation();
-  const imageGen = useImageGen();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const cliSearchRef = useRef<HTMLInputElement>(null);
@@ -185,26 +181,6 @@ export function MessageInput({
       return attachments;
     };
 
-    // If Image Agent toggle is on and no badge, send via normal LLM with systemPromptAppend
-    if (imageGen.state.enabled && !badge && !isStreaming) {
-      const files = await convertFiles();
-      if (!content && files.length === 0) return;
-
-      // Store uploaded images as pending reference images for ImageGenConfirmation
-      const imageFiles = files.filter(f => f.type.startsWith('image/'));
-      if (imageFiles.length > 0) {
-        setRefImages(PENDING_KEY, imageFiles.map(f => ({ mimeType: f.type, data: f.data })));
-      } else {
-        deleteRefImages(PENDING_KEY);
-      }
-
-      setInputValue('');
-      if (onSend) {
-        onSend(content, files.length > 0 ? files : undefined, IMAGE_AGENT_SYSTEM_PROMPT);
-      }
-      return;
-    }
-
     // If badge is active, dispatch by kind
     if (badge && !isStreaming) {
       const files = await convertFiles();
@@ -242,7 +218,7 @@ export function MessageInput({
 
     onSend(content || 'Please review the attached file(s).', hasFiles ? files : undefined, cliAppend);
     setInputValue('');
-  }, [inputValue, onSend, onCommand, disabled, isStreaming, popover, badge, cliBadge, imageGen, setBadge, setCliBadge]);
+  }, [inputValue, onSend, onCommand, disabled, isStreaming, popover, badge, cliBadge, setBadge, setCliBadge]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {

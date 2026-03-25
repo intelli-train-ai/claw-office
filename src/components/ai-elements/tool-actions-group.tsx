@@ -99,8 +99,48 @@ function getToolSummary(name: string, input: unknown, category: ToolCategory): s
       return pattern ? `"${pattern.length > 50 ? pattern.slice(0, 47) + '...' : pattern}"` : name;
     }
     default:
-      return name;
+      return getOtherToolSummary(name, inp);
   }
+}
+
+function getOtherToolSummary(name: string, inp: Record<string, unknown>): string {
+  const lower = name.toLowerCase();
+
+  // Skill tool — show the skill name
+  if (lower === 'skill') {
+    const skill = (inp.skill || '') as string;
+    return skill || name;
+  }
+
+  // Agent tool — show the description
+  if (lower === 'agent') {
+    const desc = (inp.description || '') as string;
+    return desc || name;
+  }
+
+  // Task tools — show task id or description
+  if (lower.startsWith('task')) {
+    const desc = (inp.description || inp.task_id || inp.id || '') as string;
+    if (desc) return String(desc).length > 50 ? String(desc).slice(0, 47) + '...' : String(desc);
+    return name;
+  }
+
+  // TodoWrite — show a brief hint
+  if (lower === 'todowrite' || lower === 'todo_write') {
+    return 'update tasks';
+  }
+
+  // WebSearch / WebFetch
+  if (lower === 'webfetch' || lower === 'web_fetch') {
+    const url = (inp.url || '') as string;
+    return url ? (url.length > 50 ? url.slice(0, 47) + '...' : url) : name;
+  }
+  if (lower === 'websearch' || lower === 'web_search') {
+    const query = (inp.query || '') as string;
+    return query ? `"${query.length > 50 ? query.slice(0, 47) + '...' : query}"` : name;
+  }
+
+  return name;
 }
 
 function getFilePath(input: unknown): string {

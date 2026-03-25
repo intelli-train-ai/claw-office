@@ -951,6 +951,8 @@ export interface ClaudeStreamOptions {
   sessionId: string;
   sdkSessionId?: string; // SDK session ID for resuming conversations
   model?: string;
+  /** Human-readable model name for status display (e.g. "GLM5" instead of upstream model ID) */
+  modelDisplayName?: string;
   systemPrompt?: string;
   workingDirectory?: string;
   mcpServers?: Record<string, MCPServerConfig>;

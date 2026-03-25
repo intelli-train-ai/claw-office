@@ -9,13 +9,10 @@ import { ChatComposerActionBar } from './ChatComposerActionBar';
 import { ModeIndicator } from './ModeIndicator';
 import { ChatPermissionSelector } from './ChatPermissionSelector';
 import { ContextUsageIndicator } from './ContextUsageIndicator';
-import { ImageGenToggle } from './ImageGenToggle';
 import { Button } from '@/components/ui/button';
 import { usePanel } from '@/hooks/usePanel';
 import { useTranslation } from '@/hooks/useTranslation';
 import { PermissionPrompt } from './PermissionPrompt';
-import { BatchExecutionDashboard, BatchContextSync } from './batch-image-gen';
-import { setLastGeneratedImages, loadLastGenerated } from '@/lib/image-ref-store';
 import { useChatCommands } from '@/hooks/useChatCommands';
 import { useAssistantTrigger } from '@/hooks/useAssistantTrigger';
 import { useStreamSubscription } from '@/hooks/useStreamSubscription';
@@ -77,9 +74,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
   }, [currentProviderId]);
   useEffect(() => { if (initialPermissionProfile) setPermissionProfile(initialPermissionProfile); }, [initialPermissionProfile]);
 
-  // Restore session-scoped last-generated images from sessionStorage
-  useEffect(() => { loadLastGenerated(sessionId); }, [sessionId]);
-
   // Stream snapshot from the manager — drives all streaming UI
   const [streamSnapshot, setStreamSnapshot] = useState<SessionStreamSnapshot | null>(
     () => getSnapshot(sessionId)
@@ -96,8 +90,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
   const permissionResolved = streamSnapshot?.permissionResolved ?? null;
   const rewindPoints = getRewindPoints(sessionId);
 
-  // Pending image generation notices
-  const pendingImageNoticesRef = useRef<string[]>([]);
   const sendMessageRef = useRef<(content: string, files?: FileAttachment[]) => Promise<void>>(undefined);
   const initMetaRef = useRef<{ tools?: unknown; slash_commands?: unknown; skills?: unknown } | null>(null);
 
@@ -284,11 +276,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      const notices = pendingImageNoticesRef.current.length > 0
-        ? [...pendingImageNoticesRef.current]
-        : undefined;
-      if (notices) pendingImageNoticesRef.current = [];
-
       startStream({
         sessionId,
         content,
@@ -297,7 +284,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         providerId: currentProviderId,
         files,
         systemPromptAppend,
-        pendingImageNotices: notices,
         effort: selectedEffort,
         thinking: buildThinkingConfig(),
         context1m,
@@ -348,34 +334,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
 
   const handleCommand = useChatCommands({ sessionId, messages, setMessages, sendMessage });
 
-  // Listen for image generation completion
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (!detail) return;
-      const paths = (detail.images || [])
-        .map((img: { localPath?: string }) => img.localPath)
-        .filter(Boolean);
-      const pathInfo = paths.length > 0 ? `\nGenerated image file paths:\n${paths.map((p: string) => `- ${p}`).join('\n')}` : '';
-      const notice = `[Image generation completed]\n- Prompt: "${detail.prompt}"\n- Aspect ratio: ${detail.aspectRatio}\n- Resolution: ${detail.resolution}${pathInfo}`;
-
-      if (paths.length > 0) {
-        setLastGeneratedImages(sessionId, paths);
-      }
-
-      pendingImageNoticesRef.current.push(notice);
-
-      const dbNotice = `[__IMAGE_GEN_NOTICE__ prompt: "${detail.prompt}", aspect ratio: ${detail.aspectRatio}, resolution: ${detail.resolution}${paths.length > 0 ? `, file path: ${paths.join(', ')}` : ''}]`;
-      fetch('/api/chat/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, role: 'user', content: dbNotice }),
-      }).catch(() => {});
-    };
-    window.addEventListener('image-gen-completed', handler);
-    return () => window.removeEventListener('image-gen-completed', handler);
-  }, [sessionId]);
-
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Workspace mismatch banner */}
@@ -415,10 +373,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         toolUses={toolUses}
         permissionProfile={permissionProfile}
       />
-      {/* Batch image generation panels */}
-      <BatchExecutionDashboard />
-      <BatchContextSync />
-
       <MessageInput
         key={sessionId}
         onSend={sendMessage}
@@ -438,7 +392,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         sdkInitMeta={initMetaRef.current}
       />
       <ChatComposerActionBar
-        left={<><ModeIndicator mode={mode} onModeChange={handleModeChange} disabled={isStreaming} /><ImageGenToggle /></>}
+        left={<ModeIndicator mode={mode} onModeChange={handleModeChange} disabled={isStreaming} />}
         center={
           <ChatPermissionSelector
             sessionId={sessionId}

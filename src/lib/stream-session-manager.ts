@@ -11,7 +11,6 @@
  */
 
 import { consumeSSEStream } from '@/hooks/useSSEStream';
-import { transferPendingToMessage } from '@/lib/image-ref-store';
 import type {
   ToolUseInfo,
   ToolResultInfo,
