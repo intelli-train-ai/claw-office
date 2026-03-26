@@ -1,6 +1,9 @@
 services:
   codepilot:
-    build: .
+    build:
+      context: .
+      args:
+        - CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION:-latest}
     ports:
       - "${PORT:-3811}:${PORT:-3811}"
     volumes:
@@ -8,6 +11,7 @@ services:
       - ${WORKSPACE_PATH:-./workspace}:/workspace
     environment:
       - NODE_ENV=production
+      - PORT=${PORT:-3811}
       - CLAUDE_GUI_DATA_DIR=/data
       - CODEPILOT_WORKSPACE=/workspace
       # Uncomment and set your API keys as needed:
