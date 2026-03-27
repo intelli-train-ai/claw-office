@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { authFetch } from '@/lib/api-client';
 import { Folder, FolderOpen, FolderPlus, ArrowRight, CaretUp, Check, X } from "@/components/ui/icon";
 import { Button } from '@/components/ui/button';
 import {
@@ -57,7 +58,7 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
       const url = dir
         ? `/api/files/browse?dir=${encodeURIComponent(dir)}`
         : '/api/files/browse';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) {
         const data: BrowseResponse = await res.json();
         setCurrentDir(data.current);
@@ -99,7 +100,7 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
     if (!name) return;
     setCreateError('');
     try {
-      const res = await fetch('/api/files/browse', {
+      const res = await authFetch('/api/files/browse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dir: currentDir, name }),

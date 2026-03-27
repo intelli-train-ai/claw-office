@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { authFetch } from "@/lib/api-client";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -60,7 +61,7 @@ export function useAutoSave(
     }
     if (mountedRef.current) setSaveStatus("saving");
     try {
-      const res = await fetch("/api/files", {
+      const res = await authFetch("/api/files", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filePath, baseDir, content: text }),
@@ -103,7 +104,7 @@ export function useAutoSave(
         clearTimeout(timerRef.current);
         // Fire-and-forget save on unmount
         if (latestContentRef.current !== savedContentRef.current && filePath) {
-          fetch("/api/files", {
+          authFetch("/api/files", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ filePath, baseDir, content: latestContentRef.current }),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { authFetch } from "@/lib/api-client";
 import { useTheme } from "next-themes";
 import { X, Copy, Check, SpinnerGap } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
@@ -114,7 +115,7 @@ export function PreviewPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=100000${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
         );
         if (!res.ok) throw new Error("Failed to load file for editing");
@@ -147,7 +148,7 @@ export function PreviewPanel() {
 
       (async () => {
         try {
-          const res = await fetch(
+          const res = await authFetch(
             `/api/files/office-preview?path=${encodeURIComponent(filePath)}${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
           );
           if (!res.ok) {
@@ -173,7 +174,7 @@ export function PreviewPanel() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=500${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
         );
         if (!res.ok) {
@@ -305,7 +306,7 @@ export function PreviewPanel() {
               initialContent={fullContent}
               onSaved={() => {
                 // Reload preview content after save so switching back shows fresh data
-                fetch(`/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=500${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`)
+                authFetch(`/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=500${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`)
                   .then(r => r.json())
                   .then(data => setPreview(data.preview))
                   .catch(() => {});

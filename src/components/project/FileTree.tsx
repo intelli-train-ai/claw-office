@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type DragEvent } from "react";
+import { authFetch } from "@/lib/api-client";
 import { ArrowsClockwise, MagnifyingGlass, FileCode, Code, File, UploadSimple } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ function LazyFolder({
     if (!needsLazyLoad || loading) return;
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/files?dir=${encodeURIComponent(node.path)}&baseDir=${encodeURIComponent(workingDirectory)}&depth=3&_t=${Date.now()}`
       );
       if (res.ok) {
@@ -206,7 +207,7 @@ export function FileTree({ workingDirectory, onFileSelect, onFileAdd }: FileTree
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/files?dir=${encodeURIComponent(workingDirectory)}&baseDir=${encodeURIComponent(workingDirectory)}&depth=4&_t=${Date.now()}`,
         { signal: controller.signal }
       );
@@ -275,7 +276,7 @@ export function FileTree({ workingDirectory, onFileSelect, onFileAdd }: FileTree
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget || !workingDirectory) return;
     try {
-      const res = await fetch('/api/files', {
+      const res = await authFetch('/api/files', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filePath: deleteTarget.path, baseDir: workingDirectory }),
@@ -300,7 +301,7 @@ export function FileTree({ workingDirectory, onFileSelect, onFileAdd }: FileTree
       for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
       }
-      const res = await fetch('/api/files/upload', { method: 'POST', body: formData });
+      const res = await authFetch('/api/files/upload', { method: 'POST', body: formData });
       if (res.ok) {
         const data = await res.json();
         const hasExtracted = data.files?.some((f: { extracted?: boolean }) => f.extracted);

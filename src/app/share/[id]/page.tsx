@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { authFetch } from '@/lib/api-client';
 import { useParams } from 'next/navigation';
 import type { Message } from '@/types';
 import { MessageItem } from '@/components/chat/MessageItem';
@@ -109,7 +110,7 @@ function ShareFilePreview({ filePath, workingDirectory, onClose }: {
     setLoading(true);
      
     setError(null);
-    fetch(`/api/files/preview?path=${encodeURIComponent(filePath)}${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`)
+    authFetch(`/api/files/preview?path=${encodeURIComponent(filePath)}${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`)
       .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(new Error(d.error || t('filePreview.failedToLoad')))))
       .then(data => { if (!cancelled) setPreview(data.preview); })
       .catch(err => { if (!cancelled) setError(err.message); })
@@ -194,8 +195,8 @@ export default function ShareReplayPage() {
     (async () => {
       try {
         const [sessionRes, messagesRes] = await Promise.all([
-          fetch(`/api/chat/sessions/${sessionId}`),
-          fetch(`/api/chat/sessions/${sessionId}/messages?limit=9999`),
+          authFetch(`/api/chat/sessions/${sessionId}`),
+          authFetch(`/api/chat/sessions/${sessionId}/messages?limit=9999`),
         ]);
         if (cancelled) return;
         if (!sessionRes.ok || !messagesRes.ok) {

@@ -124,7 +124,7 @@ export function ChatListPanel({ open, width }: ChatListPanelProps) {
     // Validate the saved directory still exists
     setCreatingChat(true);
     try {
-      const checkRes = await fetch(
+      const checkRes = await authFetch(
         `/api/files/browse?dir=${encodeURIComponent(lastDir)}`
       );
       if (!checkRes.ok) {
