@@ -56,7 +56,7 @@ const en = {
   'messageInput.reviewDesc': 'Review code quality',
   'messageInput.terminalSetupDesc': 'Configure terminal settings',
   'messageInput.memoryDesc': 'Edit project memory file',
-  'messageInput.modeCode': 'Code',
+  'messageInput.modeCode': 'Execute',
   'messageInput.modePlan': 'Plan',
   'messageInput.aiSuggested': 'AI Suggested',
 
