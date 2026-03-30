@@ -9,6 +9,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { FieldRow } from "@/components/patterns/FieldRow";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
+import { authFetch } from '@/lib/api-client';
 
 interface QqBridgeSettings {
   bridge_qq_app_id: string;
@@ -43,7 +44,7 @@ export function QqBridgeSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/qq");
+      const res = await authFetch("/api/settings/qq");
       if (res.ok) {
         const data = await res.json();
         const s = { ...DEFAULT_SETTINGS, ...data.settings };
@@ -66,7 +67,7 @@ export function QqBridgeSection() {
   const saveSettings = async (updates: Partial<QqBridgeSettings>) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/settings/qq", {
+      const res = await authFetch("/api/settings/qq", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: updates }),
@@ -116,7 +117,7 @@ export function QqBridgeSection() {
         return;
       }
 
-      const res = await fetch("/api/settings/qq/verify", {
+      const res = await authFetch("/api/settings/qq/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import * as bridgeManager from '@/lib/bridge/bridge-manager';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,10 @@ export const dynamic = 'force-dynamic';
  * status endpoint (e.g. /api/channels/feishu/status?probe=true).
  * This endpoint is polled every 5s by useBridgeStatus so it must stay cheap.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const status = bridgeManager.getStatus();
     return Response.json(status);
@@ -28,6 +32,9 @@ export async function GET() {
  * Body: { action: 'start' | 'stop' | 'auto-start' }
  */
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { action } = body;

@@ -42,6 +42,7 @@ export {
   FolderMinus,
   FolderOpen,
   FolderPlus,
+  UploadSimple,
   Funnel,
   GameController,
   Gear,
@@ -93,6 +94,7 @@ export {
   CloudArrowUp,
   ArrowsInLineVertical,
   PushPin,
+  ShareNetwork,
 } from "@phosphor-icons/react";
 
 export type { Icon, IconProps } from "@phosphor-icons/react";

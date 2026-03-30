@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import { getSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 interface OrganizeAction {
   action: 'capture' | 'classify' | 'move' | 'archive' | 'suggest-evolution';
@@ -24,6 +25,9 @@ function validateRelativePath(p: string, fieldName: string): NextResponse | null
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const workspacePath = getSetting('assistant_workspace_path');
     if (!workspacePath) {

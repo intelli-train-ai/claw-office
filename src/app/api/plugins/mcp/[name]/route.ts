@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import type { MCPServerConfig, ErrorResponse, SuccessResponse } from '@/types';
 import { invalidateMcpCache } from '@/lib/mcp-loader';
+import { requireAuth } from '@/lib/auth';
 
 function getSettingsPath(): string {
   return path.join(os.homedir(), '.claude', 'settings.json');
@@ -32,9 +33,12 @@ function writeJsonFile(filePath: string, data: Record<string, unknown>): void {
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const authError = requireAuth(request);
+  if (authError) return authError as any;
+
   try {
     const { name } = await params;
     const serverName = decodeURIComponent(name);

@@ -7,6 +7,7 @@ import { SpinnerGap, CheckCircle, Warning } from "@/components/ui/icon";
 import { useTranslation } from "@/hooks/useTranslation";
 import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
+import { authFetch } from '@/lib/api-client';
 
 interface TelegramBridgeSettings {
   telegram_bot_token: string;
@@ -36,7 +37,7 @@ export function TelegramBridgeSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/telegram");
+      const res = await authFetch("/api/settings/telegram");
       if (res.ok) {
         const data = await res.json();
         const s = { ...DEFAULT_SETTINGS, ...data.settings };
@@ -57,7 +58,7 @@ export function TelegramBridgeSection() {
   const saveSettings = async (updates: Partial<TelegramBridgeSettings>) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/settings/telegram", {
+      const res = await authFetch("/api/settings/telegram", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: updates }),
@@ -94,7 +95,7 @@ export function TelegramBridgeSection() {
     setDetecting(true);
     setVerifyResult(null);
     try {
-      const res = await fetch("/api/settings/telegram/verify", {
+      const res = await authFetch("/api/settings/telegram/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -141,7 +142,7 @@ export function TelegramBridgeSection() {
         return;
       }
 
-      const res = await fetch("/api/settings/telegram/verify", {
+      const res = await authFetch("/api/settings/telegram/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

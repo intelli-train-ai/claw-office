@@ -40,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { authFetch } from '@/lib/api-client';
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -77,7 +78,7 @@ export function ProviderManager() {
   const fetchProviders = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetch("/api/providers");
+      const res = await authFetch("/api/providers");
       if (!res.ok) throw new Error("Failed to load providers");
       const data = await res.json();
       setProviders(data.providers || []);
@@ -93,14 +94,14 @@ export function ProviderManager() {
 
   // Fetch all provider models for the global default model selector
   const fetchModels = useCallback(() => {
-    fetch('/api/providers/models')
+    authFetch('/api/providers/models')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.groups) setProviderGroups(data.groups);
       })
       .catch(() => {});
     // Load current global default model
-    fetch('/api/providers/options?providerId=__global__')
+    authFetch('/api/providers/options?providerId=__global__')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.options?.default_model) {
@@ -138,7 +139,7 @@ export function ProviderManager() {
   const handleEditSave = async (data: ProviderFormData) => {
     const target = presetEditProvider || editingProvider;
     if (!target) return;
-    const res = await fetch(`/api/providers/${target.id}`, {
+    const res = await authFetch(`/api/providers/${target.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -153,7 +154,7 @@ export function ProviderManager() {
   };
 
   const handlePresetAdd = async (data: ProviderFormData) => {
-    const res = await fetch("/api/providers", {
+    const res = await authFetch("/api/providers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -179,7 +180,7 @@ export function ProviderManager() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/providers/${deleteTarget.id}`, { method: "DELETE" });
+      const res = await authFetch(`/api/providers/${deleteTarget.id}`, { method: "DELETE" });
       if (res.ok) {
         setProviders((prev) => prev.filter((p) => p.id !== deleteTarget.id));
         window.dispatchEvent(new Event("provider-changed"));
@@ -195,7 +196,7 @@ export function ProviderManager() {
       const env = JSON.parse(provider.extra_env || '{}');
       env.GEMINI_IMAGE_MODEL = model;
       const newExtraEnv = JSON.stringify(env);
-      const res = await fetch(`/api/providers/${provider.id}`, {
+      const res = await authFetch(`/api/providers/${provider.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -223,7 +224,7 @@ export function ProviderManager() {
       setGlobalDefaultModel('');
       setGlobalDefaultProvider('');
       // Clear both global default model AND legacy default_provider_id in one call
-      await fetch('/api/providers/options', {
+      await authFetch('/api/providers/options', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +240,7 @@ export function ProviderManager() {
       setGlobalDefaultModel(model);
       setGlobalDefaultProvider(pid);
       // Write global default model + sync legacy default_provider_id in one call
-      await fetch('/api/providers/options', {
+      await authFetch('/api/providers/options', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -482,34 +483,6 @@ export function ProviderManager() {
             ))}
           </div>
 
-          {/* Media Providers */}
-          <div className="mt-4 pt-3 border-t border-border/30">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              {t('provider.mediaProviders')}
-            </h4>
-            {QUICK_PRESETS.filter((p) => p.category === "media").map((preset) => (
-              <div
-                key={preset.key}
-                className="flex items-center gap-3 py-2.5 px-1 border-b border-border/30 last:border-b-0"
-              >
-                <div className="shrink-0 w-[22px] flex justify-center">{preset.icon}</div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium">{preset.name}</span>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {isZh ? preset.descriptionZh : preset.description}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="shrink-0 gap-1"
-                  onClick={() => handleOpenPresetDialog(preset)}
-                >
-                  + {t('provider.connect')}
-                </Button>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 

@@ -12,11 +12,7 @@ import { MediaPreview } from './MediaPreview';
 import { Button } from "@/components/ui/button";
 import { Copy, Check, CaretDown, CaretUp, PushPin, DownloadSimple } from "@/components/ui/icon";
 import { FileAttachmentDisplay } from './FileAttachmentDisplay';
-import { ImageGenConfirmation } from './ImageGenConfirmation';
-import { ImageGenCard } from './ImageGenCard';
-import { BatchPlanInlinePreview } from './batch-image-gen/BatchPlanInlinePreview';
 import { WidgetRenderer } from './WidgetRenderer';
-import { buildReferenceImages } from '@/lib/image-ref-store';
 import { parseDBDate } from '@/lib/utils';
 import { usePanel } from '@/hooks/usePanel';
 import type { PlannerOutput } from '@/types';
@@ -724,91 +720,6 @@ const AssistantContent = memo(function AssistantContent({ displayText, messageId
       );
     }
 
-    // Try batch-plan (Image Agent batch mode)
-    const batchPlanResult = parseBatchPlan(displayText);
-    if (batchPlanResult) {
-      return (
-        <>
-          {batchPlanResult.beforeText && <MessageResponse>{batchPlanResult.beforeText}</MessageResponse>}
-          <BatchPlanInlinePreview plan={batchPlanResult.plan} messageId={messageId} />
-          {batchPlanResult.afterText && <MessageResponse>{batchPlanResult.afterText}</MessageResponse>}
-        </>
-      );
-    }
-
-    // Try image-gen-result first (new direct-call format)
-    const genResult = parseImageGenResult(displayText);
-    if (genResult) {
-      const { result } = genResult;
-      if (result.status === 'generating') {
-        return (
-          <>
-            {genResult.beforeText && <MessageResponse>{genResult.beforeText}</MessageResponse>}
-            <div className="flex items-center gap-2 py-3">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span className="text-sm text-muted-foreground">Generating image...</span>
-            </div>
-            {genResult.afterText && <MessageResponse>{genResult.afterText}</MessageResponse>}
-          </>
-        );
-      }
-      if (result.status === 'error') {
-        return (
-          <>
-            {genResult.beforeText && <MessageResponse>{genResult.beforeText}</MessageResponse>}
-            <div className="rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30 p-3">
-              <p className="text-sm text-status-error-foreground">{result.error || 'Image generation failed'}</p>
-            </div>
-            {genResult.afterText && <MessageResponse>{genResult.afterText}</MessageResponse>}
-          </>
-        );
-      }
-      if (result.status === 'completed' && result.images && result.images.length > 0) {
-        return (
-          <>
-            {genResult.beforeText && <MessageResponse>{genResult.beforeText}</MessageResponse>}
-            <ImageGenCard
-              images={result.images.map(img => ({
-                data: img.data || '',
-                mimeType: img.mimeType,
-                localPath: img.localPath,
-              }))}
-              prompt={result.prompt}
-              aspectRatio={result.aspectRatio}
-              imageSize={result.resolution}
-              model={result.model}
-            />
-            {genResult.afterText && <MessageResponse>{genResult.afterText}</MessageResponse>}
-          </>
-        );
-      }
-    }
-
-    // Legacy: image-gen-request (model-dependent format, for old messages)
-    const parsed = parseImageGenRequest(displayText);
-    if (parsed) {
-      const refs = buildReferenceImages(
-        messageId,
-        sessionId || '',
-        parsed.request.useLastGenerated || false,
-        parsed.request.referenceImages,
-      );
-      return (
-        <>
-          {parsed.beforeText && <MessageResponse>{parsed.beforeText}</MessageResponse>}
-          <ImageGenConfirmation
-            messageId={messageId}
-            sessionId={sessionId}
-            initialPrompt={parsed.request.prompt}
-            initialAspectRatio={parsed.request.aspectRatio}
-            initialResolution={parsed.request.resolution}
-            rawRequestBlock={parsed.rawBlock}
-            referenceImages={refs.length > 0 ? refs : undefined}
-          />
-          {parsed.afterText && <MessageResponse>{parsed.afterText}</MessageResponse>}
-        </>
-      );
-    }
     const stripped = displayText
       .replace(/```image-gen-request[\s\S]*?```/g, '')
       .replace(/```image-gen-result[\s\S]*?```/g, '')

@@ -4,7 +4,7 @@ import type { MarketingContent } from '../../../content/marketing/en';
 
 async function getStarCount(): Promise<string> {
   try {
-    const res = await fetch('https://api.github.com/repos/op7418/CodePilot', {
+    const res = await fetch('https://api.github.com/repos/intelli-train-ai/CodePilot', {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return '3.4k';

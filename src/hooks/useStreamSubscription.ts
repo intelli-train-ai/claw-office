@@ -5,7 +5,7 @@ import {
   getSnapshot,
   clearSnapshot,
 } from '@/lib/stream-session-manager';
-import { transferPendingToMessage } from '@/lib/image-ref-store';
+import { authFetch } from '@/lib/api-client';
 
 interface UseStreamSubscriptionOpts {
   sessionId: string;
@@ -36,7 +36,7 @@ export function useStreamSubscription({
       // If stream completed while this ChatView was unmounted, consume finalMessageContent now.
       // Re-fetch messages from DB to avoid duplicates (backend already persisted the reply).
       if (existing.phase !== 'active' && existing.finalMessageContent) {
-        fetch(`/api/chat/sessions/${sessionId}/messages?limit=50`)
+        authFetch(`/api/chat/sessions/${sessionId}/messages?limit=50`)
           .then(res => res.ok ? res.json() : null)
           .then(data => {
             if (data?.messages) {
@@ -53,7 +53,6 @@ export function useStreamSubscription({
               created_at: new Date().toISOString(),
               token_usage: existing.tokenUsage ? JSON.stringify(existing.tokenUsage) : null,
             };
-            transferPendingToMessage(assistantMessage.id);
             setMessages((prev) => [...prev, assistantMessage]);
           });
         clearSnapshot(sessionId);
@@ -92,8 +91,6 @@ export function useStreamSubscription({
             created_at: new Date().toISOString(),
             token_usage: event.snapshot.tokenUsage ? JSON.stringify(event.snapshot.tokenUsage) : null,
           };
-          // Transfer pending reference images to this message ID
-          transferPendingToMessage(assistantMessage.id);
           setMessages((prev) => [...prev, assistantMessage]);
         }
 

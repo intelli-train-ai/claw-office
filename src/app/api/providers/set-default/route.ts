@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setDefaultProviderId, getProvider } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { provider_id } = await request.json();
 

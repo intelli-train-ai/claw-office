@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getMessages, getSession } from '@/lib/db';
 import type { MessagesResponse } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 /** Strip base64 `data` fields from <!--files:...--> HTML comments in message content */
 function stripFileData(content: string): string {
@@ -22,6 +23,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const session = getSession(id);

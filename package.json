@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "author": {
-    "name": "op7418",
+    "name": "intelli-train-ai",
     "email": "7418@openclaw.ai"
   },
   "description": "A native desktop GUI client for Claude Code",
@@ -55,6 +55,7 @@
     "@streamdown/math": "^1.0.1",
     "@streamdown/mermaid": "1.0.1",
     "@types/qrcode": "^1.5.6",
+    "adm-zip": "^0.5.16",
     "ai": "^6.0.73",
     "ansi-to-react": "^6.2.6",
     "better-sqlite3": "^12.6.2",
@@ -65,6 +66,7 @@
     "dompurify": "^3.3.3",
     "electron-updater": "^6.8.3",
     "html-to-image": "^1.11.13",
+    "mammoth": "^1.12.0",
     "markdown-it": "^14.1.1",
     "morphdom": "^2.7.8",
     "motion": "^12.33.0",
@@ -86,11 +88,13 @@
     "use-stick-to-bottom": "^1.1.2",
     "uuid": "^13.0.0",
     "ws": "^8.19.0",
+    "xlsx": "^0.18.5",
     "zlib-sync": "^0.1.10"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4",
+    "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.13",
     "@types/dompurify": "^3.0.5",
     "@types/markdown-it": "^14.1.2",

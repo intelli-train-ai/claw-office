@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import { getSetting, setSetting } from '@/lib/db';
 import { validateWorkspace, initializeWorkspace, loadState, saveState } from '@/lib/assistant-workspace';
+import { requireAuth } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const workspacePath = getSetting('assistant_workspace_path');
     if (!workspacePath) {
@@ -97,6 +101,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { path: workspacePath, initialize, resetOnboarding } = body as { path: string; initialize?: boolean; resetOnboarding?: boolean };
@@ -185,6 +192,9 @@ export async function PUT(request: NextRequest) {
 
 /** PATCH — update individual state fields (e.g. dailyCheckInEnabled toggle) */
 export async function PATCH(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const workspacePath = getSetting('assistant_workspace_path');

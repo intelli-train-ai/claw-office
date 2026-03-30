@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server';
 import { getTokenUsageStats } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const daysParam = searchParams.get('days');

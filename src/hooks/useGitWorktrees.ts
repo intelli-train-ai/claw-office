@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { GitWorktree } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 export function useGitWorktrees(cwd: string) {
   const [worktrees, setWorktrees] = useState<GitWorktree[]>([]);
@@ -13,7 +14,7 @@ export function useGitWorktrees(cwd: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/git/worktrees?cwd=${encodeURIComponent(cwd)}`);
+      const res = await authFetch(`/api/git/worktrees?cwd=${encodeURIComponent(cwd)}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to fetch worktrees');

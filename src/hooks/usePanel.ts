@@ -4,7 +4,7 @@ import { createContext, useContext } from "react";
 
 export type PanelContent = "files" | "tasks";
 
-export type PreviewViewMode = "source" | "rendered";
+export type PreviewViewMode = "source" | "rendered" | "edit";
 
 export interface PanelContextValue {
   // --- New independent panel states ---

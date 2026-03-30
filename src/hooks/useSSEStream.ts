@@ -106,7 +106,7 @@ function handleSSEEvent(
           return accumulated;
         }
         if (statusData.session_id) {
-          callbacks.onStatus(`Connected (${statusData.requested_model || statusData.model || 'claude'})`);
+          callbacks.onStatus(`Connected (${statusData.display_model || statusData.requested_model || statusData.model || 'claude'})`);
           callbacks.onInitMeta?.({
             tools: statusData.tools,
             slash_commands: statusData.slash_commands,

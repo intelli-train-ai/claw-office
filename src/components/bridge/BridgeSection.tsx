@@ -21,6 +21,7 @@ import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { FieldRow } from "@/components/patterns/FieldRow";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
 import type { ProviderModelGroup } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface BridgeSettings {
   remote_bridge_enabled: string;
@@ -59,7 +60,7 @@ export function BridgeSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/bridge/settings");
+      const res = await authFetch("/api/bridge/settings");
       if (res.ok) {
         const data = await res.json();
         const s = { ...DEFAULT_SETTINGS, ...data.settings };
@@ -81,7 +82,7 @@ export function BridgeSection() {
 
   const fetchModels = useCallback(async () => {
     try {
-      const res = await fetch("/api/providers/models");
+      const res = await authFetch("/api/providers/models");
       if (res.ok) {
         const data = await res.json();
         if (data.groups && data.groups.length > 0) {
@@ -101,7 +102,7 @@ export function BridgeSection() {
   const saveSettings = async (updates: Partial<BridgeSettings>) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/bridge/settings", {
+      const res = await authFetch("/api/bridge/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: updates }),

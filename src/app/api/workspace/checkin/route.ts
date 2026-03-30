@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processCheckin } from '@/lib/checkin-processor';
+import { requireAuth } from '@/lib/auth';
 
 const CHECK_IN_QUESTIONS = [
   'assistant.checkInQ1',
@@ -13,7 +14,10 @@ const CHECK_IN_LABELS = [
   'Anything you\'d like me to remember going forward?',
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   return NextResponse.json({
     questions: CHECK_IN_QUESTIONS.map((key, i) => ({
       key,
@@ -24,6 +28,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { answers, sessionId } = body as { answers: Record<string, string>; sessionId?: string };

@@ -3,11 +3,15 @@ import { resolvePendingPermission } from '@/lib/permission-registry';
 import { getPermissionRequest } from '@/lib/db';
 import type { PermissionResponseRequest } from '@/types';
 import type { PermissionResult, PermissionUpdate } from '@anthropic-ai/claude-agent-sdk';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body: PermissionResponseRequest = await request.json();
     const { permissionRequestId, decision } = body;

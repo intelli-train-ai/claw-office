@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processOnboarding } from '@/lib/onboarding-processor';
+import { requireAuth } from '@/lib/auth';
 
 const QUESTIONS = [
   'assistant.onboardingQ1',
@@ -33,7 +34,10 @@ const QUESTION_LABELS = [
   'How should completed tasks be archived?',
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   return NextResponse.json({
     questions: QUESTIONS.map((key, i) => ({
       key,
@@ -44,6 +48,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { answers, sessionId } = body as { answers: Record<string, string>; sessionId?: string };

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { authFetch } from "@/lib/api-client";
 import { useTheme } from "next-themes";
-import { X, Copy, Check, SpinnerGap } from "@/components/ui/icon";
+import { X, Copy, Check, SpinnerGap, ChatCircleText, Circle } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { useThemeFamily } from "@/lib/theme/context";
@@ -14,12 +15,17 @@ import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import { usePanel } from "@/hooks/usePanel";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import type { SaveStatus } from "@/hooks/useAutoSave";
 import { ResizeHandle } from "@/components/layout/ResizeHandle";
-import type { FilePreview as FilePreviewType } from "@/types";
+import { RegionSelector, type SelectionRect } from "@/components/project/RegionSelector";
+import { FeedbackPopover } from "@/components/project/FeedbackPopover";
+import { RecordingPanel } from "@/components/project/RecordingPanel";
+import type { FilePreview as FilePreviewType, RecordedEvent, RecordingSession, FileAttachment } from "@/types";
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
-type ViewMode = "source" | "rendered";
+type ViewMode = "source" | "rendered" | "edit";
 
 /** Extensions that support a rendered preview */
 const RENDERABLE_EXTENSIONS = new Set([".md", ".mdx", ".html", ".htm"]);
@@ -28,6 +34,24 @@ const RENDERABLE_EXTENSIONS = new Set([".md", ".mdx", ".html", ".htm"]);
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".avif", ".ico"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm", ".mkv", ".avi"]);
 const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".flac", ".aac"]);
+
+/** Extensions that support in-app editing */
+const EDITABLE_EXTENSIONS = new Set([
+  ".md", ".mdx", ".txt", ".text", ".markdown",
+  ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+  ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+  ".py", ".rb", ".rs", ".go", ".java", ".kt", ".swift", ".c", ".cpp", ".h", ".hpp",
+  ".css", ".scss", ".less", ".html", ".htm", ".xml", ".svg",
+  ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
+  ".env", ".gitignore", ".dockerignore", ".editorconfig",
+  ".csv", ".tsv", ".log", ".sql",
+]);
+
+/** PDF extension */
+const PDF_EXTENSIONS = new Set([".pdf"]);
+
+/** Office extensions (docx/xlsx/pptx + legacy) */
+const OFFICE_EXTENSIONS = new Set([".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]);
 
 function getExtension(filePath: string): string {
   const dot = filePath.lastIndexOf(".");
@@ -54,9 +78,25 @@ function isMediaPreview(filePath: string): boolean {
   return isImagePreview(filePath) || isVideoPreview(filePath) || isAudioPreview(filePath);
 }
 
+function isImage(filePath: string): boolean {
+  return IMAGE_EXTENSIONS.has(getExtension(filePath));
+}
+
+function isPdf(filePath: string): boolean {
+  return PDF_EXTENSIONS.has(getExtension(filePath));
+}
+
+function isOffice(filePath: string): boolean {
+  return OFFICE_EXTENSIONS.has(getExtension(filePath));
+}
+
 function isHtml(filePath: string): boolean {
   const ext = getExtension(filePath);
   return ext === ".html" || ext === ".htm";
+}
+
+function isEditable(filePath: string): boolean {
+  return EDITABLE_EXTENSIONS.has(getExtension(filePath));
 }
 
 const PREVIEW_MIN_WIDTH = 320;
@@ -65,6 +105,7 @@ const PREVIEW_DEFAULT_WIDTH = 480;
 
 export function PreviewPanel() {
   const { resolvedTheme } = useTheme();
+  const { t } = useTranslation();
   const { workingDirectory, sessionId, previewFile, setPreviewFile, previewViewMode, setPreviewViewMode, setPreviewOpen } = usePanel();
   const isDark = resolvedTheme === "dark";
   const [preview, setPreview] = useState<FilePreviewType | null>(null);
@@ -72,6 +113,22 @@ export function PreviewPanel() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [width, setWidth] = useState(PREVIEW_DEFAULT_WIDTH);
+  /** Full file content for editing (loaded without line limit) */
+  const [fullContent, setFullContent] = useState<string | null>(null);
+
+  // Feedback mode
+  const [feedbackActive, setFeedbackActive] = useState(false);
+  const [feedbackData, setFeedbackData] = useState<{
+    screenshot: string;
+    selectionRect: SelectionRect;
+    lineRange?: { start: number; end: number };
+  } | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Recording mode (HTML files only)
+  const [recordingActive, setRecordingActive] = useState(false);
+  const [recordingSession, setRecordingSession] = useState<RecordingSession | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleResize = useCallback((delta: number) => {
     // Left-side handle: dragging left (negative delta) = wider
@@ -79,19 +136,85 @@ export function PreviewPanel() {
   }, []);
 
   const filePath = previewFile || "";
+  const imageFile = isImage(filePath);
+  const pdfFile = isPdf(filePath);
+  const officeFile = isOffice(filePath);
+  const editable = isEditable(filePath);
+  const htmlFile = isHtml(filePath);
+  const [officeHtml, setOfficeHtml] = useState<string | null>(null);
+
+  // Load full content when entering edit mode
+  useEffect(() => {
+    if (previewViewMode !== "edit" || !filePath || !editable) {
+      setFullContent(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await authFetch(
+          `/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=100000${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
+        );
+        if (!res.ok) throw new Error("Failed to load file for editing");
+        const data = await res.json();
+        if (!cancelled) setFullContent(data.preview.content);
+      } catch {
+        if (!cancelled) setFullContent(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [filePath, workingDirectory, previewViewMode, editable]);
+
+  // Reset edit mode when switching files
+  useEffect(() => {
+    if (previewViewMode === "edit") {
+      setFullContent(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filePath]);
 
   useEffect(() => {
-    if (!filePath || isMediaPreview(filePath)) {
+    if (!filePath || isMediaPreview(filePath) || imageFile || pdfFile) {
       setLoading(false);
       return;
     }
+
+    // Office files use a separate endpoint
+    if (officeFile) {
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      setOfficeHtml(null);
+
+      (async () => {
+        try {
+          const res = await authFetch(
+            `/api/files/office-preview?path=${encodeURIComponent(filePath)}${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
+          );
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to convert file");
+          }
+          const data = await res.json();
+          if (!cancelled) setOfficeHtml(data.html);
+        } catch (err) {
+          if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load file");
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      })();
+
+      return () => { cancelled = true; };
+    }
+
+    // Text-based files
     let cancelled = false;
 
     async function loadPreview() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=500${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
         );
         if (!res.ok) {
@@ -117,7 +240,7 @@ export function PreviewPanel() {
     return () => {
       cancelled = true;
     };
-  }, [filePath, workingDirectory]);
+  }, [filePath, workingDirectory, imageFile, pdfFile, officeFile]);
 
   const handleCopyContent = async () => {
     const text = preview?.content || filePath;
@@ -152,6 +275,226 @@ export function PreviewPanel() {
       : `/api/files/raw?path=${encodeURIComponent(filePath)}`
     : '';
 
+  // Reset feedback state when switching files
+  useEffect(() => {
+    setFeedbackActive(false);
+    setFeedbackData(null);
+  }, [filePath]);
+
+  const handleRegionSelect = useCallback(async (rect: SelectionRect, screenRect: DOMRect) => {
+    let screenshot: string | null = null;
+
+    // Try Electron capturePage first
+    const api = (window as unknown as { electronAPI?: { capture?: { region: (r: { x: number; y: number; width: number; height: number }) => Promise<string | null> } } }).electronAPI;
+    if (api?.capture?.region) {
+      try {
+        screenshot = await api.capture.region({ x: screenRect.x, y: screenRect.y, width: screenRect.width, height: screenRect.height });
+      } catch {
+        // Fall through to DOM-based capture
+      }
+    }
+
+    // Fallback: capture from DOM using html-to-image
+    if (!screenshot && contentRef.current) {
+      try {
+        const { toPng } = await import('html-to-image');
+        const dataUrl = await toPng(contentRef.current, {
+          canvasWidth: contentRef.current.scrollWidth,
+          canvasHeight: contentRef.current.scrollHeight,
+          pixelRatio: 2,
+          filter: (node) => {
+            // Exclude the region selector overlay itself
+            if (node instanceof HTMLElement && node.classList?.contains('z-50')) return false;
+            return true;
+          },
+        });
+
+        // Crop to the selected region using a canvas
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = dataUrl;
+        });
+        const canvas = document.createElement('canvas');
+        const dpr = 2;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const scrollTop = contentRef.current.scrollTop;
+          ctx.drawImage(
+            img,
+            rect.x * dpr, (rect.y + scrollTop) * dpr,
+            rect.width * dpr, rect.height * dpr,
+            0, 0,
+            rect.width * dpr, rect.height * dpr,
+          );
+          screenshot = canvas.toDataURL('image/png');
+        }
+      } catch (err) {
+        console.error('[Feedback] DOM capture failed:', err);
+      }
+    }
+
+    if (!screenshot) {
+      console.warn('[Feedback] Screenshot capture failed');
+      setFeedbackActive(false);
+      return;
+    }
+
+    // Estimate line range for code files
+    let lineRange: { start: number; end: number } | undefined;
+    if (preview && !imageFile && !pdfFile && !officeFile) {
+      const LINE_HEIGHT = 16.5;
+      const PADDING_TOP = 8;
+      const scrollTop = contentRef.current?.scrollTop ?? 0;
+      const adjustedY = rect.y + scrollTop - PADDING_TOP;
+      const startLine = Math.max(1, Math.floor(adjustedY / LINE_HEIGHT) + 1);
+      const endLine = Math.min(preview.line_count, Math.ceil((adjustedY + rect.height) / LINE_HEIGHT) + 1);
+      lineRange = { start: startLine, end: endLine };
+    }
+
+    setFeedbackData({ screenshot, selectionRect: rect, lineRange });
+  }, [preview, imageFile, pdfFile, officeFile]);
+
+  const handleFeedbackSend = useCallback((context: string, screenshot: string, fName: string) => {
+    window.dispatchEvent(new CustomEvent('send-feedback-to-chat', {
+      detail: { content: context, screenshot, fileName: fName },
+    }));
+    setFeedbackData(null);
+    setFeedbackActive(false);
+  }, []);
+
+  const handleFeedbackCancel = useCallback(() => {
+    setFeedbackData(null);
+    if (!feedbackData) setFeedbackActive(false);
+  }, [feedbackData]);
+
+  // --- Recording handlers ---
+
+  const startRecording = useCallback(() => {
+    setRecordingActive(true);
+    setRecordingSession({ filePath, startedAt: Date.now(), events: [] });
+  }, [filePath]);
+
+  const stopRecording = useCallback(() => {
+    setRecordingActive(false);
+  }, []);
+
+  const discardRecording = useCallback(() => {
+    setRecordingActive(false);
+    setRecordingSession(null);
+  }, []);
+
+  const addRecordingNote = useCallback((text: string) => {
+    setRecordingSession((prev) => {
+      if (!prev) return prev;
+      const event: RecordedEvent = { type: 'note', ts: Date.now() - prev.startedAt, text };
+      return { ...prev, events: [...prev.events, event] };
+    });
+  }, []);
+
+  const takeSnapshot = useCallback(async () => {
+    if (!contentRef.current) return;
+    // Use Electron capture or html-to-image fallback
+    const api = (window as unknown as { electronAPI?: { capture?: { region: (r: { x: number; y: number; width: number; height: number }) => Promise<string | null> } } }).electronAPI;
+    const box = contentRef.current.getBoundingClientRect();
+    let screenshot: string | null = null;
+    if (api?.capture?.region) {
+      try {
+        screenshot = await api.capture.region({ x: box.x, y: box.y, width: box.width, height: box.height });
+      } catch { /* fallback */ }
+    }
+    if (!screenshot) {
+      try {
+        const { toPng } = await import('html-to-image');
+        screenshot = await toPng(contentRef.current, { pixelRatio: 2 });
+      } catch { /* skip */ }
+    }
+    if (!screenshot) return;
+    setRecordingSession((prev) => {
+      if (!prev) return prev;
+      const event: RecordedEvent = { type: 'snapshot', ts: Date.now() - prev.startedAt, screenshot: screenshot! };
+      return { ...prev, events: [...prev.events, event] };
+    });
+  }, []);
+
+  const sendRecording = useCallback((summary: string) => {
+    if (!recordingSession) return;
+
+    const events = recordingSession.events;
+    const duration = events.length > 0 ? events[events.length - 1].ts : 0;
+
+    // Build structured message
+    const lines: string[] = [
+      `📎 ${t('feedback.file')}: ${recordingSession.filePath}`,
+      `⏱ ${t('recording.duration')}: ${Math.round(duration / 1000)}s`,
+      `📋 ${t('recording.interactionSequence')} (${events.filter(e => e.type !== 'snapshot').length} ${t('recording.steps')}):`,
+    ];
+
+    let stepNum = 0;
+    for (const event of events) {
+      if (event.type === 'snapshot') continue;
+      stepNum++;
+      const ts = `[${Math.floor(event.ts / 1000 / 60)}:${(Math.floor(event.ts / 1000) % 60).toString().padStart(2, '0')}]`;
+      switch (event.type) {
+        case 'click': lines.push(`  ${stepNum}. ${ts} 🖱 click ${event.target} "${event.text}"`); break;
+        case 'input': lines.push(`  ${stepNum}. ${ts} ⌨ input ${event.target} → "${event.value.slice(0, 50)}"`); break;
+        case 'scroll': lines.push(`  ${stepNum}. ${ts} 📜 scroll → y=${event.scrollY}`); break;
+        case 'navigate': lines.push(`  ${stepNum}. ${ts} 🔗 navigate → ${event.url}`); break;
+        case 'note': lines.push(`  ${stepNum}. ${ts} 📝 ${event.text}`); break;
+      }
+    }
+
+    if (summary) {
+      lines.push('---', summary);
+    }
+
+    // Collect screenshot attachments (max 5)
+    const snapshots = events.filter((e): e is Extract<RecordedEvent, { type: 'snapshot' }> => e.type === 'snapshot').slice(0, 5);
+    const attachments: FileAttachment[] = snapshots.map((snap, i) => ({
+      id: `recording-snap-${Date.now()}-${i}`,
+      name: `recording-${i + 1}.png`,
+      type: 'image/png',
+      size: Math.round(snap.screenshot.length * 0.75),
+      data: snap.screenshot.replace(/^data:image\/png;base64,/, ''),
+    }));
+
+    window.dispatchEvent(new CustomEvent('send-feedback-to-chat', {
+      detail: {
+        content: lines.join('\n'),
+        screenshot: attachments.length > 0 ? attachments[0].data : undefined,
+        fileName: filePath.split('/').pop() || 'recording',
+        attachments,
+      },
+    }));
+
+    setRecordingActive(false);
+    setRecordingSession(null);
+  }, [recordingSession, filePath, t]);
+
+  // Listen for recorder events from iframe postMessage
+  useEffect(() => {
+    if (!recordingActive) return;
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== 'recorder-event' || !e.data.event) return;
+      const event = e.data.event as RecordedEvent;
+      setRecordingSession((prev) => {
+        if (!prev) return prev;
+        return { ...prev, events: [...prev.events, event] };
+      });
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [recordingActive]);
+
+  // Reset recording when switching files
+  useEffect(() => {
+    setRecordingActive(false);
+    setRecordingSession(null);
+  }, [filePath]);
+
   return (
     <div className="flex h-full shrink-0 overflow-hidden">
       <ResizeHandle side="left" onResize={handleResize} />
@@ -162,11 +505,11 @@ export function PreviewPanel() {
           <p className="truncate text-sm font-medium">{fileName}</p>
         </div>
 
-        {canRender && !isMedia && (
-          <ViewModeToggle value={previewViewMode} onChange={setPreviewViewMode} />
+        {!isMedia && !imageFile && !pdfFile && !officeFile && (canRender || editable) && (
+          <ViewModeToggle value={previewViewMode} onChange={setPreviewViewMode} canRender={canRender} canEdit={editable} />
         )}
 
-        {!isMedia && (
+        {!isMedia && !imageFile && !pdfFile && !officeFile && previewViewMode !== "edit" && (
           <Button variant="ghost" size="icon-sm" onClick={handleCopyContent}>
             {copied ? (
               <Check size={14} className="text-status-success-foreground" />
@@ -174,6 +517,34 @@ export function PreviewPanel() {
               <Copy size={14} />
             )}
             <span className="sr-only">Copy content</span>
+          </Button>
+        )}
+
+        {/* Recording button — HTML files only */}
+        {htmlFile && (
+          <Button
+            variant={recordingActive || recordingSession ? "default" : "ghost"}
+            size="icon-sm"
+            onClick={() => {
+              if (recordingActive) { stopRecording(); }
+              else if (recordingSession) { /* already stopped, panel visible */ }
+              else { startRecording(); }
+            }}
+            title={t('recording.toggleTooltip')}
+          >
+            <Circle size={14} weight={recordingActive ? "fill" : "regular"} className={recordingActive ? "text-destructive" : ""} />
+          </Button>
+        )}
+
+        {/* Feedback button — non-HTML files */}
+        {!htmlFile && (
+          <Button
+            variant={feedbackActive ? "default" : "ghost"}
+            size="icon-sm"
+            onClick={() => { setFeedbackActive(!feedbackActive); setFeedbackData(null); }}
+            title={t('feedback.toggleTooltip')}
+          >
+            <ChatCircleText size={14} />
           </Button>
         )}
 
@@ -188,17 +559,44 @@ export function PreviewPanel() {
         <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground/60">
           {breadcrumb}
         </p>
-        {preview && !isMedia && (
+        {isMedia ? null : imageFile || pdfFile || officeFile ? (
+          <span className="shrink-0 text-[10px] text-muted-foreground/50">
+            {getExtension(filePath).slice(1)}
+          </span>
+        ) : preview ? (
           <span className="shrink-0 text-[10px] text-muted-foreground/50">
             {preview.language}
           </span>
-        )}
+        ) : null}
       </div>
 
+      {/* Feedback hint */}
+      {feedbackActive && !feedbackData && (
+        <div className="mx-3 mb-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] text-primary">
+          {t('feedback.selectionHint')}
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="relative flex-1 min-h-0 overflow-auto" ref={contentRef}>
         {isMedia ? (
           <MediaView filePath={filePath} fileServeUrl={fileServeUrl} />
+        ) : imageFile ? (
+          <ImageView filePath={filePath} />
+        ) : pdfFile ? (
+          <PdfView filePath={filePath} />
+        ) : officeFile ? (
+          loading ? (
+            <div className="flex items-center justify-center py-12">
+              <SpinnerGap size={20} className="animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          ) : officeHtml ? (
+            <OfficeView html={officeHtml} ext={getExtension(filePath)} isDark={isDark} />
+          ) : null
         ) : loading ? (
           <div className="flex items-center justify-center py-12">
             <SpinnerGap size={20} className="animate-spin text-muted-foreground" />
@@ -207,26 +605,93 @@ export function PreviewPanel() {
           <div className="px-4 py-8 text-center">
             <p className="text-sm text-destructive">{error}</p>
           </div>
+        ) : previewViewMode === "edit" && editable ? (
+          fullContent !== null ? (
+            <EditView
+              filePath={filePath}
+              baseDir={workingDirectory}
+              initialContent={fullContent}
+              onSaved={() => {
+                // Reload preview content after save so switching back shows fresh data
+                authFetch(`/api/files/preview?path=${encodeURIComponent(filePath)}&maxLines=500${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`)
+                  .then(r => r.json())
+                  .then(data => setPreview(data.preview))
+                  .catch(() => {});
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <SpinnerGap size={20} className="animate-spin text-muted-foreground" />
+            </div>
+          )
         ) : preview ? (
           previewViewMode === "rendered" && canRender ? (
-            <RenderedView content={preview.content} filePath={filePath} />
+            htmlFile ? (
+              <InteractiveHtmlView
+                ref={iframeRef}
+                filePath={filePath}
+                workingDirectory={workingDirectory}
+                recording={recordingActive}
+              />
+            ) : (
+              <RenderedView content={preview.content} filePath={filePath} workingDirectory={workingDirectory} />
+            )
           ) : (
             <SourceView preview={preview} isDark={isDark} />
           )
         ) : null}
+
+        {/* Region selector overlay (non-HTML files) */}
+        {!htmlFile && (
+          <RegionSelector
+            containerRef={contentRef}
+            active={feedbackActive && !feedbackData}
+            onSelect={handleRegionSelect}
+            onCancel={() => setFeedbackActive(false)}
+          />
+        )}
+
+        {/* Feedback popover (non-HTML files) */}
+        {!htmlFile && feedbackData && (
+          <FeedbackPopover
+            screenshot={feedbackData.screenshot}
+            filePath={filePath}
+            lineRange={feedbackData.lineRange}
+            anchorRect={feedbackData.selectionRect}
+            onSend={handleFeedbackSend}
+            onCancel={handleFeedbackCancel}
+          />
+        )}
       </div>
+
+      {/* Recording panel (HTML files) */}
+      {htmlFile && recordingSession && (
+        <RecordingPanel
+          recording={recordingActive}
+          session={recordingSession}
+          onStop={stopRecording}
+          onDiscard={discardRecording}
+          onAddNote={addRecordingNote}
+          onSnapshot={takeSnapshot}
+          onSend={sendRecording}
+        />
+      )}
       </div>
     </div>
   );
 }
 
-/** Capsule toggle for Source / Preview view mode */
+/** Capsule toggle for Source / Preview / Edit view mode */
 function ViewModeToggle({
   value,
   onChange,
+  canRender,
+  canEdit,
 }: {
   value: ViewMode;
   onChange: (v: ViewMode) => void;
+  canRender: boolean;
+  canEdit: boolean;
 }) {
   return (
     <div className="flex h-6 items-center rounded-full bg-muted p-0.5 text-[11px]">
@@ -242,18 +707,34 @@ function ViewModeToggle({
       >
         Source
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`rounded-full px-2 py-0.5 font-medium h-auto ${
-          value === "rendered"
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-        onClick={() => onChange("rendered")}
-      >
-        Preview
-      </Button>
+      {canRender && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`rounded-full px-2 py-0.5 font-medium h-auto ${
+            value === "rendered"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => onChange("rendered")}
+        >
+          Preview
+        </Button>
+      )}
+      {canEdit && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`rounded-full px-2 py-0.5 font-medium h-auto ${
+            value === "edit"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => onChange("edit")}
+        >
+          Edit
+        </Button>
+      )}
     </div>
   );
 }
@@ -333,12 +814,355 @@ function MediaView({ filePath, fileServeUrl }: { filePath: string; fileServeUrl:
 
   return null;
 }
+
+/** Image preview view */
+function ImageView({ filePath }: { filePath: string }) {
+  const fileName = filePath.split("/").pop() || filePath;
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let revoked = false;
+    authFetch(`/api/files/raw?path=${encodeURIComponent(filePath)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (revoked) return;
+        setObjectUrl(URL.createObjectURL(blob));
+      })
+      .catch((err) => {
+        if (!revoked) setError(err.message);
+      });
+    return () => {
+      revoked = true;
+      setObjectUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, [filePath]);
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center p-4 text-muted-foreground">
+        Failed to load image: {error}
+      </div>
+    );
+  }
+
+  if (!objectUrl) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <SpinnerGap className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full items-center justify-center p-4">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={objectUrl}
+        alt={fileName}
+        className="max-h-full max-w-full object-contain"
+      />
+    </div>
+  );
+}
+
+/** PDF preview via native browser rendering */
+function PdfView({ filePath }: { filePath: string }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let revoked = false;
+    authFetch(`/api/files/raw?path=${encodeURIComponent(filePath)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (revoked) return;
+        setObjectUrl(URL.createObjectURL(blob));
+      })
+      .catch((err) => {
+        if (!revoked) setError(err.message);
+      });
+    return () => {
+      revoked = true;
+      setObjectUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, [filePath]);
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center p-4 text-muted-foreground">
+        Failed to load PDF: {error}
+      </div>
+    );
+  }
+
+  if (!objectUrl) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <SpinnerGap className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <iframe
+      src={objectUrl}
+      className="h-full w-full border-0"
+      title="PDF Preview"
+    />
+  );
+}
+
+/** Office file preview (docx/xlsx/pptx converted to HTML) */
+function OfficeView({ html, ext, isDark }: { html: string; ext: string; isDark: boolean }) {
+  const styles = getOfficeStyles(ext, isDark);
+  const srcDoc = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>${styles}</style>
+</head>
+<body>${html}</body>
+</html>`;
+
+  return (
+    <iframe
+      srcDoc={srcDoc}
+      sandbox="allow-same-origin"
+      className="h-full w-full border-0"
+      title="Office Preview"
+    />
+  );
+}
+
+function getOfficeStyles(ext: string, isDark: boolean): string {
+  const bg = isDark ? '#1a1a2e' : '#ffffff';
+  const fg = isDark ? '#e4e4e7' : '#1a1a2e';
+  const mutedFg = isDark ? '#a1a1aa' : '#71717a';
+  const border = isDark ? '#27272a' : '#e4e4e7';
+  const headerBg = isDark ? '#27272a' : '#f4f4f5';
+
+  const base = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           color: ${fg}; background: ${bg}; padding: 16px; font-size: 13px; line-height: 1.6; }
+    img { max-width: 100%; height: auto; }
+    a { color: #3b82f6; }
+  `;
+
+  if (ext === '.docx' || ext === '.doc') {
+    return `${base}
+      body { padding: 24px; max-width: 720px; }
+      p { margin-bottom: 8px; }
+      h1, h2, h3, h4, h5, h6 { margin: 16px 0 8px; font-weight: 600; }
+      h1 { font-size: 1.5em; } h2 { font-size: 1.3em; } h3 { font-size: 1.15em; }
+      ul, ol { padding-left: 24px; margin-bottom: 8px; }
+      table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+      th, td { border: 1px solid ${border}; padding: 6px 10px; text-align: left; }
+      th { background: ${headerBg}; font-weight: 600; }
+    `;
+  }
+
+  if (ext === '.xlsx' || ext === '.xls') {
+    return `${base}
+      .sheet-tab { font-size: 12px; font-weight: 600; color: ${mutedFg}; margin: 12px 0 6px;
+                   padding: 4px 8px; background: ${headerBg}; border-radius: 4px; display: inline-block; }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 8px; font-size: 12px; }
+      th, td { border: 1px solid ${border}; padding: 4px 8px; text-align: left; white-space: nowrap; }
+      th { background: ${headerBg}; font-weight: 600; position: sticky; top: 0; }
+      tr:nth-child(even) { background: ${isDark ? '#1e1e30' : '#fafafa'}; }
+    `;
+  }
+
+  if (ext === '.pptx' || ext === '.ppt') {
+    return `${base}
+      body { padding: 12px; background: ${isDark ? '#0a0a14' : '#e8e8ec'}; }
+      .slide-wrapper { margin-bottom: 16px; }
+      .slide-number { font-size: 10px; color: ${mutedFg}; margin-bottom: 4px; text-align: center; }
+      .slide {
+        position: relative;
+        width: 100%;
+        padding-bottom: 75%; /* 4:3 default aspect ratio */
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,${isDark ? '0.5' : '0.15'});
+        overflow: hidden;
+      }
+      .shape {
+        position: absolute;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 0.5% 0.8%;
+        box-sizing: border-box;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        font-size: 1.8vw;
+      }
+      .sp {
+        line-height: 1.35;
+        margin: 0.1em 0;
+        min-height: 0.5em;
+      }
+      .bullet {
+        display: inline-block;
+        min-width: 1em;
+      }
+    `;
+  }
+
+  return base;
+}
+
+/**
+ * Resolve relative image paths in markdown to `/api/files/resolve-image` URLs.
+ * The server-side endpoint walks upward from the markdown file's directory
+ * toward the working directory to find the actual image file, which handles
+ * common documentation layouts where assets live in a parent directory.
+ */
+function resolveMarkdownImages(markdown: string, mdFilePath: string, workingDirectory: string): string {
+  // ![alt](src) or ![alt](src "title")  — skip absolute URLs and data/blob URIs
+  return markdown.replace(
+    /!\[([^\]]*)\]\((?!https?:\/\/|data:|blob:)([^)"\s]+)([^)]*)\)/g,
+    (_match, alt, src, rest) => {
+      const apiUrl = `/api/files/resolve-image?src=${encodeURIComponent(src)}&mdFile=${encodeURIComponent(mdFilePath)}&workDir=${encodeURIComponent(workingDirectory)}`;
+      return `![${alt}](${apiUrl}${rest})`;
+    },
+  );
+}
+
+/** Save status indicator shown in the editor header */
+function SaveStatusIndicator({ status, isDirty }: { status: SaveStatus; isDirty: boolean }) {
+  if (status === "saving") {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <SpinnerGap size={10} className="animate-spin" />
+        Saving…
+      </span>
+    );
+  }
+  if (status === "saved" && !isDirty) {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-status-success-foreground">
+        <Check size={10} />
+        Saved
+      </span>
+    );
+  }
+  if (status === "error") {
+    return (
+      <span className="text-[10px] text-destructive">
+        Save failed
+      </span>
+    );
+  }
+  if (isDirty) {
+    return (
+      <span className="text-[10px] text-muted-foreground">
+        ●
+      </span>
+    );
+  }
+  return null;
+}
+
+/** In-app text editor with auto-save */
+function EditView({
+  filePath,
+  baseDir,
+  initialContent,
+  onSaved,
+}: {
+  filePath: string;
+  baseDir: string;
+  initialContent: string;
+  onSaved?: () => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { content, setContent, saveStatus, isDirty, saveNow } = useAutoSave(
+    filePath,
+    baseDir,
+    initialContent,
+    { onSaved }
+  );
+
+  // Focus textarea on mount
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  // Ctrl/Cmd+S to force save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        saveNow();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [saveNow]);
+
+  // Handle Tab key for indentation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const ta = e.currentTarget;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const newContent = content.substring(0, start) + "  " + content.substring(end);
+      setContent(newContent);
+      // Restore cursor position after React re-render
+      requestAnimationFrame(() => {
+        ta.selectionStart = ta.selectionEnd = start + 2;
+      });
+    }
+  }, [content, setContent]);
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Editor status bar */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border/30 px-3 py-1">
+        <SaveStatusIndicator status={saveStatus} isDirty={isDirty} />
+        <span className="text-[10px] text-muted-foreground/50">
+          Ctrl+S
+        </span>
+      </div>
+      {/* Textarea editor */}
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onKeyDown={handleKeyDown}
+        spellCheck={false}
+        className="flex-1 w-full resize-none bg-transparent px-4 py-3 font-mono text-[12px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40 selection:bg-primary/20"
+        style={{ tabSize: 2 }}
+      />
+    </div>
+  );
+}
+
+/** Rendered view for markdown / HTML files */
 function RenderedView({
   content,
   filePath,
+  workingDirectory,
 }: {
   content: string;
   filePath: string;
+  workingDirectory: string;
 }) {
   const { t } = useTranslation();
   if (isHtml(filePath)) {
@@ -352,15 +1176,53 @@ function RenderedView({
     );
   }
 
-  // Markdown / MDX
+  // Markdown / MDX — strip YAML frontmatter before rendering
+  const body = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+  // Resolve relative image paths to API URLs so they render correctly
+  const resolved = resolveMarkdownImages(body, filePath, workingDirectory);
   return (
     <div className="px-6 py-4 overflow-x-hidden break-words">
       <Streamdown
         className="size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_ul]:pl-6 [&_ol]:pl-6"
         plugins={streamdownPlugins}
       >
-        {content}
+        {resolved}
       </Streamdown>
     </div>
   );
 }
+
+/** Interactive HTML preview — served via HTTP for full JS/CSS support */
+import { forwardRef } from "react";
+import { getStoredAuthToken } from "@/components/auth/TokenGate";
+
+const InteractiveHtmlView = forwardRef<
+  HTMLIFrameElement,
+  { filePath: string; workingDirectory: string; recording: boolean }
+>(function InteractiveHtmlView({ filePath, workingDirectory, recording }, ref) {
+  const token = getStoredAuthToken();
+  const root = workingDirectory || filePath.substring(0, filePath.lastIndexOf("/"));
+  // Make path relative to root
+  const resolvedRoot = root.endsWith("/") ? root : root + "/";
+  const relativePath = filePath.startsWith(resolvedRoot)
+    ? filePath.slice(resolvedRoot.length)
+    : filePath.split("/").pop() || filePath;
+
+  const params = new URLSearchParams({
+    root,
+    path: relativePath,
+    ...(recording ? { record: "1" } : {}),
+    ...(token ? { token } : {}),
+  });
+  const src = `/api/files/serve?${params.toString()}`;
+
+  return (
+    <iframe
+      ref={ref}
+      src={src}
+      sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"
+      className="h-full w-full border-0"
+      title="Interactive HTML Preview"
+    />
+  );
+});

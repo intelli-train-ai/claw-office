@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTasksBySession, createTask, syncSdkTasks } from '@/lib/db';
 import type { TasksResponse, TaskResponse, ErrorResponse, CreateTaskRequest } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { searchParams } = request.nextUrl;
   const sessionId = searchParams.get('session_id');
 
@@ -25,6 +29,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body: CreateTaskRequest = await request.json();
 
@@ -47,6 +54,9 @@ export async function POST(request: NextRequest) {
 
 /** Bulk sync SDK tasks (replace-all for source='sdk') */
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body: { session_id: string; todos: Array<{ id: string; content: string; status: string; activeForm?: string }> } = await request.json();
 

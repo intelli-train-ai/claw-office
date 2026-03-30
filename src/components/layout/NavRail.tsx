@@ -6,7 +6,6 @@ import {
   ChatCircle,
   Lightning,
   Plug,
-  Image,
   Gear,
   WifiHigh,
   Terminal,
@@ -35,7 +34,6 @@ const navItems = [
   { href: "/skills", label: "Skills", icon: Lightning },
   { href: "/mcp", label: "MCP", icon: Plug },
   { href: "/cli-tools", label: "CLI Tools", icon: Terminal },
-  { href: "/gallery", label: "Gallery", icon: Image },
   { href: "/bridge", label: "Bridge", icon: WifiHigh },
 ] as const;
 
@@ -47,7 +45,6 @@ export function NavRail({ onToggleChatList, hasUpdate, readyToInstall, skipPermi
     'Chats': 'nav.chats',
     'Skills': 'extensions.skills',
     'MCP': 'extensions.mcpServers',
-    'Gallery': 'gallery.title',
     'Bridge': 'nav.bridge',
     'CLI Tools': 'nav.cliTools',
   };

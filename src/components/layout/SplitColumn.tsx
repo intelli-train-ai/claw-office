@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { usePanel } from "@/hooks/usePanel";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
+import { authFetch } from '@/lib/api-client';
 
 interface SplitColumnProps {
   sessionId: string;
@@ -38,7 +39,7 @@ export function SplitColumn({ sessionId, isActive, onClose, onFocus }: SplitColu
     setSessionProviderId("");
     async function loadSession() {
       try {
-        const res = await fetch(`/api/chat/sessions/${sessionId}`);
+        const res = await authFetch(`/api/chat/sessions/${sessionId}`);
         if (cancelled) return;
         if (res.ok) {
           const data: { session: ChatSession } = await res.json();
@@ -68,7 +69,7 @@ export function SplitColumn({ sessionId, isActive, onClose, onFocus }: SplitColu
 
     async function loadMessages() {
       try {
-        const res = await fetch(`/api/chat/sessions/${sessionId}/messages?limit=30`);
+        const res = await authFetch(`/api/chat/sessions/${sessionId}/messages?limit=30`);
         if (cancelled) return;
         if (!res.ok) {
           if (res.status === 404) {

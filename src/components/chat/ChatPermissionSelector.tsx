@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Lock, LockOpen, CaretDown } from '@/components/ui/icon';
+import { authFetch } from '@/lib/api-client';
 
 interface ChatPermissionSelectorProps {
   sessionId?: string;
@@ -51,7 +52,7 @@ export function ChatPermissionSelector({
       return;
     }
     try {
-      const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+      const res = await authFetch(`/api/chat/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ permission_profile: profile }),

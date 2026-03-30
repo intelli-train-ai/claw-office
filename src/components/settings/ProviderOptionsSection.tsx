@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/i18n";
 import type { ProviderOptions } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface ProviderOptionsSectionProps {
   providerId: string;
@@ -33,7 +34,7 @@ export function ProviderOptionsSection({ providerId, showThinkingOptions = false
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/providers/options?providerId=${encodeURIComponent(providerId)}`)
+    authFetch(`/api/providers/options?providerId=${encodeURIComponent(providerId)}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!cancelled && data) setOptions(data.options || {});
@@ -47,7 +48,7 @@ export function ProviderOptionsSection({ providerId, showThinkingOptions = false
     const updated = { ...options, [key]: value };
     setOptions(updated);
     try {
-      await fetch('/api/providers/options', {
+      await authFetch('/api/providers/options', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ providerId, options: { [key]: value } }),

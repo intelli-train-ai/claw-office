@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { GitLogEntry } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 export function useGitLog(cwd: string) {
   const [entries, setEntries] = useState<GitLogEntry[]>([]);
@@ -13,7 +14,7 @@ export function useGitLog(cwd: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/git/log?cwd=${encodeURIComponent(cwd)}&limit=${limit}`);
+      const res = await authFetch(`/api/git/log?cwd=${encodeURIComponent(cwd)}&limit=${limit}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to fetch log');

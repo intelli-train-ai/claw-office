@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, setSetting } from '@/lib/db';
 import { startPolling, stopPolling } from '@/lib/telegram-bot';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * Telegram Bot notification settings.
@@ -18,7 +19,10 @@ const TELEGRAM_KEYS = [
   'telegram_bridge_allowed_users',
 ] as const;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const result: Record<string, string> = {};
     for (const key of TELEGRAM_KEYS) {
@@ -49,6 +53,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { settings } = body;

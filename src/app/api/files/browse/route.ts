@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import type { ErrorResponse } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 async function getWindowsDrives(): Promise<string[]> {
   if (process.platform !== 'win32') return [];
@@ -19,8 +20,53 @@ async function getWindowsDrives(): Promise<string[]> {
   return drives;
 }
 
+// Create a new directory inside the given parent
+export async function POST(request: NextRequest) {
+  try {
+    const { dir, name } = await request.json();
+    if (!dir || !name) {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Missing dir or name' },
+        { status: 400 }
+      );
+    }
+
+    // Prevent path traversal
+    if (name.includes('/') || name.includes('\\') || name === '..' || name === '.') {
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Invalid folder name' },
+        { status: 400 }
+      );
+    }
+
+    const newDir = path.join(path.resolve(dir), name);
+
+    try {
+      await fs.access(newDir);
+      return NextResponse.json<ErrorResponse>(
+        { error: 'Folder already exists' },
+        { status: 409 }
+      );
+    } catch {
+      // Does not exist — good, proceed to create
+    }
+
+    await fs.mkdir(newDir, { recursive: true });
+
+    return NextResponse.json({ path: newDir });
+  } catch {
+    return NextResponse.json<ErrorResponse>(
+      { error: 'Failed to create folder' },
+      { status: 500 }
+    );
+  }
+}
+
 // List only directories for folder browsing (no safety restriction since user is choosing where to work)
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { searchParams } = request.nextUrl;
   const dir = searchParams.get('dir') || os.homedir();
 

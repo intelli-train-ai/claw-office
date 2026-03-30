@@ -1,4 +1,6 @@
+import { NextRequest } from 'next/server';
 import { listChannelBindings } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,7 +12,10 @@ export const dynamic = 'force-dynamic';
  *   ?active=true  — return only active bindings
  *   ?active=false — return only inactive bindings
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const activeParam = searchParams.get('active');

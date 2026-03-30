@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCachedAccountInfo, getCapabilityCacheAge } from '@/lib/agent-sdk-capabilities';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const providerId = request.nextUrl.searchParams.get('providerId') || 'env';
     const account = getCachedAccountInfo(providerId);

@@ -8,6 +8,7 @@ import { usePanel } from "@/hooks/usePanel";
 import { showToast } from "@/hooks/useToast";
 import { CommitDialog } from "./CommitDialog";
 import type { GitStatus, GitChangedFile } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface GitStatusSectionProps {
   status: GitStatus;
@@ -23,7 +24,7 @@ export function GitStatusSection({ status }: GitStatusSectionProps) {
     if (!workingDirectory || pushing) return;
     setPushing(true);
     try {
-      const res = await fetch('/api/git/push', {
+      const res = await authFetch('/api/git/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cwd: workingDirectory }),

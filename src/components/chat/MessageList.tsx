@@ -15,6 +15,7 @@ import {
 import { MessageItem } from './MessageItem';
 import { StreamingMessage } from './StreamingMessage';
 import { CodePilotLogo } from './CodePilotLogo';
+import { authFetch } from '@/lib/api-client';
 
 /**
  * Scrolls to bottom when streaming starts or new messages are appended.
@@ -54,7 +55,7 @@ function RewindButton({ sessionId, userMessageId }: { sessionId: string; userMes
   const handleDryRun = useCallback(async () => {
     setState('loading');
     try {
-      const res = await fetch('/api/chat/rewind', {
+      const res = await authFetch('/api/chat/rewind', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, userMessageId, dryRun: true }),
@@ -74,7 +75,7 @@ function RewindButton({ sessionId, userMessageId }: { sessionId: string; userMes
   const handleRewind = useCallback(async () => {
     setState('loading');
     try {
-      const res = await fetch('/api/chat/rewind', {
+      const res = await authFetch('/api/chat/rewind', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, userMessageId }),

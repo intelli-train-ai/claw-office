@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   const { path } = await req.json();
   if (!path || typeof path !== 'string') {
     return NextResponse.json({ error: 'Missing path' }, { status: 400 });

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { authFetch } from '@/lib/api-client';
 
 interface AdapterStatus {
   channelType: string;
@@ -33,7 +34,7 @@ export function useBridgeStatus(): {
 
   const refreshStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/bridge");
+      const res = await authFetch("/api/bridge");
       if (res.ok) {
         const data = await res.json();
         setBridgeStatus(data);
@@ -65,7 +66,7 @@ export function useBridgeStatus(): {
   const startBridge = useCallback(async (): Promise<string | null> => {
     setStarting(true);
     try {
-      const res = await fetch("/api/bridge", {
+      const res = await authFetch("/api/bridge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "start" }),
@@ -86,7 +87,7 @@ export function useBridgeStatus(): {
   const stopBridge = useCallback(async () => {
     setStopping(true);
     try {
-      await fetch("/api/bridge", {
+      await authFetch("/api/bridge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "stop" }),

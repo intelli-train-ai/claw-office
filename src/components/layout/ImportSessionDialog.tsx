@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/icon";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn, parseDBDate } from "@/lib/utils";
+import { authFetch } from '@/lib/api-client';
 
 interface ClaudeSessionInfo {
   sessionId: string;
@@ -82,7 +83,7 @@ export function ImportSessionDialog({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/claude-sessions");
+      const res = await authFetch("/api/claude-sessions");
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to fetch sessions");
@@ -106,7 +107,7 @@ export function ImportSessionDialog({
     setImporting(sessionId);
     setError(null);
     try {
-      const res = await fetch("/api/claude-sessions/import", {
+      const res = await authFetch("/api/claude-sessions/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),

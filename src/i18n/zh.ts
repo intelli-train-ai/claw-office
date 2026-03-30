@@ -192,6 +192,15 @@ const zh: Record<TranslationKey, string> = {
   'fileTree.refresh': '刷新',
   'fileTree.noFiles': '未找到文件',
   'fileTree.selectFolder': '选择项目文件夹以查看文件',
+  'fileTree.dropHint': '拖拽文件到此处上传',
+  'fileTree.dropActive': '释放以上传',
+  'fileTree.uploading': '上传中...',
+  'fileTree.uploadSuccess': '已上传 {count} 个文件',
+  'fileTree.archiveExtracted': '压缩包已解压',
+  'fileTree.deleteConfirmTitle': '删除',
+  'fileTree.deleteConfirmFile': '确定要删除 "{name}" 吗？',
+  'fileTree.deleteConfirmFolder': '确定要删除文件夹 "{name}" 及其所有内容吗？',
+  'fileTree.delete': '删除',
 
   // ── File preview ────────────────────────────────────────────
   'filePreview.backToTree': '返回文件树',
@@ -199,8 +208,36 @@ const zh: Record<TranslationKey, string> = {
   'filePreview.copyPath': '复制路径',
   'filePreview.failedToLoad': '加载文件失败',
 
+  // ── Feedback ────────────────────────────────────────────────
+  'feedback.toggleTooltip': '反馈模式 — 框选区域截图',
+  'feedback.selectionHint': '拖拽选择区域，然后添加反馈说明',
+  'feedback.placeholder': '描述问题或建议…',
+  'feedback.send': '发送',
+  'feedback.cancel': '取消',
+  'feedback.file': '文件',
+  'feedback.lineRange': '行号',
+
+  // ── Recording ───────────────────────────────────────────────
+  'recording.toggleTooltip': '录制交互操作',
+  'recording.recording': '录制中',
+  'recording.stopped': '录制已停止',
+  'recording.events': '个事件',
+  'recording.snapshot': '截图',
+  'recording.addNote': '备注',
+  'recording.stop': '停止',
+  'recording.discard': '丢弃',
+  'recording.notePlaceholder': '添加关于此交互的备注…',
+  'recording.summaryPlaceholder': '整体反馈…',
+  'recording.duration': '时长',
+  'recording.interactionSequence': '交互序列',
+  'recording.steps': '步',
+
   // ── Doc preview ─────────────────────────────────────────────
   'docPreview.htmlPreview': 'HTML 预览',
+  'docPreview.edit': '编辑',
+  'docPreview.saving': '保存中…',
+  'docPreview.saved': '已保存',
+  'docPreview.saveFailed': '保存失败',
 
   // ── Extensions page ─────────────────────────────────────────
   'extensions.title': '扩展',
@@ -279,6 +316,9 @@ const zh: Record<TranslationKey, string> = {
   'folderPicker.noSubdirs': '无子目录',
   'folderPicker.cancel': '取消',
   'folderPicker.select': '选择此文件夹',
+  'folderPicker.newFolder': '新建文件夹',
+  'folderPicker.newFolderPlaceholder': '文件夹名称',
+  'folderPicker.folderExists': '文件夹已存在',
 
   // ── Import session dialog ───────────────────────────────────
   'import.title': '从 Claude CLI 导入会话',
@@ -508,8 +548,6 @@ const zh: Record<TranslationKey, string> = {
 
   // ── Provider: Gemini Image ──────────────────────────────────
   'provider.chatProviders': '聊天服务商',
-  'provider.mediaProviders': '媒体服务商',
-  'provider.geminiImageDesc': 'Nano Banana Pro — Google Gemini AI 图片生成',
   'provider.diagnose': '诊断',
   'provider.doctor.title': '服务商诊断',
   'provider.doctor.running': '正在运行诊断...',
@@ -943,8 +981,6 @@ const zh: Record<TranslationKey, string> = {
   'composer.manageSkills': '管理技能',
   'composer.searchModels': '搜索模型...',
   'composer.manageProviders': '管理服务商',
-  'composer.designAgent': '设计 Agent',
-  'composer.designAgentTooltip': '启用 AI 设计与图片生成',
 
   // ── Permission ────────────────────────────────────────────
   'permission.default': '默认权限',
@@ -1239,6 +1275,17 @@ const zh: Record<TranslationKey, string> = {
   'error.selectDirectory': '选择目录',
   'error.openSetup': '打开设置',
 
+  // ── Share / Replay ──────────────────────────────────────────
+  'share.copyLink': '分享回放',
+  'share.linkCopied': '回放链接已复制',
+  'share.noMessages': '没有消息可分享',
+  'share.replayTitle': '对话回放',
+  'share.replayOf': '回放: {title}',
+  'share.generatedBy': '由 CodePilot 生成',
+  'share.skipReplay': '跳过回放',
+  'share.startReplay': '开始回放',
+  'share.sessionNotFound': '会话不存在',
+
   // ── Widget (Generative UI) ────────────────────────────────
   'widget.loading': '渲染组件中...',
   'widget.streaming': '正在渲染可视化',
@@ -1246,6 +1293,35 @@ const zh: Record<TranslationKey, string> = {
   'widget.error': '组件渲染错误',
   'widget.showCode': '显示代码',
   'widget.hideCode': '隐藏代码',
+
+  // ── Auth ─────────────────────────────────────────────────────
+  'auth.title': '需要认证',
+  'auth.subtitle': '请输入访问令牌以继续',
+  'auth.tokenPlaceholder': '访问令牌',
+  'auth.unlock': '解锁',
+  'auth.verifying': '验证中...',
+  'auth.invalidToken': '令牌无效',
+  'auth.networkError': '网络错误，请重试',
+  'auth.logout': '登出',
+
+  // ── Settings: Security ──────────────────────────────────────
+  'settings.security': '安全',
+  'settings.security.accessToken': '访问令牌',
+  'settings.security.accessTokenDesc': '设置访问令牌后，需要输入令牌才能使用 CodePilot。适用于公网部署场景。',
+  'settings.security.tokenConfigured': '令牌已配置',
+  'settings.security.tokenNotConfigured': '未配置令牌（开放访问）',
+  'settings.security.tokenFromEnv': '令牌通过 CODEPILOT_ACCESS_TOKEN 环境变量设置',
+  'settings.security.setToken': '设置令牌',
+  'settings.security.changeToken': '修改令牌',
+  'settings.security.removeToken': '删除令牌',
+  'settings.security.newTokenPlaceholder': '输入新的访问令牌（至少 6 个字符）',
+  'settings.security.save': '保存',
+  'settings.security.cancel': '取消',
+  'settings.security.tokenSaved': '访问令牌已保存',
+  'settings.security.tokenRemoved': '访问令牌已删除',
+  'settings.security.tokenError': '更新令牌失败',
+  'settings.security.logout': '登出当前会话',
+  'settings.security.logoutDesc': '清除浏览器中存储的令牌，需要重新输入。',
 };
 
 export default zh;

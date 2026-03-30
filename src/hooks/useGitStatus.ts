@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { GitStatus } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 const POLL_INTERVAL = 10000; // 10s
 
@@ -16,7 +17,7 @@ export function useGitStatus(cwd: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/git/status?cwd=${encodeURIComponent(cwd)}`);
+      const res = await authFetch(`/api/git/status?cwd=${encodeURIComponent(cwd)}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to fetch status');

@@ -59,5 +59,14 @@ apps/site/.next/
 apps/site/.source/
 apps/site/node_modules/
 
+
 # claude code session data
 .claude/
+.claude/worktrees/
+
+资料/附件2：申报材料真实性承诺书.docx
+资料/附件1：校级先进班集体、优良学风班名额分配表.xlsx
+资料/Chapter_1_v8.1.pptx
+资料/matlab-1-.pdf
+资料/R.jpg
+img_tmp/

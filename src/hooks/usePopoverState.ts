@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import type { PopoverItem, PopoverMode } from '@/types';
 import { filterItems } from '@/lib/message-input-logic';
+import { authFetch } from '@/lib/api-client';
 
 export interface UsePopoverStateReturn {
   popoverMode: PopoverMode;
@@ -99,7 +100,7 @@ export function usePopoverState(modelName?: string): UsePopoverStateReturn {
           return;
         }
 
-        const res = await fetch('/api/skills/search', {
+        const res = await authFetch('/api/skills/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,

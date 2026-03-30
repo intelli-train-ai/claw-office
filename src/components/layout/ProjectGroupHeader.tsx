@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from '@/hooks/useTranslation';
 import type { TranslationKey } from "@/i18n";
 import { useState } from "react";
+import { authFetch } from '@/lib/api-client';
 
 interface ProjectGroupHeaderProps {
   workingDirectory: string;
@@ -117,7 +118,7 @@ export function ProjectGroupHeader({
                 if (w.electronAPI?.shell?.openPath) {
                   w.electronAPI.shell.openPath(workingDirectory);
                 } else {
-                  fetch('/api/files/open', {
+                  authFetch('/api/files/open', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: workingDirectory }),

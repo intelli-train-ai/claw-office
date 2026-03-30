@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { findClaudeBinary, getClaudeVersion, findAllClaudeBinaries, classifyClaudePath, isWindows, findGitBash } from '@/lib/platform';
 import type { ClaudeInstallInfo } from '@/lib/platform';
+import { requireAuth } from '@/lib/auth';
 
 /** Minimum CLI versions for optional features */
 const FEATURE_MIN_VERSIONS: Record<string, string> = {
@@ -22,7 +23,10 @@ function versionGte(a: string, b: string): boolean {
   return true;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const claudePath = findClaudeBinary();
 

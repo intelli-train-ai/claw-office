@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { X, GitCommit, CloudArrowUp } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
+import { authFetch } from '@/lib/api-client';
 
 interface CommitDialogProps {
   cwd: string;
@@ -52,7 +53,7 @@ export function CommitDialog({ cwd, open, onClose, onSuccess }: CommitDialogProp
     setError(null);
     try {
       // Commit
-      const commitRes = await fetch("/api/git/commit", {
+      const commitRes = await authFetch("/api/git/commit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cwd, message: trimmed }),
@@ -64,7 +65,7 @@ export function CommitDialog({ cwd, open, onClose, onSuccess }: CommitDialogProp
 
       // Push if selected
       if (mode === "commit-and-push") {
-        const pushRes = await fetch("/api/git/push", {
+        const pushRes = await authFetch("/api/git/push", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cwd }),

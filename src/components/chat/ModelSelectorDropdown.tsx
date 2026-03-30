@@ -63,6 +63,11 @@ export function ModelSelectorDropdown({
     currentProviderIdValue === globalDefaultProvider
   );
 
+  // Avoid hydration mismatch: model value comes from localStorage on client
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []);
+
   // Click outside to close model menu
   useEffect(() => {
     if (!modelMenuOpen) return;
@@ -98,7 +103,7 @@ export function ModelSelectorDropdown({
       <PromptInputButton
         onClick={() => setModelMenuOpen((prev) => !prev)}
       >
-        <span className="text-xs font-mono">{currentModelOption?.label}</span>
+        <span className="text-xs font-mono">{mounted ? currentModelOption?.label : '\u00A0'}</span>
         {isCurrentDefault && (
           <span className="text-[9px] px-1 py-0 rounded bg-primary/10 text-primary font-medium ml-0.5">
             {isZh ? '默认' : 'Default'}
@@ -108,7 +113,7 @@ export function ModelSelectorDropdown({
       </PromptInputButton>
 
       {modelMenuOpen && (
-        <CommandList className="w-64 mb-1.5">
+        <CommandList className="min-w-64 w-max mb-1.5">
           <CommandListSearch
             placeholder={t('composer.searchModels' as TranslationKey)}
             value={modelSearch}
@@ -144,7 +149,7 @@ export function ModelSelectorDropdown({
                         onClick={() => handleModelSelect(group.provider_id, opt.value)}
                         className="justify-between"
                       >
-                        <span className="font-mono text-xs flex items-center gap-1.5">
+                        <span className="text-xs whitespace-nowrap flex items-center gap-1.5">
                           {opt.label}
                           {isDefault && (
                             <span className="text-[9px] px-1 py-0 rounded bg-primary/10 text-primary font-medium">

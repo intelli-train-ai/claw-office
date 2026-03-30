@@ -8,6 +8,7 @@ import { ProviderCard } from './ProviderCard';
 import { ProjectDirCard } from './ProjectDirCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { SetupCardStatus } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 interface SetupCenterProps {
   onClose: () => void;
@@ -26,7 +27,7 @@ export function SetupCenter({ onClose, initialCard }: SetupCenterProps) {
 
   // Load initial status
   useEffect(() => {
-    fetch('/api/setup')
+    authFetch('/api/setup')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
@@ -54,7 +55,7 @@ export function SetupCenter({ onClose, initialCard }: SetupCenterProps) {
       initialCompletedCountRef.current < 3
     ) {
       // Mark as completed
-      fetch('/api/setup', {
+      authFetch('/api/setup', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ card: 'completed', status: 'completed' }),
@@ -92,7 +93,7 @@ export function SetupCenter({ onClose, initialCard }: SetupCenterProps) {
             </span>
             <Button variant="ghost" size="sm" className="text-xs" onClick={() => {
               // Persist skip so setup center doesn't reopen on next launch
-              fetch('/api/setup', {
+              authFetch('/api/setup', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ card: 'completed', status: 'completed' }),

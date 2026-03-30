@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * POST /api/settings/qq/verify
@@ -11,6 +12,9 @@ import { getSetting } from '@/lib/db';
  * If both succeed, credentials are valid.
  */
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     let { app_id, app_secret } = body;

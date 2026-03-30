@@ -14,6 +14,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/i18n";
 import { cn } from "@/lib/utils";
 import type { SkillItem } from "./SkillListItem";
+import { authFetch } from '@/lib/api-client';
 
 type ViewTab = "local" | "marketplace";
 
@@ -30,7 +31,7 @@ export function SkillsManager() {
   const fetchSkills = useCallback(async () => {
     try {
       const cwdParam = workingDirectory ? `?cwd=${encodeURIComponent(workingDirectory)}` : '';
-      const res = await fetch(`/api/skills${cwdParam}`);
+      const res = await authFetch(`/api/skills${cwdParam}`);
       if (res.ok) {
         const data = await res.json();
         setSkills((data.skills || []).filter((s: SkillItem) => s.source !== "project"));
@@ -48,7 +49,7 @@ export function SkillsManager() {
 
   const handleCreate = useCallback(
     async (name: string, scope: "global" | "project", content: string) => {
-      const res = await fetch("/api/skills", {
+      const res = await authFetch("/api/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, content, scope, cwd: workingDirectory || undefined }),

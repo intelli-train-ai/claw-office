@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { Message, FileAttachment } from '@/types';
 import { getLocalDateString } from '@/lib/utils';
 import { startStream } from '@/lib/stream-session-manager';
+import { authFetch } from '@/lib/api-client';
 
 // ── localStorage heartbeat for cross-tab liveness detection ──
 // The session that owns the onboarding lock writes {sessionId, ts} every 10s.
@@ -120,7 +121,7 @@ export function useAssistantTrigger({
     if (isStreaming || assistantTriggerFiredRef.current) return;
 
     try {
-      const res = await fetch('/api/settings/workspace');
+      const res = await authFetch('/api/settings/workspace');
       if (!res.ok) return;
       const data = await res.json();
       if (!data.path) return;
@@ -144,7 +145,7 @@ export function useAssistantTrigger({
         // is still the stale session we observed).  If another tab already swapped
         // in, the server returns owner_mismatch and we bail out.
         try {
-          const clearRes = await fetch('/api/workspace/hook-triggered', {
+          const clearRes = await authFetch('/api/workspace/hook-triggered', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -183,13 +184,13 @@ export function useAssistantTrigger({
             const completion = extractCompletion(msg.content);
             if (completion?.type === 'onboarding') {
               console.log('[useAssistantTrigger] Found unprocessed onboarding completion in message history, compensating...');
-              const resp = await fetch('/api/workspace/onboarding', {
+              const resp = await authFetch('/api/workspace/onboarding', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ answers: completion.answers, sessionId }),
               });
               if (resp.ok) {
-                await fetch('/api/workspace/hook-triggered', {
+                await authFetch('/api/workspace/hook-triggered', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -211,7 +212,7 @@ export function useAssistantTrigger({
       // For daily check-in, only trigger in the most recent session for this workspace.
       // This prevents older sessions from hijacking the check-in when reopened.
       if (needsCheckIn) {
-        const latestRes = await fetch(`/api/workspace/latest-session?workingDirectory=${encodeURIComponent(data.path)}`);
+        const latestRes = await authFetch(`/api/workspace/latest-session?workingDirectory=${encodeURIComponent(data.path)}`);
         if (latestRes.ok) {
           const { sessionId: latestSessionId } = await latestRes.json();
           if (latestSessionId && latestSessionId !== sessionId) return;
@@ -230,7 +231,7 @@ export function useAssistantTrigger({
       // CAS: only set owner if currently unowned (null).  If another tab set itself
       // as owner between our clear and this call, the server rejects and we bail.
       try {
-        const setRes = await fetch('/api/workspace/hook-triggered', {
+        const setRes = await authFetch('/api/workspace/hook-triggered', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, expectedOwner: null }),

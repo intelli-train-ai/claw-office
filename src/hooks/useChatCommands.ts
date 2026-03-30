@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Message } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 interface UseChatCommandsOpts {
   sessionId: string;
@@ -27,7 +28,7 @@ export function useChatCommands({ sessionId, messages, setMessages, sendMessage 
         setMessages([]);
         // Also clear database messages and reset SDK session
         if (sessionId) {
-          fetch(`/api/chat/sessions/${sessionId}`, {
+          authFetch(`/api/chat/sessions/${sessionId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ clear_messages: true }),

@@ -585,9 +585,17 @@ function buildResolution(
   // Has credentials?
   const hasCredentials = !!(provider.api_key) || authStyle === 'env_only';
 
-  // Settings sources — always include 'user' so SDK can load skills from
-  // ~/.claude/skills/. Env override conflicts are handled by envOverrides.
-  const settingSources = ['user', 'project', 'local'];
+  // Settings sources control which layers the SDK loads for permissions,
+  // skills, env overrides, etc.  When an active provider supplies its own
+  // credentials we MUST exclude 'user' — otherwise ~/.claude/settings.json
+  // env overrides (ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, …) would
+  // silently replace the provider's credentials and route requests to
+  // Anthropic instead of the configured proxy (GLM, Kimi, MiniMax, …).
+  // Skills from ~/.claude/skills/ are unavailable in this case; project-
+  // and local-level skills still load normally.
+  const settingSources = hasCredentials
+    ? ['project', 'local']
+    : ['user', 'project', 'local'];
 
   return {
     provider,
