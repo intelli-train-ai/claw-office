@@ -4,7 +4,6 @@ import {
   Folder,
   CaretDown,
   CaretRight,
-  Plus,
   FolderOpen,
   FolderMinus,
   UserCircle,
@@ -35,7 +34,6 @@ interface ProjectGroupHeaderProps {
   onToggle: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  onCreateSession: (e: React.MouseEvent) => void;
   onRemoveProject?: (workingDirectory: string) => void;
 }
 
@@ -48,7 +46,6 @@ export function ProjectGroupHeader({
   onToggle,
   onMouseEnter,
   onMouseLeave,
-  onCreateSession,
   onRemoveProject,
 }: ProjectGroupHeaderProps) {
   const { t } = useTranslation();
@@ -87,16 +84,6 @@ export function ProjectGroupHeader({
           "flex items-center gap-0.5 transition-opacity",
           showActions ? "opacity-100" : "opacity-0 pointer-events-none"
         )}>
-          {/* New chat button */}
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground"
-            tabIndex={showActions ? 0 : -1}
-            onClick={onCreateSession}
-          >
-            <Plus size={14} />
-          </Button>
           {/* Three-dot menu */}
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>

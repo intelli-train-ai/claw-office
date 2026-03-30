@@ -22,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -338,27 +339,6 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     }
   };
 
-  const handleCreateSessionInProject = async (
-    e: React.MouseEvent,
-    workingDirectory: string
-  ) => {
-    e.stopPropagation();
-    try {
-      const { model, provider_id } = getCurrentModelAndProvider();
-      const res = await authFetch("/api/chat/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ working_directory: workingDirectory, model, provider_id }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        window.dispatchEvent(new CustomEvent("session-created"));
-        router.push(`/chat/${data.session.id}`);
-      }
-    } catch {
-      // Silently fail
-    }
-  };
 
   const isSearching = searchQuery.length > 0;
 
@@ -573,7 +553,6 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
                     onToggle={() => toggleProject(group.workingDirectory)}
                     onMouseEnter={() => setHoveredFolder(group.workingDirectory)}
                     onMouseLeave={() => setHoveredFolder(null)}
-                    onCreateSession={(e) => handleCreateSessionInProject(e, group.workingDirectory)}
                     onRemoveProject={handleRemoveProject}
                   />
 
@@ -674,6 +653,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       {/* Search Dialog */}
       <Dialog open={searchDialogOpen} onOpenChange={(open) => { setSearchDialogOpen(open); if (!open) setSearchQuery(""); }}>
         <DialogContent className="sm:max-w-md p-0 max-h-[60vh] flex flex-col overflow-hidden" showCloseButton={false}>
+          <DialogTitle className="sr-only">{t('chatList.searchSessions')}</DialogTitle>
           <div className="p-3 shrink-0">
             <div className="relative">
               <MagnifyingGlass
