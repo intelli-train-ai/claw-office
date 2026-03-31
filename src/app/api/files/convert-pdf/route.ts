@@ -59,10 +59,11 @@ export async function GET(request: NextRequest) {
     const pdfPath = path.join(tmpDir, baseName);
     const pdfBuffer = await fs.readFile(pdfPath);
 
+    const encodedName = encodeURIComponent(baseName);
     return new Response(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${baseName}"`,
+        'Content-Disposition': `inline; filename*=UTF-8''${encodedName}`,
       },
     });
   } catch (err) {
