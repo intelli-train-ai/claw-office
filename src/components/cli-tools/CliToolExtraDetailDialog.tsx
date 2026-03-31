@@ -4,6 +4,7 @@ import { computeAgentScore } from "./CliToolCard";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -54,6 +55,7 @@ export function CliToolExtraDetailDialog({
       <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{displayName}</DialogTitle>
+          <DialogDescription className="sr-only">{displayName}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-5 overflow-y-auto flex-1 min-h-0">

@@ -22,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -670,6 +671,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       <Dialog open={searchDialogOpen} onOpenChange={(open) => { setSearchDialogOpen(open); if (!open) setSearchQuery(""); }}>
         <DialogContent className="sm:max-w-md p-0 max-h-[60vh] flex flex-col overflow-hidden" showCloseButton={false}>
           <DialogTitle className="sr-only">{t('chatList.searchSessions')}</DialogTitle>
+          <DialogDescription className="sr-only">{t('chatList.searchSessions')}</DialogDescription>
           <div className="p-3 shrink-0">
             <div className="relative">
               <MagnifyingGlass

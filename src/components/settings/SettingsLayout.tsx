@@ -80,16 +80,16 @@ export function SettingsLayout() {
         </p>
       </div>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
         {/* Sidebar */}
-        <nav className="flex w-52 shrink-0 flex-col gap-1 border-r border-border/50 p-3">
+        <nav className="flex w-full sm:w-52 shrink-0 flex-row sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible border-b sm:border-b-0 sm:border-r border-border/50 p-2 sm:p-3">
           {sidebarItems.map((item) => (
             <Button
               key={item.id}
               variant="ghost"
               onClick={() => handleSectionChange(item.id)}
               className={cn(
-                "justify-start gap-3 px-3 py-2 text-sm font-medium text-left w-full",
+                "justify-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 text-sm font-medium text-left whitespace-nowrap sm:whitespace-normal sm:w-full",
                 activeSection === item.id
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -102,7 +102,7 @@ export function SettingsLayout() {
         </nav>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4 sm:p-6">
           {activeSection === "general" && <GeneralSection />}
           {activeSection === "providers" && <ProviderManager />}
           {activeSection === "cli" && <CliSettingsSection />}

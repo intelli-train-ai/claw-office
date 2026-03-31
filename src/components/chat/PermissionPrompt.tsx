@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -304,6 +305,7 @@ function ExitPlanModeUI({
           <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Plan</DialogTitle>
+              <DialogDescription className="sr-only">Plan</DialogDescription>
             </DialogHeader>
             <div className="overflow-y-auto flex-1 min-h-0">
               <MessageResponse>{planContent}</MessageResponse>
