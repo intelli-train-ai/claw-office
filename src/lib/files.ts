@@ -1,4 +1,6 @@
 import fs from 'fs/promises';
+import { createReadStream } from 'fs';
+import { createInterface } from 'readline';
 import path from 'path';
 import type { FileTreeNode, FilePreview } from '@/types';
 
@@ -179,18 +181,49 @@ export async function readFilePreview(filePath: string, maxLines: number = 200):
     throw new Error(`Not a file: ${filePath}`);
   }
 
-  // Read the file content, limiting to maxLines
-  const content = await fs.readFile(resolvedPath, 'utf-8');
-  const lines = content.split('\n');
-  const truncated = lines.slice(0, maxLines).join('\n');
+  // Estimate total line count from file size (avoids reading entire file).
+  // Heuristic: average ~60 bytes per line for source code.
+  const estimatedTotalLines = Math.max(1, Math.ceil(stat.size / 60));
+
+  // Stream-read only the first maxLines to avoid loading entire large files
+  const collectedLines: string[] = [];
+  let scannedLineCount = 0;
+  let hitLimit = false;
+
+  await new Promise<void>((resolve, reject) => {
+    const stream = createReadStream(resolvedPath, { encoding: 'utf-8' });
+    const rl = createInterface({ input: stream, crlfDelay: Infinity });
+
+    rl.on('line', (line) => {
+      scannedLineCount++;
+      if (collectedLines.length < maxLines) {
+        collectedLines.push(line);
+      } else {
+        hitLimit = true;
+        rl.close();
+        stream.destroy();
+      }
+    });
+
+    rl.on('close', () => resolve());
+    rl.on('error', reject);
+    stream.on('error', reject);
+  });
 
   const ext = path.extname(resolvedPath).replace(/^\./, '');
   const language = getFileLanguage(ext);
 
+  // If we read the entire file, scannedLineCount is exact.
+  // If we hit the limit early, use the larger of scanned count vs size-based estimate.
+  const lineCount = hitLimit
+    ? Math.max(scannedLineCount, estimatedTotalLines)
+    : scannedLineCount;
+
   return {
     path: resolvedPath,
-    content: truncated,
+    content: collectedLines.join('\n'),
     language,
-    line_count: lines.length,
+    line_count: lineCount,
+    line_count_exact: !hitLimit,
   };
 }

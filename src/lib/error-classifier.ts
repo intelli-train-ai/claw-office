@@ -160,8 +160,8 @@ const ERROR_PATTERNS: ErrorPattern[] = [
     category: 'CONTEXT_TOO_LONG',
     patterns: ['context_length', 'context window', 'too many tokens', 'max_tokens', 'prompt is too long'],
     userMessage: () => 'Conversation context is too long.',
-    actionHint: () => 'Try starting a new conversation or use /compact to compress the context.',
-    retryable: false,
+    actionHint: () => 'Context is being auto-compressed. If this persists, try /compact or start a new conversation.',
+    retryable: false, // Backend handles retry internally via reactive compact
   },
 
   // ── Unsupported feature (unknown option) ──

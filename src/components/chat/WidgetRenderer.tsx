@@ -79,6 +79,33 @@ function WidgetRendererInner({ widgetCode, isStreaming, title, showOverlay, extr
           setIframeReady(true);
           break;
 
+        case 'widget:hatch-buddy':
+          // Widget requested buddy hatching — call API from parent (widgets can't fetch due to sandbox)
+          fetch('/api/workspace/hatch-buddy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buddyName: e.data.buddyName || '' }),
+          })
+            .then(r => r.json())
+            .then(data => {
+              if (data.buddy) {
+                // Reload to show the celebration message + new widget that the API inserted into chat
+                setTimeout(() => window.location.reload(), 500);
+              }
+            })
+            .catch(() => {});
+          break;
+
+        case 'widget:name-buddy':
+          fetch('/api/workspace/hatch-buddy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buddyName: e.data.buddyName || '' }),
+          })
+            .then(() => setTimeout(() => window.location.reload(), 500))
+            .catch(() => {});
+          break;
+
         case 'widget:resize':
           if (typeof e.data.height === 'number' && e.data.height > 0) {
             const newH = Math.min(e.data.height + 2, MAX_IFRAME_HEIGHT);

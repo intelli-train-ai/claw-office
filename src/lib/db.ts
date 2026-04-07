@@ -3,7 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
-import type { ChatSession, Message, SettingsMap, TaskItem, TaskStatus, ApiProvider, CreateProviderRequest, UpdateProviderRequest, MediaJob, MediaJobStatus, MediaJobItem, MediaJobItemStatus, MediaContextEvent, BatchConfig, CustomCliTool } from '@/types';
+import type { ChatSession, Message, SettingsMap, TaskItem, TaskStatus, ApiProvider, CreateProviderRequest, UpdateProviderRequest, MediaJob, MediaJobStatus, MediaJobItem, MediaJobItemStatus, MediaContextEvent, BatchConfig, CustomCliTool, ScheduledTask } from '@/types';
 import type { ChannelType, ChannelBinding } from './bridge/types';
 import { getLocalDateString, localDayStartAsUTC } from './utils';
 
@@ -382,6 +382,12 @@ function migrateDb(db: Database.Database): void {
   if (!colNames.includes('permission_profile')) {
     safeAddColumn(db, "ALTER TABLE chat_sessions ADD COLUMN permission_profile TEXT NOT NULL DEFAULT 'default'");
   }
+  if (!colNames.includes('context_summary')) {
+    safeAddColumn(db, "ALTER TABLE chat_sessions ADD COLUMN context_summary TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.includes('context_summary_updated_at')) {
+    safeAddColumn(db, "ALTER TABLE chat_sessions ADD COLUMN context_summary_updated_at TEXT NOT NULL DEFAULT ''");
+  }
   db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_runtime_status ON chat_sessions(runtime_status)");
 
   // Migrate is_active provider to default_provider_id setting
@@ -400,6 +406,10 @@ function migrateDb(db: Database.Database): void {
 
   if (!msgColNames.includes('token_usage')) {
     safeAddColumn(db, "ALTER TABLE messages ADD COLUMN token_usage TEXT");
+  }
+
+  if (!msgColNames.includes('is_heartbeat_ack')) {
+    safeAddColumn(db, "ALTER TABLE messages ADD COLUMN is_heartbeat_ack INTEGER NOT NULL DEFAULT 0");
   }
 
   // Ensure tasks table exists for databases created before this migration
@@ -856,6 +866,56 @@ function migrateDb(db: Database.Database): void {
       }
     }
   } catch { /* table may not exist yet */ }
+
+  // Ensure scheduled_tasks table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS scheduled_tasks (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      schedule_type TEXT NOT NULL CHECK(schedule_type IN ('cron', 'interval', 'once')),
+      schedule_value TEXT NOT NULL,
+      next_run TEXT NOT NULL,
+      last_run TEXT,
+      last_status TEXT CHECK(last_status IN ('success', 'error', 'skipped', 'running')),
+      last_error TEXT,
+      last_result TEXT,
+      consecutive_errors INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'disabled')),
+      priority TEXT NOT NULL DEFAULT 'normal' CHECK(priority IN ('low', 'normal', 'urgent')),
+      notify_on_complete INTEGER NOT NULL DEFAULT 1,
+      session_id TEXT,
+      working_directory TEXT,
+      permanent INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_status ON scheduled_tasks(status);
+    CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_next_run ON scheduled_tasks(next_run);
+  `);
+
+  // Migration: add permanent column for existing databases
+  safeAddColumn(db, "ALTER TABLE scheduled_tasks ADD COLUMN permanent INTEGER NOT NULL DEFAULT 0");
+
+  // Migration: set default_panel to 'file_tree' only if not already configured
+  db.prepare(
+    "INSERT OR IGNORE INTO settings (key, value) VALUES ('default_panel', 'file_tree')"
+  ).run();
+
+  // Task execution history
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_run_logs (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      result TEXT,
+      error TEXT,
+      duration_ms INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (task_id) REFERENCES scheduled_tasks(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_run_logs_task_id ON task_run_logs(task_id);
+  `);
 }
 
 // ==========================================
@@ -880,6 +940,25 @@ export function getActiveSessions(): ChatSession[] {
 export function getSession(id: string): ChatSession | undefined {
   const db = getDb();
   return db.prepare('SELECT * FROM chat_sessions WHERE id = ?').get(id) as ChatSession | undefined;
+}
+
+export function getSessionSummary(sessionId: string): { summary: string; updatedAt: string } {
+  const db = getDb();
+  const row = db.prepare(
+    'SELECT context_summary, context_summary_updated_at FROM chat_sessions WHERE id = ?'
+  ).get(sessionId) as { context_summary: string; context_summary_updated_at: string } | undefined;
+  return {
+    summary: row?.context_summary || '',
+    updatedAt: row?.context_summary_updated_at || '',
+  };
+}
+
+export function updateSessionSummary(sessionId: string, summary: string): void {
+  const db = getDb();
+  const now = new Date().toISOString().replace('T', ' ').split('.')[0];
+  db.prepare(
+    'UPDATE chat_sessions SET context_summary = ?, context_summary_updated_at = ? WHERE id = ?'
+  ).run(summary, now, sessionId);
 }
 
 export function createSession(
@@ -990,22 +1069,23 @@ export function updateSessionPermissionProfile(id: string, profile: string): voi
 
 export function getMessages(
   sessionId: string,
-  options?: { limit?: number; beforeRowId?: number },
+  options?: { limit?: number; beforeRowId?: number; excludeHeartbeatAck?: boolean },
 ): { messages: Message[]; hasMore: boolean } {
   const db = getDb();
   const limit = options?.limit ?? 100;
   const beforeRowId = options?.beforeRowId;
+  const ackFilter = options?.excludeHeartbeatAck ? ' AND is_heartbeat_ack = 0' : '';
 
   let rows: Message[];
   if (beforeRowId) {
     // Fetch `limit + 1` rows before the cursor to detect if there are more
     rows = db.prepare(
-      'SELECT *, rowid as _rowid FROM messages WHERE session_id = ? AND rowid < ? ORDER BY rowid DESC LIMIT ?'
+      `SELECT *, rowid as _rowid FROM messages WHERE session_id = ? AND rowid < ?${ackFilter} ORDER BY rowid DESC LIMIT ?`
     ).all(sessionId, beforeRowId, limit + 1) as Message[];
   } else {
     // Fetch the most recent `limit + 1` messages
     rows = db.prepare(
-      'SELECT *, rowid as _rowid FROM messages WHERE session_id = ? ORDER BY rowid DESC LIMIT ?'
+      `SELECT *, rowid as _rowid FROM messages WHERE session_id = ?${ackFilter} ORDER BY rowid DESC LIMIT ?`
     ).all(sessionId, limit + 1) as Message[];
   }
 
@@ -1042,6 +1122,11 @@ export function updateMessageContent(messageId: string, content: string): number
   const db = getDb();
   const result = db.prepare('UPDATE messages SET content = ? WHERE id = ?').run(content, messageId);
   return result.changes;
+}
+
+export function updateMessageHeartbeatAck(messageId: string, isAck: boolean): void {
+  const db = getDb();
+  db.prepare('UPDATE messages SET is_heartbeat_ack = ? WHERE id = ?').run(isAck ? 1 : 0, messageId);
 }
 
 /**
@@ -2517,6 +2602,66 @@ export function bulkUpsertCliToolDescriptions(entries: Array<{ toolId: string; z
  * In WAL mode, this ensures the WAL is checkpointed and the
  * -wal/-shm files are cleaned up properly.
  */
+// ==========================================
+// Scheduled Tasks
+// ==========================================
+
+export function createScheduledTask(task: Omit<ScheduledTask, 'id' | 'created_at' | 'updated_at'>): ScheduledTask {
+  const db = getDb();
+  const id = crypto.randomBytes(8).toString('hex');
+  db.prepare(`INSERT INTO scheduled_tasks (id, name, prompt, schedule_type, schedule_value, next_run, status, priority, notify_on_complete, session_id, working_directory, consecutive_errors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`).run(
+    id, task.name, task.prompt, task.schedule_type, task.schedule_value, task.next_run, task.status || 'active', task.priority || 'normal', task.notify_on_complete ?? 1, task.session_id || null, task.working_directory || null
+  );
+  return getScheduledTask(id)!;
+}
+
+export function getScheduledTask(id: string): ScheduledTask | undefined {
+  const db = getDb();
+  return db.prepare('SELECT * FROM scheduled_tasks WHERE id = ?').get(id) as ScheduledTask | undefined;
+}
+
+export function listScheduledTasks(opts?: { status?: string }): ScheduledTask[] {
+  const db = getDb();
+  if (opts?.status) {
+    return db.prepare('SELECT * FROM scheduled_tasks WHERE status = ? ORDER BY next_run ASC').all(opts.status) as ScheduledTask[];
+  }
+  return db.prepare('SELECT * FROM scheduled_tasks ORDER BY created_at DESC').all() as ScheduledTask[];
+}
+
+export function getDueTasks(): ScheduledTask[] {
+  const db = getDb();
+  return db.prepare("SELECT * FROM scheduled_tasks WHERE next_run <= datetime('now') AND status = 'active' AND (last_status IS NULL OR last_status != 'running')").all() as ScheduledTask[];
+}
+
+export function updateScheduledTask(id: string, updates: Partial<ScheduledTask>): void {
+  const db = getDb();
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  for (const [key, value] of Object.entries(updates)) {
+    if (key === 'id' || key === 'created_at') continue;
+    fields.push(`${key} = ?`);
+    values.push(value);
+  }
+  if (fields.length === 0) return;
+  fields.push("updated_at = datetime('now')");
+  values.push(id);
+  db.prepare(`UPDATE scheduled_tasks SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function insertTaskRunLog(log: { task_id: string; status: string; result?: string; error?: string; duration_ms: number }): void {
+  const db = getDb();
+  const id = crypto.randomBytes(8).toString('hex');
+  db.prepare('INSERT INTO task_run_logs (id, task_id, status, result, error, duration_ms) VALUES (?, ?, ?, ?, ?, ?)').run(
+    id, log.task_id, log.status, log.result || null, log.error || null, log.duration_ms
+  );
+}
+
+export function deleteScheduledTask(id: string): boolean {
+  const db = getDb();
+  const result = db.prepare('DELETE FROM scheduled_tasks WHERE id = ?').run(id);
+  return result.changes > 0;
+}
+
 export function closeDb(): void {
   if (db) {
     try {

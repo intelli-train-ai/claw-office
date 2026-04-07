@@ -22,6 +22,7 @@ interface ElectronInstallAPI {
   start: () => Promise<void>;
   cancel: () => Promise<void>;
   getLogs: () => Promise<string[]>;
+  installGit: () => Promise<{ success: boolean; output?: string; error?: string }>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProgress: (callback: (data: any) => void) => () => void;
 }
@@ -80,7 +81,14 @@ interface ElectronAPI {
   bridge?: {
     isActive: () => Promise<boolean>;
   };
+  proxy?: {
+    resolve: (url: string) => Promise<string>;
+  };
   terminal?: ElectronTerminalAPI;
+  notification?: {
+    show: (options: { title: string; body?: string; onClick?: string }) => Promise<void>;
+    onClick: (listener: (action: string) => void) => () => void;
+  };
 }
 
 declare global {

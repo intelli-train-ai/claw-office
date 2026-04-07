@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import Link from 'next/link';
 import type { Message, MessagesResponse, ChatSession } from '@/types';
 import { ChatView } from '@/components/chat/ChatView';
@@ -24,8 +24,10 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
   const [sessionInfoLoaded, setSessionInfoLoaded] = useState(false);
   const [sessionPermissionProfile, setSessionPermissionProfile] = useState<'default' | 'full_access'>('default');
   const [sessionMode, setSessionMode] = useState<'code' | 'plan'>('code');
-  const { setWorkingDirectory, setSessionId, setSessionTitle: setPanelSessionTitle } = usePanel();
+  const [sessionHasSummary, setSessionHasSummary] = useState(false);
+  const { setWorkingDirectory, setSessionId, setSessionTitle: setPanelSessionTitle, setFileTreeOpen, setGitPanelOpen, setDashboardPanelOpen } = usePanel();
   const { t } = useTranslation();
+  const defaultPanelAppliedRef = useRef(false);
 
   // Load session info and set working directory
   useEffect(() => {
@@ -38,10 +40,10 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
 
     async function loadSession() {
       try {
-        const res = await authFetch(`/api/chat/sessions/${id}`);
+        const sessionRes = await authFetch(`/api/chat/sessions/${id}`);
         if (cancelled) return;
-        if (res.ok) {
-          const data: { session: ChatSession } = await res.json();
+        if (sessionRes.ok) {
+          const data: { session: ChatSession } = await sessionRes.json();
           if (cancelled) return;
           if (data.session.working_directory) {
             setWorkingDirectory(data.session.working_directory);
@@ -51,10 +53,17 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
           setSessionId(id);
           const title = data.session.title || t('chat.newConversation');
           setPanelSessionTitle(title);
-          setSessionModel(data.session.model || '');
-          setSessionProviderId(data.session.provider_id || '');
+
+          // Resolve model: session → global default → provider's first → localStorage → 'sonnet'
+          const { resolveSessionModel } = await import('@/lib/resolve-session-model');
+          if (cancelled) return;
+          const resolved = await resolveSessionModel(data.session.model || '', data.session.provider_id || '');
+          if (cancelled) return;
+          setSessionModel(resolved.model);
+          setSessionProviderId(resolved.providerId);
           setSessionPermissionProfile(data.session.permission_profile || 'default');
           setSessionMode((data.session.mode as 'code' | 'plan') || 'code');
+          setSessionHasSummary(!!data.session.context_summary);
         }
       } catch {
         // Session info load failed - panel will still work without directory
@@ -69,6 +78,7 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
 
   useEffect(() => {
     // Reset state when switching sessions
+    defaultPanelAppliedRef.current = false;
     setLoading(true);
     setError(null);
     setMessages([]);
@@ -104,6 +114,41 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
     return () => { cancelled = true; };
   }, [id]);
 
+  // Auto-open default panel the first time a session is ever opened.
+  // Uses sessionStorage to track which sessions have already been initialized,
+  // so re-opening an untouched (zero-message) session won't override the layout.
+  useEffect(() => {
+    if (defaultPanelAppliedRef.current) return;
+    defaultPanelAppliedRef.current = true;
+
+    const storageKey = `codepilot:panel-init:${id}`;
+    if (typeof window !== 'undefined' && sessionStorage.getItem(storageKey)) return;
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(storageKey, '1');
+    }
+
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/app');
+        if (!res.ok) return;
+        const data = await res.json();
+        const panel = data.settings?.default_panel || 'file_tree';
+        if (panel === 'none') {
+          setFileTreeOpen(false);
+          setGitPanelOpen(false);
+          setDashboardPanelOpen(false);
+        } else {
+          setFileTreeOpen(panel === 'file_tree');
+          setGitPanelOpen(panel === 'git');
+          setDashboardPanelOpen(panel === 'dashboard');
+        }
+      } catch {
+        setFileTreeOpen(true);
+      }
+    })();
+  }, [id, setFileTreeOpen, setGitPanelOpen, setDashboardPanelOpen]);
+
   if (loading || !sessionInfoLoaded) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -127,7 +172,7 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ChatView key={id} sessionId={id} initialMessages={messages} initialHasMore={hasMore} modelName={sessionModel} providerId={sessionProviderId} initialPermissionProfile={sessionPermissionProfile} initialMode={sessionMode} />
+      <ChatView key={id} sessionId={id} initialMessages={messages} initialHasMore={hasMore} modelName={sessionModel} providerId={sessionProviderId} initialPermissionProfile={sessionPermissionProfile} initialMode={sessionMode} initialHasSummary={sessionHasSummary} />
     </div>
   );
 }

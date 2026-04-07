@@ -52,6 +52,7 @@ import { SessionListItem, SplitGroupSection } from "./SessionListItem";
 import { ProjectGroupHeader } from "./ProjectGroupHeader";
 import { FolderPicker } from "@/components/chat/FolderPicker";
 import { useAssistantWorkspace } from "@/hooks/useAssistantWorkspace";
+import { AssistantPromoCard } from "@/components/chat/ChatEmptyState";
 import {
   formatRelativeTime,
   groupSessionsByProject,
@@ -94,6 +95,22 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
   const [hoveredFolder, setHoveredFolder] = useState<string | null>(null);
   const [creatingChat, setCreatingChat] = useState(false);
   const { workspacePath } = useAssistantWorkspace();
+  const [assistantSummary, setAssistantSummary] = useState<{
+    name: string;
+    memoryCount: number;
+    lastHeartbeatDate: string;
+    configured: boolean;
+    buddy?: { emoji: string; buddyName?: string; species?: string };
+  } | null>(null);
+  const [promoDismissed, setPromoDismissed] = useState(false);
+
+  // Reload assistant summary when sessions change (e.g. after onboarding/rename)
+  useEffect(() => {
+    fetch('/api/workspace/summary')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setAssistantSummary(data))
+      .catch(() => {});
+  }, [sessions.length]);
 
   /** Read current model + provider_id from localStorage for new session creation */
   const getCurrentModelAndProvider = useCallback(() => {
@@ -533,6 +550,14 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
             />
           )}
 
+          {/* Assistant promo card for unconfigured users */}
+          {assistantSummary && !assistantSummary.configured && !promoDismissed && (
+            <AssistantPromoCard
+              onSetup={() => router.push('/settings#assistant')}
+              onDismiss={() => setPromoDismissed(true)}
+            />
+          )}
+
           {filteredSessions.length === 0 && (!isSplitActive || splitSessions.length === 0) ? (
             <p className="px-2.5 py-3 text-[11px] text-muted-foreground/60">
               {searchQuery ? "No matching threads" : t('chatList.noSessions')}
@@ -558,6 +583,8 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
               }
               const hiddenCount = group.sessions.length - visibleSessions.length;
 
+              const groupIsWorkspace = !!(workspacePath && group.workingDirectory === workspacePath);
+
               return (
                 <div key={group.workingDirectory || "__no_project"} className="mt-1 first:mt-0">
                   {/* Folder header */}
@@ -566,11 +593,17 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
                     displayName={group.displayName}
                     isCollapsed={isCollapsed}
                     isFolderHovered={isFolderHovered}
-                    isWorkspace={!!(workspacePath && group.workingDirectory === workspacePath)}
+                    isWorkspace={groupIsWorkspace}
                     onToggle={() => toggleProject(group.workingDirectory)}
                     onMouseEnter={() => setHoveredFolder(group.workingDirectory)}
                     onMouseLeave={() => setHoveredFolder(null)}
                     onRemoveProject={handleRemoveProjectClick}
+                    assistantName={assistantSummary?.name}
+                    assistantMemoryCount={assistantSummary?.memoryCount}
+                    lastHeartbeatDate={assistantSummary?.lastHeartbeatDate}
+                    buddyEmoji={assistantSummary?.buddy?.emoji}
+                    buddyName={assistantSummary?.buddy?.buddyName}
+                    buddySpecies={assistantSummary?.buddy?.species}
                   />
 
                   {/* Session items with animated collapse */}
@@ -598,6 +631,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
                                 isSessionStreaming={activeStreamingSessions.has(session.id) || streamingSessionId === session.id}
                                 needsApproval={pendingApprovalSessionIds.has(session.id) || pendingApprovalSessionId === session.id}
                                 canSplit={canSplit}
+                                isWorkspace={groupIsWorkspace}
                                 formatRelativeTime={formatRelativeTime}
                                 t={t}
                                 onMouseEnter={() => setHoveredSession(session.id)}

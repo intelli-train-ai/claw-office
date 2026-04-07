@@ -1,20 +1,25 @@
-## CodePilot v0.43.1
+## CodePilot v0.45.1
 
-> v0.43.0 热修复：修复可视化组件流式输出时中文显示为乱码、看板刷新按钮对 CLI 数据源不生效的问题。
+> 新增默认侧边面板设置、小米 MiMo Token Plan 渠道，以及 Buddy 头像本地化等修复。
+
+### 新增功能
+
+- 新增「默认侧边面板」设置：可选择新对话时自动打开文件树、看板、Git 或不打开
+- 新增小米 MiMo Token Plan 服务商预设，支持订阅套餐方式使用
 
 ### 修复问题
 
-- 修复可视化组件在流式输出时中文字符显示为 `\uXXXX` 转义码的问题
-- 修复看板刷新按钮对 CLI 数据源类型的组件不生效的问题
+- 修复 Buddy 头像在部分网络环境下无法加载的问题（图片改为本地打包）
+- 修复 Windows 安装包下载链接指向错误文件名的问题
 
 ## 下载地址
 
 ### macOS
-- [Apple Silicon (M1/M2/M3/M4)](https://github.com/op7418/CodePilot/releases/download/v0.43.1/CodePilot-0.43.1-arm64.dmg)
-- [Intel](https://github.com/op7418/CodePilot/releases/download/v0.43.1/CodePilot-0.43.1-x64.dmg)
+- [Apple Silicon (M1/M2/M3/M4)](https://github.com/op7418/CodePilot/releases/download/v0.45.1/CodePilot-0.45.1-arm64.dmg)
+- [Intel](https://github.com/op7418/CodePilot/releases/download/v0.45.1/CodePilot-0.45.1-x64.dmg)
 
 ### Windows
-- [Windows 安装包](https://github.com/op7418/CodePilot/releases/download/v0.43.1/CodePilot-Setup-0.43.1.exe)
+- [Windows 安装包](https://github.com/op7418/CodePilot/releases/download/v0.45.1/CodePilot.Setup.0.45.1.exe)
 
 ## 安装说明
 

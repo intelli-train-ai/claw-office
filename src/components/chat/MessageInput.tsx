@@ -31,6 +31,7 @@ import { useCommandBadge } from '@/hooks/useCommandBadge';
 import { useCliToolsFetch } from '@/hooks/useCliToolsFetch';
 import { useSlashCommands } from '@/hooks/useSlashCommands';
 import { resolveKeyAction, cycleIndex, resolveDirectSlash, dispatchBadge, buildCliAppend } from '@/lib/message-input-logic';
+import { QuickActions } from './QuickActions';
 
 interface MessageInputProps {
   onSend: (content: string, files?: FileAttachment[], systemPromptAppend?: string, displayOverride?: string) => void;
@@ -52,6 +53,10 @@ interface MessageInputProps {
   sdkInitMeta?: { tools?: unknown; slash_commands?: unknown; skills?: unknown } | null;
   /** Initial value to prefill in the input */
   initialValue?: string;
+  /** Whether this session is an assistant workspace project */
+  isAssistantProject?: boolean;
+  /** Whether the session already has messages */
+  hasMessages?: boolean;
 }
 
 export function MessageInput({
@@ -71,6 +76,8 @@ export function MessageInput({
   onEffortChange,
   sdkInitMeta,
   initialValue,
+  isAssistantProject,
+  hasMessages,
 }: MessageInputProps) {
   const { t, locale } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -350,6 +357,17 @@ export function MessageInput({
               onFocusTextarea={() => textareaRef.current?.focus()}
             />
           )}
+
+          {/* Quick Actions — memory-driven suggestion chips */}
+          <QuickActions
+            isAssistantProject={!!isAssistantProject}
+            hasMessages={!!hasMessages}
+            onAction={(text) => {
+              onSend(text);
+              // Clear input after send to avoid stale text
+              setInputValue('');
+            }}
+          />
 
           {/* PromptInput replaces the old input area */}
           <PromptInput

@@ -14,6 +14,13 @@ interface TerminalInstanceProps {
  * Uses ansi-to-react for ANSI escape code rendering.
  * xterm.js integration can be added later for full terminal emulation.
  */
+/** Hard cap on terminal output characters (~500 KB). Oldest output is discarded. */
+const MAX_OUTPUT_CHARS = 500_000;
+
+function truncateOutput(text: string): string {
+  return text.length > MAX_OUTPUT_CHARS ? text.slice(-MAX_OUTPUT_CHARS) : text;
+}
+
 export function TerminalInstance({ terminal }: TerminalInstanceProps) {
   const { isElectron, connected, exited, create, write, setOnData } = terminal;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -25,6 +32,7 @@ export function TerminalInstance({ terminal }: TerminalInstanceProps) {
   // Flush buffered output via rAF to avoid excessive re-renders
   const flush = useCallback(() => {
     rafRef.current = null;
+    bufferRef.current = truncateOutput(bufferRef.current);
     setOutput(bufferRef.current);
   }, []);
 

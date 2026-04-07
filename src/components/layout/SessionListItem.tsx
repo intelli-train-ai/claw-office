@@ -31,6 +31,8 @@ interface SessionListItemProps {
   isSessionStreaming: boolean;
   needsApproval: boolean;
   canSplit: boolean;
+  /** Whether this session belongs to the assistant workspace */
+  isWorkspace?: boolean;
   formatRelativeTime: (dateStr: string, t: (key: TranslationKey, params?: Record<string, string | number>) => string) => string;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
   onMouseEnter: () => void;
@@ -48,6 +50,7 @@ export function SessionListItem({
   isSessionStreaming,
   needsApproval,
   canSplit,
+  isWorkspace,
   formatRelativeTime,
   t,
   onMouseEnter,
@@ -68,10 +71,14 @@ export function SessionListItem({
       <Link
         href={`/chat/${session.id}`}
         className={cn(
-          "flex items-center gap-1.5 rounded-md pl-2 pr-2 py-2 transition-all duration-150 min-w-0",
-          isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-sidebar-foreground hover:bg-accent/50"
+          "flex items-center gap-1.5 rounded-md pl-2 pr-2 py-1.5 transition-all duration-150 min-w-0",
+          isWorkspace
+            ? isActive
+              ? "bg-primary/[0.12] text-sidebar-accent-foreground"
+              : "text-sidebar-foreground hover:bg-primary/[0.06]"
+            : isActive
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground hover:bg-accent/50"
         )}
       >
         {/* Left icon area — streaming/approval indicators */}

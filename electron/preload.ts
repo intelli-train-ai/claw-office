@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     start: () => ipcRenderer.invoke('install:start'),
     cancel: () => ipcRenderer.invoke('install:cancel'),
     getLogs: () => ipcRenderer.invoke('install:get-logs'),
+    installGit: () => ipcRenderer.invoke('install:git'),
     onProgress: (callback: (data: unknown) => void) => {
       const listener = (_event: unknown, data: unknown) => callback(data);
       ipcRenderer.on('install:progress', listener);
@@ -28,6 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   bridge: {
     isActive: () => ipcRenderer.invoke('bridge:is-active'),
+  },
+  proxy: {
+    resolve: (url: string) => ipcRenderer.invoke('proxy:resolve', url),
   },
   widget: {
     exportPng: (html: string, width: number, isDark: boolean) =>
@@ -55,6 +59,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const listener = (_event: unknown, data: { id: string; code: number }) => callback(data);
       ipcRenderer.on('terminal:exit', listener);
       return () => { ipcRenderer.removeListener('terminal:exit', listener); };
+    },
+  },
+  notification: {
+    show: (options: { title: string; body: string; onClick?: unknown }) =>
+      ipcRenderer.invoke('notification:show', options),
+    onClick: (callback: (action: { type: string; payload: string }) => void) => {
+      const listener = (_event: unknown, action: { type: string; payload: string }) => callback(action);
+      ipcRenderer.on('notification:click', listener);
+      return () => { ipcRenderer.removeListener('notification:click', listener); };
     },
   },
 });

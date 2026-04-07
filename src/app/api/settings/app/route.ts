@@ -16,6 +16,7 @@ const ALLOWED_KEYS = [
   'thinking_mode',
   'theme_mode',
   'theme_family',
+  'default_panel',
 ];
 
 export async function GET(request: NextRequest) {

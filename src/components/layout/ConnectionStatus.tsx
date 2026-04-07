@@ -26,6 +26,9 @@ interface ClaudeInstallInfo {
 interface ClaudeStatus {
   connected: boolean;
   version: string | null;
+  latestVersion?: string | null;
+  updateAvailable?: boolean;
+  manualUpdateChannel?: boolean;
   binaryPath?: string | null;
   installType?: string | null;
   otherInstalls?: ClaudeInstallInfo[];
@@ -37,11 +40,18 @@ const BASE_INTERVAL = 30_000; // 30s
 const BACKED_OFF_INTERVAL = 60_000; // 60s after 3 consecutive stable results
 const STABLE_THRESHOLD = 3;
 
+/** Extract pure semver from strings like "2.1.90 (Claude Code)" → "2.1.90" */
+function extractVersion(v: string): string {
+  const match = v.match(/(\d+\.\d+\.\d+)/);
+  return match ? match[1] : v;
+}
+
 const INSTALL_TYPE_LABELS: Record<string, string> = {
   native: "Native",
   homebrew: "Homebrew",
   npm: "npm (deprecated)",
   bun: "bun",
+  winget: "WinGet",
   unknown: "Unknown",
 };
 
@@ -59,6 +69,10 @@ export function ConnectionStatus() {
   const [status, setStatus] = useState<ClaudeStatus | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; output: string; error?: string } | null>(null);
+  const [installingGit, setInstallingGit] = useState(false);
+  const [gitInstallResult, setGitInstallResult] = useState<{ success: boolean; error?: string } | null>(null);
 
   const isElectron =
     typeof window !== "undefined" &&
@@ -109,7 +123,7 @@ export function ConnectionStatus() {
   }, [checkStatus]);
 
   useEffect(() => {
-    checkStatus(); // eslint-disable-line react-hooks/set-state-in-effect -- setState is called asynchronously after fetch
+    checkStatus();  
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
@@ -154,10 +168,58 @@ export function ConnectionStatus() {
     }
   }, []);
 
+  const handleInstallGit = useCallback(async () => {
+    if (!window.electronAPI?.install?.installGit) return;
+    setInstallingGit(true);
+    setGitInstallResult(null);
+    try {
+      const result = await window.electronAPI.install.installGit();
+      setGitInstallResult(result);
+      if (result.success) {
+        // Refresh status to pick up newly installed Git
+        try { await fetch('/api/claude-status/invalidate', { method: 'POST' }); } catch { /* best-effort */ }
+        stableCountRef.current = 0;
+        checkStatus();
+      }
+    } catch (err) {
+      setGitInstallResult({ success: false, error: String(err) });
+    } finally {
+      setInstallingGit(false);
+    }
+  }, [checkStatus]);
+
+  const handleUpgrade = useCallback(async () => {
+    if (!status?.installType) return;
+    setUpgrading(true);
+    setUpgradeResult(null);
+    try {
+      const res = await fetch('/api/claude-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ installType: status.installType }),
+      });
+      const data = await res.json();
+      setUpgradeResult(data);
+      if (data.success) {
+        // Invalidate cache and refresh status
+        try { await fetch('/api/claude-status/invalidate', { method: 'POST' }); } catch { /* best-effort */ }
+        stableCountRef.current = 0;
+        checkStatus();
+      }
+    } catch (err) {
+      setUpgradeResult({ success: false, output: '', error: String(err) });
+    } finally {
+      setUpgrading(false);
+    }
+  }, [status?.installType, checkStatus]);
+
   const connected = status?.connected ?? false;
   const hasConflicts = (status?.otherInstalls?.length ?? 0) > 0;
   const missingGit = status?.missingGit ?? false;
-  const hasWarnings = hasConflicts || missingGit;
+  const updateAvailable = status?.updateAvailable ?? false;
+  const manualUpdateChannel = status?.manualUpdateChannel ?? false;
+  const showUpgrade = updateAvailable || manualUpdateChannel;
+  const hasWarnings = hasConflicts || missingGit || updateAvailable;
 
   return (
     <>
@@ -170,9 +232,11 @@ export function ConnectionStatus() {
           status === null
             ? "bg-muted text-muted-foreground"
             : connected
-              ? hasWarnings
-                ? "bg-status-warning-muted text-status-warning-foreground"
-                : "bg-status-success-muted text-status-success-foreground"
+              ? missingGit
+                ? "bg-status-error-muted text-status-error-foreground"
+                : hasWarnings
+                  ? "bg-status-warning-muted text-status-warning-foreground"
+                  : "bg-status-success-muted text-status-success-foreground"
               : "bg-status-error-muted text-status-error-foreground"
         )}
       >
@@ -182,9 +246,11 @@ export function ConnectionStatus() {
             status === null
               ? "bg-muted-foreground/40"
               : connected
-                ? hasWarnings
-                  ? "bg-status-warning"
-                  : "bg-status-success"
+                ? missingGit
+                  ? "bg-status-error"
+                  : hasWarnings
+                    ? "bg-status-warning"
+                    : "bg-status-success"
                 : "bg-status-error"
           )}
         />
@@ -193,9 +259,11 @@ export function ConnectionStatus() {
           : connected
             ? missingGit
               ? t('connection.missingGit')
-              : hasConflicts
-                ? t('connection.conflict')
-                : t('connection.connected')
+              : updateAvailable
+                ? t('connection.updateAvailable')
+                : hasConflicts
+                  ? t('connection.conflict')
+                  : t('connection.connected')
             : t('connection.disconnected')}
       </Button>
 
@@ -213,19 +281,29 @@ export function ConnectionStatus() {
               {connected
                 ? missingGit
                   ? t('connection.missingGitDesc')
-                  : `Claude Code CLI v${status?.version} is running and ready.`
-                : "Claude Code CLI is required to use this application."}
+                  : t('connection.readyDesc', { version: status?.version ?? '' })
+                : t('connection.requiredDesc')}
             </DialogDescription>
           </DialogHeader>
 
           {connected ? (
             <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3 rounded-lg bg-status-success-muted px-4 py-3">
-                <span className="block h-2.5 w-2.5 shrink-0 rounded-full bg-status-success" />
-                <div>
-                  <p className="font-medium text-status-success-foreground">Active</p>
+              <div className={cn(
+                "flex items-center gap-3 rounded-lg px-4 py-3",
+                updateAvailable ? "bg-status-warning-muted" : "bg-status-success-muted"
+              )}>
+                <span className={cn(
+                  "block h-2.5 w-2.5 shrink-0 rounded-full",
+                  updateAvailable ? "bg-status-warning" : "bg-status-success"
+                )} />
+                <div className="flex-1 min-w-0">
+                  <p className={cn("font-medium", updateAvailable ? "text-status-warning-foreground" : "text-status-success-foreground")}>
+                    {updateAvailable ? t('connection.updateAvailable') : t('connection.active')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {t('connection.version', { version: status?.version ?? '' })}
+                    {updateAvailable && status?.latestVersion
+                      ? t('connection.versionCompare', { current: extractVersion(status?.version ?? ''), latest: extractVersion(status.latestVersion) })
+                      : t('connection.version', { version: status?.version ?? '' })}
                     {status?.installType && ` (${INSTALL_TYPE_LABELS[status.installType] || status.installType})`}
                   </p>
                   {status?.binaryPath && (
@@ -233,6 +311,39 @@ export function ConnectionStatus() {
                   )}
                 </div>
               </div>
+
+              {/* Upgrade section — shown for npm/bun (confirmed update) or homebrew/winget (manual channel) */}
+              {showUpgrade && (
+                <div className="space-y-2">
+                  {!updateAvailable && manualUpdateChannel && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('connection.manualUpdateHint')}
+                    </p>
+                  )}
+                  {upgradeResult ? (
+                    <div className={cn(
+                      "rounded-lg px-4 py-3 text-xs",
+                      upgradeResult.success ? "bg-status-success-muted text-status-success-foreground" : "bg-status-error-muted text-status-error-foreground"
+                    )}>
+                      <p className="font-medium">
+                        {upgradeResult.success ? t('connection.upgradeSuccess') : t('connection.upgradeFailed')}
+                      </p>
+                      {!upgradeResult.success && upgradeResult.output && (
+                        <pre className="mt-1 whitespace-pre-wrap text-muted-foreground">{upgradeResult.output}</pre>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleUpgrade}
+                      disabled={upgrading}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {upgrading ? t('connection.upgrading') : t(updateAvailable ? 'connection.upgradeButton' : 'connection.checkUpgrade')}
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* Conflict warning */}
               {hasConflicts && (
@@ -262,22 +373,56 @@ export function ConnectionStatus() {
                 </div>
               )}
 
-              {/* Git Bash missing warning (Windows only) */}
+              {/* Git Bash missing — critical on Windows, causes exit code 1 */}
               {missingGit && (
-                <div className="rounded-lg bg-status-warning-muted px-4 py-3 space-y-2">
+                <div className="rounded-lg bg-status-error-muted px-4 py-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <Warning size={16} className="text-status-warning-foreground shrink-0" />
-                    <p className="font-medium text-status-warning-foreground text-xs">
+                    <Warning size={16} className="text-status-error-foreground shrink-0" />
+                    <p className="font-medium text-status-error-foreground text-xs">
                       {t('connection.missingGitTitle')}
                     </p>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <ol className="list-decimal list-inside space-y-0.5">
-                      <li>{t('install.gitStep1')}</li>
-                      <li>{t('install.gitStep2')}</li>
-                      <li>{t('install.gitStep3')}</li>
-                    </ol>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('connection.missingGitDesc')}
+                  </p>
+                  {gitInstallResult ? (
+                    <div className={cn(
+                      "rounded-md px-3 py-2 text-xs",
+                      gitInstallResult.success ? "bg-status-success-muted text-status-success-foreground" : "bg-muted text-muted-foreground"
+                    )}>
+                      <p className="font-medium">
+                        {gitInstallResult.success ? t('connection.gitInstallSuccess') : t('connection.gitInstallFailed')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      {isElectron && (
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleInstallGit}
+                          disabled={installingGit}
+                        >
+                          {installingGit ? t('connection.gitInstalling') : t('connection.installGit')}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={isElectron ? "" : "flex-1"}
+                        onClick={() => window.open('https://git-scm.com/downloads/win', '_blank')}
+                      >
+                        {t('connection.downloadGit')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleManualRefresh}
+                      >
+                        {t('connection.recheck')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -285,7 +430,7 @@ export function ConnectionStatus() {
             <div className="space-y-4 text-sm">
               <div className="flex items-center gap-3 rounded-lg bg-status-error-muted px-4 py-3">
                 <span className="block h-2.5 w-2.5 shrink-0 rounded-full bg-status-error" />
-                <p className="font-medium text-status-error-foreground">Not detected</p>
+                <p className="font-medium text-status-error-foreground">{t('connection.notDetected')}</p>
               </div>
 
               <div>

@@ -6,6 +6,7 @@ import {
   clearSnapshot,
 } from '@/lib/stream-session-manager';
 import { authFetch } from '@/lib/api-client';
+import { transferPendingToMessage } from '@/lib/image-ref-store';
 
 interface UseStreamSubscriptionOpts {
   sessionId: string;
@@ -13,6 +14,8 @@ interface UseStreamSubscriptionOpts {
   setStreamingSessionId: (id: string) => void;
   setPendingApprovalSessionId: (id: string) => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  /** Called after a stream completes. Phase indicates how it ended. */
+  onStreamCompleted?: (phase: string) => void;
 }
 
 export function useStreamSubscription({
@@ -21,6 +24,7 @@ export function useStreamSubscription({
   setStreamingSessionId,
   setPendingApprovalSessionId,
   setMessages,
+  onStreamCompleted,
 }: UseStreamSubscriptionOpts): void {
   useEffect(() => {
     // Restore snapshot if stream is already active (e.g., user switched away and back)
@@ -33,28 +37,45 @@ export function useStreamSubscription({
       if (existing.pendingPermission && !existing.permissionResolved) {
         setPendingApprovalSessionId(sessionId);
       }
-      // If stream completed while this ChatView was unmounted, consume finalMessageContent now.
-      // Re-fetch messages from DB to avoid duplicates (backend already persisted the reply).
+      // If stream finished while this ChatView was unmounted, consume finalMessageContent now.
       if (existing.phase !== 'active' && existing.finalMessageContent) {
-        authFetch(`/api/chat/sessions/${sessionId}/messages?limit=50`)
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (data?.messages) {
-              setMessages(data.messages);
-            }
-          })
-          .catch(() => {
-            // Fallback: append locally if DB fetch fails
-            const assistantMessage: Message = {
-              id: 'temp-assistant-' + Date.now(),
-              session_id: sessionId,
-              role: 'assistant',
-              content: existing.finalMessageContent!,
-              created_at: new Date().toISOString(),
-              token_usage: existing.tokenUsage ? JSON.stringify(existing.tokenUsage) : null,
-            };
-            setMessages((prev) => [...prev, assistantMessage]);
-          });
+        if (existing.phase === 'completed') {
+          // Normal completion — both messages are persisted. Re-fetch from DB
+          // to get canonical state and avoid duplicating the temp assistant message.
+          authFetch(`/api/chat/sessions/${sessionId}/messages?limit=50`)
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (data?.messages) {
+                setMessages(data.messages);
+              }
+            })
+            .catch(() => {
+              // Fallback: append locally if DB fetch fails
+              const assistantMessage: Message = {
+                id: 'temp-assistant-' + Date.now(),
+                session_id: sessionId,
+                role: 'assistant',
+                content: existing.finalMessageContent!,
+                created_at: new Date().toISOString(),
+                token_usage: existing.tokenUsage ? JSON.stringify(existing.tokenUsage) : null,
+              };
+              transferPendingToMessage(assistantMessage.id);
+              setMessages((prev) => [...prev, assistantMessage]);
+            });
+        } else {
+          // Error/stopped/idle-timeout — partial output may not be persisted yet.
+          // Append locally to preserve the content the user saw before unmount.
+          const assistantMessage: Message = {
+            id: 'temp-assistant-' + Date.now(),
+            session_id: sessionId,
+            role: 'assistant',
+            content: existing.finalMessageContent!,
+            created_at: new Date().toISOString(),
+            token_usage: existing.tokenUsage ? JSON.stringify(existing.tokenUsage) : null,
+          };
+          transferPendingToMessage(assistantMessage.id);
+          setMessages((prev) => [...prev, assistantMessage]);
+        }
         clearSnapshot(sessionId);
       }
     } else {
@@ -96,6 +117,10 @@ export function useStreamSubscription({
 
         // Clear the snapshot from the manager since we've consumed it
         clearSnapshot(sessionId);
+
+        // Signal stream completion with the final phase so the caller can
+        // decide whether DB reconciliation is safe (only on success).
+        onStreamCompleted?.(event.snapshot.phase);
       }
     });
 
@@ -103,5 +128,5 @@ export function useStreamSubscription({
       unsubscribe();
       // Do NOT abort — stream continues in the manager
     };
-  }, [sessionId, setStreamingSessionId, setPendingApprovalSessionId, setStreamSnapshot, setMessages]);
+  }, [sessionId, setStreamingSessionId, setPendingApprovalSessionId, setStreamSnapshot, setMessages, onStreamCompleted]);
 }

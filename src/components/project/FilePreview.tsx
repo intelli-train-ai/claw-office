@@ -212,7 +212,9 @@ export function FilePreview({ filePath, onBack }: FilePreviewProps) {
             {preview.language}
           </Badge>
           <span className="text-[10px] text-muted-foreground">
-            {t('filePreview.lines', { count: preview.line_count })}
+            {preview.line_count_exact === false
+              ? t('filePreview.linesApprox', { count: preview.line_count })
+              : t('filePreview.lines', { count: preview.line_count })}
           </span>
         </div>
       )}

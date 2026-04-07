@@ -7,7 +7,7 @@ import type {
   HighlighterGeneric,
   ThemedToken,
 } from "shiki";
-import { bundledLanguages } from "shiki";
+import { LRUMap } from "@/lib/lru-map";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -160,14 +160,14 @@ const CodeBlockContext = createContext<CodeBlockContextType>({
   language: "text",
 });
 
-// Highlighter cache keyed by "lang:lightTheme:darkTheme"
-const highlighterCache = new Map<
+// Highlighter cache keyed by "lang:lightTheme:darkTheme" — bounded to 10 entries
+const highlighterCache = new LRUMap<
   string,
   Promise<HighlighterGeneric<BundledLanguage, BundledTheme>>
->();
+>(10);
 
-// Token cache
-const tokensCache = new Map<string, TokenizedCode>();
+// Token cache — bounded to 200 entries
+const tokensCache = new LRUMap<string, TokenizedCode>(200);
 
 // Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
@@ -178,14 +178,31 @@ const getTokensCacheKey = (code: string, language: BundledLanguage, lightTheme: 
   return `${language}:${lightTheme}:${darkTheme}:${code.length}:${start}:${end}`;
 };
 
-const isBundledLanguage = (lang: string): lang is BundledLanguage =>
-  lang in bundledLanguages || lang === "text" || lang === "plaintext";
+// Lazy-loaded bundledLanguages to avoid eager import of the full shiki module
+let _bundledLanguages: Record<string, unknown> | null = null;
+async function loadBundledLanguages(): Promise<Record<string, unknown>> {
+  if (!_bundledLanguages) {
+    const mod = await import("shiki");
+    _bundledLanguages = mod.bundledLanguages as Record<string, unknown>;
+  }
+  return _bundledLanguages;
+}
+
+const isBundledLanguage = (lang: string): lang is BundledLanguage => {
+  // Synchronous check: if languages haven't been loaded yet, accept the lang
+  // and let getHighlighter handle the fallback.
+  if (!_bundledLanguages) return true;
+  return lang in _bundledLanguages || lang === "text" || lang === "plaintext";
+};
 
 const getHighlighter = (
   language: BundledLanguage,
   lightTheme: BundledTheme = SHIKI_DEFAULT_LIGHT,
   darkTheme: BundledTheme = SHIKI_DEFAULT_DARK,
 ): Promise<HighlighterGeneric<BundledLanguage, BundledTheme>> => {
+  // Kick off lazy load of bundledLanguages (fire-and-forget, resolves for future calls)
+  loadBundledLanguages().catch(() => {});
+
   // Normalize unknown languages to "text" before hitting Shiki
   const safeLang = isBundledLanguage(language) ? language : ("text" as BundledLanguage);
   const cacheKey = `${safeLang}:${lightTheme}:${darkTheme}`;

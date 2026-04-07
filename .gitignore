@@ -54,6 +54,9 @@ next-env.d.ts
 # user uploads (runtime data)
 .codepilot-uploads/
 
+# local runtime artifacts
+.codepilot/
+
 # monorepo: site app build artifacts
 apps/site/.next/
 apps/site/.source/

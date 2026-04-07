@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, CaretDown, CaretUp, PushPin, DownloadSimple } from "@/components/ui/icon";
 import { FileAttachmentDisplay } from './FileAttachmentDisplay';
 import { WidgetRenderer } from './WidgetRenderer';
+import { buildReferenceImages } from '@/lib/image-ref-store';
+import { SPECIES_IMAGE_URL, EGG_IMAGE_URL, RARITY_BG_GRADIENT, type Species, type Rarity } from '@/lib/buddy';
 import { parseDBDate } from '@/lib/utils';
 import { usePanel } from '@/hooks/usePanel';
 import type { PlannerOutput } from '@/types';
@@ -316,6 +318,10 @@ function extractTruncatedWidget(fenceBody: string): ShowWidgetData | null {
 interface MessageItemProps {
   message: Message;
   sessionId?: string;
+  /** Whether this is an assistant workspace project */
+  isAssistantProject?: boolean;
+  /** Assistant name for avatar */
+  assistantName?: string;
 }
 
 interface ToolBlock {
@@ -513,7 +519,7 @@ function TokenUsageDisplay({ usage }: { usage: TokenUsage }) {
 
 const COLLAPSE_HEIGHT = 300;
 
-export const MessageItem = memo(function MessageItem({ message, sessionId }: MessageItemProps) {
+export const MessageItem = memo(function MessageItem({ message, sessionId, isAssistantProject, assistantName }: MessageItemProps) {
   const isUser = message.role === 'user';
 
   // Collapse/expand state for long user messages (hooks must be called unconditionally)
@@ -563,7 +569,22 @@ export const MessageItem = memo(function MessageItem({ message, sessionId }: Mes
     minute: '2-digit',
   });
 
+  const showAssistantAvatar = !isUser && isAssistantProject;
+  const buddyInfo = isAssistantProject ? (globalThis as Record<string, unknown>).__codepilot_buddy_info__ as { emoji?: string; species?: string; rarity?: string } | undefined : undefined;
+
   return (
+    <div className={showAssistantAvatar ? 'flex gap-2.5 items-start' : ''}>
+      {showAssistantAvatar && (
+        buddyInfo?.species
+          ? <img
+              src={SPECIES_IMAGE_URL[buddyInfo.species as Species] || ''}
+              alt="" width={28} height={28}
+              className="mt-0.5 shrink-0 rounded-lg"
+              style={{ background: RARITY_BG_GRADIENT[buddyInfo.rarity as Rarity] || '' }}
+            />
+          : <img src={EGG_IMAGE_URL} alt="egg" width={28} height={28} className="mt-0.5 shrink-0" />
+      )}
+      <div className="flex-1 min-w-0">
     <AIMessage from={isUser ? 'user' : 'assistant'}>
       <MessageContent>
         {/* File attachments for user messages */}
@@ -641,6 +662,8 @@ export const MessageItem = memo(function MessageItem({ message, sessionId }: Mes
         {displayText && <CopyButton text={displayText} />}
       </div>
     </AIMessage>
+      </div>
+    </div>
   );
 });
 

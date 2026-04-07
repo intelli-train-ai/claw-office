@@ -22,6 +22,8 @@ export interface ChatSession {
   runtime_updated_at: string;
   runtime_error: string;
   permission_profile?: 'default' | 'full_access';
+  context_summary?: string;
+  context_summary_updated_at?: string;
 }
 
 // ==========================================
@@ -49,6 +51,8 @@ export interface FilePreview {
   content: string;
   language: string;
   line_count: number;
+  /** When true, line_count is exact; when false it is a best-effort estimate. */
+  line_count_exact: boolean;
 }
 
 // ==========================================
@@ -133,6 +137,7 @@ export interface Message {
   content: string; // JSON string of MessageContentBlock[] for structured content
   created_at: string;
   token_usage: string | null; // JSON string of TokenUsage
+  is_heartbeat_ack?: number; // 1 = heartbeat ack (prunable from transcript), 0 = normal
 }
 
 // Media content block (MCP-compatible: image/audio/video in tool results)
@@ -597,13 +602,26 @@ export interface SetupState {
 
 export interface AssistantWorkspaceState {
   onboardingComplete: boolean;
-  lastCheckInDate: string | null;
+  /** @deprecated Use lastHeartbeatDate instead */
+  lastCheckInDate?: string | null;
+  lastHeartbeatDate: string | null;
+  lastHeartbeatText?: string;
+  lastHeartbeatSentAt?: number;
+  /** @deprecated Use heartbeatEnabled instead */
+  dailyCheckInEnabled?: boolean;
+  heartbeatEnabled: boolean;
   schemaVersion: number;
   hookTriggeredSessionId?: string;
-  /** ISO timestamp when hookTriggeredSessionId was set — used for staleness detection */
   hookTriggeredAt?: string;
-  /** When false, daily check-in auto-trigger is disabled (default: true) */
-  dailyCheckInEnabled?: boolean;
+  buddy?: {
+    species: string;
+    rarity: string;
+    stats: Record<string, number>;
+    emoji: string;
+    peakStat: string;
+    hatchedAt: string;
+    buddyName?: string;
+  };
 }
 
 export interface AssistantWorkspaceFiles {
@@ -614,10 +632,8 @@ export interface AssistantWorkspaceFiles {
 }
 
 export interface AssistantWorkspaceFilesV2 extends AssistantWorkspaceFiles {
-  dailyMemories?: string[];
-  rootReadme?: string;
-  rootPath?: string;
   rootDir?: string;
+  heartbeatMd?: string;
 }
 
 // ==========================================
@@ -633,7 +649,9 @@ export interface WorkspaceInspectResult {
   workspaceStatus: 'empty' | 'normal_directory' | 'existing_workspace' | 'partial_workspace' | 'invalid';
   summary?: {
     onboardingComplete: boolean;
-    lastCheckInDate: string | null;
+    lastHeartbeatDate: string | null;
+    /** @deprecated Use lastHeartbeatDate instead */
+    lastCheckInDate?: string | null;
     fileCount: number;
   };
 }
@@ -1004,6 +1022,10 @@ export interface ClaudeStreamOptions {
   sessionProviderId?: string;
   /** Recent conversation history from DB — used as fallback context when SDK resume is unavailable or fails */
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  /** Compressed session summary — used as context skeleton in fallback mode */
+  sessionSummary?: string;
+  /** Token budget for fallback history — messages beyond this budget are truncated */
+  fallbackTokenBudget?: number;
   onRuntimeStatusChange?: (status: string) => void;
   /** Per-session bypass: when true, skip all permission checks for this session */
   bypassPermissions?: boolean;
@@ -1192,4 +1214,30 @@ export interface WeixinContextTokenRecord {
   peerUserId: string;
   contextToken: string;
   updatedAt: string;
+}
+
+// ==========================================
+// Scheduled Tasks
+// ==========================================
+
+export interface ScheduledTask {
+  id: string;
+  name: string;
+  prompt: string;
+  schedule_type: 'cron' | 'interval' | 'once';
+  schedule_value: string;
+  next_run: string;
+  last_run?: string;
+  last_status?: 'success' | 'error' | 'skipped' | 'running';
+  last_error?: string;
+  last_result?: string;
+  consecutive_errors: number;
+  status: 'active' | 'paused' | 'completed' | 'disabled';
+  priority: 'low' | 'normal' | 'urgent';
+  notify_on_complete: number;
+  session_id?: string;
+  working_directory?: string;
+  permanent: number;
+  created_at: string;
+  updated_at: string;
 }

@@ -13,6 +13,8 @@ import {
 interface ContextUsageIndicatorProps {
   messages: Message[];
   modelName: string;
+  context1m?: boolean;
+  hasSummary?: boolean;
 }
 
 function formatTokens(n: number): string {
@@ -20,9 +22,9 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
-export function ContextUsageIndicator({ messages, modelName }: ContextUsageIndicatorProps) {
+export function ContextUsageIndicator({ messages, modelName, context1m, hasSummary }: ContextUsageIndicatorProps) {
   const { t } = useTranslation();
-  const usage = useContextUsage(messages, modelName);
+  const usage = useContextUsage(messages, modelName, { context1m, hasSummary });
 
   const size = 16;
   const strokeWidth = 2.5;
@@ -30,11 +32,11 @@ export function ContextUsageIndicator({ messages, modelName }: ContextUsageIndic
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - usage.ratio * circumference;
 
-  // Color based on usage ratio — used portion is dark gray by default
+  // Color based on context state
   let strokeColor = 'text-muted-foreground';
   if (usage.hasData) {
-    if (usage.ratio > 0.8) strokeColor = 'text-status-error-foreground';
-    else if (usage.ratio > 0.6) strokeColor = 'text-status-warning-foreground';
+    if (usage.state === 'critical') strokeColor = 'text-status-error-foreground';
+    else if (usage.state === 'warning') strokeColor = 'text-status-warning-foreground';
     else strokeColor = 'text-zinc-600 dark:text-zinc-400';
   }
 
@@ -91,10 +93,20 @@ export function ContextUsageIndicator({ messages, modelName }: ContextUsageIndic
               </span>
             </div>
             {usage.contextWindow && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('context.percentage')}</span>
-                <span className="font-medium">{(usage.ratio * 100).toFixed(1)}%</span>
-              </div>
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('context.percentage')}</span>
+                  <span className="font-medium">{(usage.ratio * 100).toFixed(1)}%</span>
+                </div>
+                {usage.estimatedNextTurn > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('context.nextEstimate')}</span>
+                    <span className={`font-medium ${usage.estimatedNextRatio >= 0.8 ? 'text-status-warning-foreground' : ''}`}>
+                      ~{formatTokens(usage.estimatedNextTurn)} ({(usage.estimatedNextRatio * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                )}
+              </>
             )}
             <div className="border-t border-border pt-1.5 mt-1.5 space-y-1">
               <div className="flex justify-between">
@@ -110,6 +122,17 @@ export function ContextUsageIndicator({ messages, modelName }: ContextUsageIndic
                 <span>{formatTokens(usage.outputTokens)}</span>
               </div>
             </div>
+            {usage.hasSummary && (
+              <div className="flex justify-between border-t border-border pt-1.5 mt-1.5">
+                <span className="text-muted-foreground">{t('context.summary')}</span>
+                <span className="text-green-600 dark:text-green-400">{t('context.summaryActive')}</span>
+              </div>
+            )}
+            {usage.state !== 'normal' && (
+              <p className="text-[10px] pt-1 border-t border-border text-status-warning-foreground">
+                {usage.state === 'critical' ? t('context.criticalHint') : t('context.warningHint')}
+              </p>
+            )}
             <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
               {t('context.estimate')}
             </p>

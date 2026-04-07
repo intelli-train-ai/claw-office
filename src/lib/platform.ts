@@ -92,7 +92,7 @@ export function getExtraPathDirs(): string[] {
 /**
  * Classify a Claude CLI binary path by installation method.
  */
-export type ClaudeInstallType = 'native' | 'homebrew' | 'npm' | 'bun' | 'unknown';
+export type ClaudeInstallType = 'native' | 'homebrew' | 'npm' | 'bun' | 'winget' | 'unknown';
 
 export function classifyClaudePath(binPath: string): ClaudeInstallType {
   const home = os.homedir();
@@ -352,6 +352,64 @@ export async function getClaudeVersion(claudePath: string): Promise<string | nul
     return stdout.trim() || null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Detect if Claude Code was installed via WinGet on Windows.
+ * WinGet installs to the same path as native (~/.local/bin/), so path-based
+ * classification can't distinguish them. This checks WinGet's package list.
+ * Result is cached for the process lifetime.
+ */
+let _wingetDetectionResult: boolean | null = null;
+
+export async function isWingetInstall(): Promise<boolean> {
+  if (!isWindows) return false;
+  if (_wingetDetectionResult !== null) return _wingetDetectionResult;
+  try {
+    const { stdout } = await execFileAsync('winget', ['list', 'Anthropic.ClaudeCode', '--accept-source-agreements'], {
+      timeout: 5000,
+      shell: true,
+      env: { ...process.env, PATH: getExpandedPath() },
+    });
+    _wingetDetectionResult = stdout.includes('Anthropic.ClaudeCode');
+  } catch {
+    _wingetDetectionResult = false;
+  }
+  return _wingetDetectionResult;
+}
+
+/** Invalidate winget detection cache (e.g. after upgrade) */
+export function invalidateWingetCache(): void {
+  _wingetDetectionResult = null;
+}
+
+/**
+ * Get the upgrade command for a given install type.
+ */
+export interface UpgradeCommand {
+  command: string;
+  args: string[];
+  shell: boolean;
+}
+
+export function getUpgradeCommand(installType: ClaudeInstallType): UpgradeCommand {
+  switch (installType) {
+    case 'homebrew':
+      return { command: 'brew', args: ['upgrade', 'claude-code'], shell: false };
+    case 'npm':
+      // On Windows, npm is a .cmd file that requires shell execution
+      return { command: 'npm', args: ['update', '-g', '@anthropic-ai/claude-code'], shell: isWindows };
+    case 'bun':
+      return { command: 'bun', args: ['update', '-g', '@anthropic-ai/claude-code'], shell: false };
+    case 'winget':
+      return { command: 'winget', args: ['upgrade', 'Anthropic.ClaudeCode', '--accept-source-agreements'], shell: true };
+    case 'native':
+    case 'unknown':
+    default:
+      // `claude update` is the official manual update command for native installs.
+      // It works cross-platform and is simpler than re-running the install script.
+      return { command: 'claude', args: ['update'], shell: false };
   }
 }
 

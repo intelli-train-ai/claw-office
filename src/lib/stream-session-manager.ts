@@ -34,6 +34,8 @@ interface ActiveStream {
   idleCheckTimer: ReturnType<typeof setInterval> | null;
   lastEventTime: number;
   gcTimer: ReturnType<typeof setTimeout> | null;
+  /** Tracked ad-hoc timeouts — cleaned up when the stream ends. */
+  pendingTimers: Set<ReturnType<typeof setTimeout>>;
   // Mutable accumulators (snapshot gets new object refs on each emit)
   accumulatedText: string;
   toolUsesArray: ToolUseInfo[];
@@ -151,6 +153,20 @@ function cleanupTimers(stream: ActiveStream) {
     clearInterval(stream.idleCheckTimer);
     stream.idleCheckTimer = null;
   }
+  // Clear all tracked ad-hoc timeouts
+  for (const t of stream.pendingTimers) {
+    clearTimeout(t);
+  }
+  stream.pendingTimers.clear();
+}
+
+/** Schedule a tracked timeout on the stream. Auto-removes itself after firing. */
+function streamTimeout(stream: ActiveStream, fn: () => void, ms: number): void {
+  const id = setTimeout(() => {
+    stream.pendingTimers.delete(id);
+    fn();
+  }, ms);
+  stream.pendingTimers.add(id);
 }
 
 // ==========================================
@@ -191,6 +207,7 @@ export function startStream(params: StartStreamParams): void {
     idleCheckTimer: null,
     lastEventTime: Date.now(),
     gcTimer: null,
+    pendingTimers: new Set(),
     accumulatedText: '',
     toolUsesArray: [],
     toolResultsArray: [],
@@ -288,7 +305,7 @@ async function runStream(stream: ActiveStream, params: StartStreamParams): Promi
       onToolOutput: (data) => {
         markActive();
         const next = stream.toolOutputAccumulated + (stream.toolOutputAccumulated ? '\n' : '') + data;
-        stream.toolOutputAccumulated = next.length > 5000 ? next.slice(-5000) : next;
+        stream.toolOutputAccumulated = next.length > 2000 ? next.slice(-2000) : next;
         emit(stream, 'snapshot-updated');
       },
       onToolProgress: (toolName, elapsed) => {
@@ -298,10 +315,23 @@ async function runStream(stream: ActiveStream, params: StartStreamParams): Promi
       },
       onStatus: (text) => {
         markActive();
+        // Detect compression notifications and broadcast window events
+        if (text === 'context_compressed') {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('context-compressed', { detail: { sessionId: params.sessionId } }));
+          }
+          return; // Don't show this as a status line — it's a metadata signal
+        }
+        if (text === 'context_compressing_retry') {
+          // Show a brief status while PTL auto-retry is in progress
+          stream.snapshot = { ...stream.snapshot, statusText: 'Compressing context...' };
+          emit(stream, 'snapshot-updated');
+          return;
+        }
         if (text?.startsWith('Connected (')) {
           stream.snapshot = { ...stream.snapshot, statusText: text };
           emit(stream, 'snapshot-updated');
-          setTimeout(() => {
+          streamTimeout(stream, () => {
             // Only clear if still the same status
             if (stream.snapshot.statusText === text) {
               stream.snapshot = { ...stream.snapshot, statusText: undefined };
@@ -468,7 +498,7 @@ async function runStream(stream: ActiveStream, params: StartStreamParams): Promi
         // Auto-retry via sendMessageFn
         if (stream.sendMessageFn) {
           const fn = stream.sendMessageFn;
-          setTimeout(() => {
+          streamTimeout(stream, () => {
             fn(
               `The previous tool "${timeoutInfo.toolName}" timed out after ${timeoutInfo.elapsedSeconds} seconds. Please try a different approach to accomplish the task. Avoid repeating the same operation that got stuck.`
             );
@@ -535,7 +565,7 @@ export function stopStream(sessionId: string): void {
       // Interrupt failed, force abort
     }).finally(() => {
       // Always abort after a short delay to ensure cleanup
-      setTimeout(() => {
+      streamTimeout(stream, () => {
         if (stream.snapshot.phase === 'active') {
           stream.abortController.abort();
         }
@@ -644,7 +674,7 @@ export async function respondToPermission(
 
   // Clear permission state after delay (only if no new request arrived)
   const answeredId = perm.permissionRequestId;
-  setTimeout(() => {
+  streamTimeout(stream, () => {
     if (stream.snapshot.pendingPermission?.permissionRequestId === answeredId) {
       stream.snapshot = {
         ...stream.snapshot,

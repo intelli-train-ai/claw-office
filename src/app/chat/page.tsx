@@ -10,6 +10,7 @@ import { ModeIndicator } from '@/components/chat/ModeIndicator';
 import { ChatPermissionSelector } from '@/components/chat/ChatPermissionSelector';
 import { PermissionPrompt } from '@/components/chat/PermissionPrompt';
 import { ChatEmptyState } from '@/components/chat/ChatEmptyState';
+import { OnboardingWizard } from '@/components/assistant/OnboardingWizard';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { FolderPicker } from '@/components/chat/FolderPicker';
 import { useNativeFolderPicker } from '@/hooks/useNativeFolderPicker';
@@ -50,6 +51,9 @@ export default function NewChatPage() {
   const [errorBanner, setErrorBanner] = useState<{ message: string; description?: string } | null>(null);
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
   const [hasProvider, setHasProvider] = useState(true); // assume true until checked
+  const [showWizard, setShowWizard] = useState(false);
+  const [assistantConfigured, setAssistantConfigured] = useState(false);
+  const [assistantWorkspacePath, setAssistantWorkspacePath] = useState('');
   const [mode, setMode] = useState('code');
   // Model/provider start empty — populated by the async global-default fetch.
   // This prevents the race where a user sends before the fetch completes and
@@ -244,6 +248,19 @@ export default function NewChatPage() {
     authFetch('/api/setup/recent-projects')
       .then(r => r.ok ? r.json() : { projects: [] })
       .then(data => setRecentProjects(data.projects || []))
+      .catch(() => {});
+  }, []);
+
+  // Detect assistant workspace status
+  useEffect(() => {
+    fetch('/api/settings/workspace')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.path && data?.valid !== false) {
+          setAssistantWorkspacePath(data.path);
+          setAssistantConfigured(!!data.state?.onboardingComplete);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -730,6 +747,24 @@ export default function NewChatPage() {
           onSelectFolder={handleSelectFolder}
           recentProjects={recentProjects}
           onSelectProject={handleSelectProject}
+          assistantConfigured={assistantConfigured}
+          onOpenAssistant={() => {
+            if (assistantConfigured) {
+              // Navigate to the latest assistant session
+              fetch(`/api/workspace/session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'checkin' }),
+              })
+                .then(r => r.json())
+                .then(data => router.push(`/chat/${data.session.id}`))
+                .catch(() => {});
+            } else if (assistantWorkspacePath) {
+              setShowWizard(true);
+            } else {
+              router.push('/settings#assistant');
+            }
+          }}
         />
       ) : (
         <MessageList
@@ -794,6 +829,16 @@ export default function NewChatPage() {
         onOpenChange={setFolderPickerOpen}
         onSelect={handleFolderPickerSelect}
       />
+      {showWizard && assistantWorkspacePath && (
+        <OnboardingWizard
+          workspacePath={assistantWorkspacePath}
+          onComplete={(session) => {
+            setShowWizard(false);
+            setAssistantConfigured(true);
+            router.push(`/chat/${session.id}`);
+          }}
+        />
+      )}
     </div>
   );
 }

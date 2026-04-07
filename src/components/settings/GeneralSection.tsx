@@ -129,6 +129,7 @@ export function GeneralSection() {
   const [skipPermSaving, setSkipPermSaving] = useState(false);
   const [generativeUI, setGenerativeUI] = useState(true);
   const [generativeUISaving, setGenerativeUISaving] = useState(false);
+  const [defaultPanel, setDefaultPanel] = useState('file_tree');
   const { accountInfo } = useAccountInfo();
   const { t, locale, setLocale } = useTranslation();
 
@@ -141,6 +142,8 @@ export function GeneralSection() {
         setSkipPermissions(appSettings.dangerously_skip_permissions === "true");
         // generative_ui_enabled defaults to true when not set
         setGenerativeUI(appSettings.generative_ui_enabled !== "false");
+        // default_panel defaults to 'file_tree' when not set
+        setDefaultPanel(appSettings.default_panel || 'file_tree');
       }
     } catch {
       // ignore
@@ -177,6 +180,19 @@ export function GeneralSection() {
     } finally {
       setSkipPermSaving(false);
       setShowSkipPermWarning(false);
+    }
+  };
+
+  const handleDefaultPanelChange = async (value: string) => {
+    setDefaultPanel(value);
+    try {
+      await fetch("/api/settings/app", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: { default_panel: value } }),
+      });
+    } catch {
+      // ignore
     }
   };
 
@@ -235,6 +251,25 @@ export function GeneralSection() {
             onCheckedChange={handleGenerativeUIToggle}
             disabled={generativeUISaving}
           />
+        </FieldRow>
+
+        {/* Default panel */}
+        <FieldRow
+          label={t('settings.defaultPanelTitle')}
+          description={t('settings.defaultPanelDesc')}
+          separator
+        >
+          <Select value={defaultPanel} onValueChange={handleDefaultPanelChange}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t('settings.defaultPanelNone')}</SelectItem>
+              <SelectItem value="file_tree">{t('settings.defaultPanelFileTree')}</SelectItem>
+              <SelectItem value="dashboard">{t('settings.defaultPanelDashboard')}</SelectItem>
+              <SelectItem value="git">{t('settings.defaultPanelGit')}</SelectItem>
+            </SelectContent>
+          </Select>
         </FieldRow>
 
         {/* Language picker */}

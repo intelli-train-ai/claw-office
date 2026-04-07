@@ -18,6 +18,8 @@ import { isImageFile } from '@/types';
 import { registerPendingPermission } from './permission-registry';
 import { registerConversation, unregisterConversation } from './conversation-registry';
 import { captureCapabilities, isCacheFresh, setCachedPlugins } from './agent-sdk-capabilities';
+import { normalizeMessageContent, microCompactMessage } from './message-normalizer';
+import { roughTokenEstimate } from './context-estimator';
 import { getSetting, updateSdkSessionId, createPermissionRequest } from './db';
 import { resolveForClaudeCode, toClaudeCodeEnv } from './provider-resolver';
 import { findPresetForLegacy } from './provider-catalog';
@@ -237,38 +239,71 @@ function getUploadedFilePaths(files: FileAttachment[], workDir: string): string[
   return paths;
 }
 
-/**
- * Build a context-enriched prompt by prepending conversation history.
- * Used when SDK session resume is unavailable or fails.
- */
-function buildPromptWithHistory(
-  prompt: string,
-  history?: Array<{ role: 'user' | 'assistant'; content: string }>,
-): string {
-  if (!history || history.length === 0) return prompt;
+// Message normalization is in message-normalizer.ts (shared with context-compressor.ts).
+// Imported dynamically in buildFallbackContext to avoid circular deps at module level.
 
-  const lines: string[] = [
-    '<conversation_history>',
-    '(This is a summary of earlier conversation turns for context. Tool calls shown here were already executed — do not repeat them or output their markers as text.)',
-  ];
-  for (const msg of history) {
-    // For assistant messages with tool blocks (JSON arrays), extract only the text portions.
-    // Tool-use and tool-result blocks are omitted to avoid Claude parroting them as plain text.
-    let content = msg.content;
-    if (msg.role === 'assistant' && content.startsWith('[')) {
-      try {
-        const blocks = JSON.parse(content);
-        const parts: string[] = [];
-        for (const b of blocks) {
-          if (b.type === 'text' && b.text) parts.push(b.text);
-          // Skip tool_use and tool_result — they were already executed
-        }
-        content = parts.length > 0 ? parts.join('\n') : '(assistant used tools)';
-      } catch {
-        // Not JSON, use as-is
-      }
+/**
+ * Build fallback context from conversation history with token-budget awareness.
+ *
+ * Instead of a fixed message count, walks backward from the newest message
+ * and includes as many as fit within the token budget. Optionally prepends
+ * a session summary as a context skeleton for the full conversation.
+ */
+function buildFallbackContext(params: {
+  prompt: string;
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  sessionSummary?: string;
+  tokenBudget?: number;
+}): string {
+  const { prompt, history, sessionSummary, tokenBudget } = params;
+  if (!history || history.length === 0) {
+    if (sessionSummary) {
+      return `<session-summary>\n${sessionSummary}\n</session-summary>\n\n${prompt}`;
     }
-    lines.push(`${msg.role === 'user' ? 'Human' : 'Assistant'}: ${content}`);
+    return prompt;
+  }
+
+  // Normalize + microcompact: strip metadata, summarize tool blocks, truncate old messages
+  const normalized = history.map((msg, i) => ({
+    role: msg.role,
+    content: microCompactMessage(
+      msg.role,
+      normalizeMessageContent(msg.role, msg.content),
+      history.length - 1 - i, // ageFromEnd: 0 = newest
+    ),
+  }));
+
+  // Select messages within token budget (walk backward from newest).
+  // Floor at 10K tokens so even extreme sessions keep some recent context.
+  const effectiveBudget = tokenBudget != null ? Math.max(tokenBudget, 10000) : undefined;
+  let selected: typeof normalized;
+  if (effectiveBudget) {
+    selected = [];
+    let accumulated = 0;
+    for (let i = normalized.length - 1; i >= 0; i--) {
+      const msgTokens = roughTokenEstimate(normalized[i].content) + 10; // role label overhead
+      if (accumulated + msgTokens > effectiveBudget) break;
+      selected.unshift(normalized[i]);
+      accumulated += msgTokens;
+    }
+  } else {
+    selected = normalized;
+  }
+
+  // Build the output
+  const lines: string[] = [];
+
+  if (sessionSummary) {
+    lines.push('<session-summary>');
+    lines.push(sessionSummary);
+    lines.push('</session-summary>');
+    lines.push('');
+  }
+
+  lines.push('<conversation_history>');
+  lines.push('(This is a summary of earlier conversation turns for context. Tool calls shown here were already executed — do not repeat them or output their markers as text.)');
+  for (const msg of selected) {
+    lines.push(`${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`);
   }
   lines.push('</conversation_history>');
   lines.push('');
@@ -402,6 +437,9 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
 
   return new ReadableStream<string>({
     async start(controller) {
+      // Flag to prevent infinite PTL retry loops (at most one retry per request)
+      let ptlRetryAttempted = false;
+
       // Resolve provider via the unified resolver. The caller may pass an explicit
       // provider (from resolveProvider().provider), or undefined when 'env' mode is
       // intended. We do NOT fall back to getActiveProvider() here — that's handled
@@ -521,6 +559,35 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         // is now automatically loaded by the SDK via settingSources: ['user', 'project', 'local'].
         if (mcpServers && Object.keys(mcpServers).length > 0) {
           queryOptions.mcpServers = toSdkMcpConfig(mcpServers);
+        }
+
+        // Memory MCP: always registered in assistant mode for memory search/retrieval.
+        // Unlike other MCPs which are keyword-gated, memory search is a core assistant capability.
+        {
+          const assistantWorkspacePath = getSetting('assistant_workspace_path');
+          if (assistantWorkspacePath && resolvedWorkingDirectory.path === assistantWorkspacePath) {
+            const { createMemorySearchMcpServer, MEMORY_SEARCH_SYSTEM_PROMPT } = await import('@/lib/memory-search-mcp');
+            queryOptions.mcpServers = {
+              ...(queryOptions.mcpServers || {}),
+              'codepilot-memory': createMemorySearchMcpServer(assistantWorkspacePath),
+            };
+            if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
+              queryOptions.systemPrompt.append = (queryOptions.systemPrompt.append || '') + '\n\n' + MEMORY_SEARCH_SYSTEM_PROMPT;
+            }
+          }
+        }
+
+        // Notification + Schedule MCP: globally available in all contexts
+        {
+          const { createNotificationMcpServer, NOTIFICATION_MCP_SYSTEM_PROMPT } =
+            await import('@/lib/notification-mcp');
+          queryOptions.mcpServers = {
+            ...(queryOptions.mcpServers || {}),
+            'codepilot-notify': createNotificationMcpServer(),
+          };
+          if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
+            queryOptions.systemPrompt.append = (queryOptions.systemPrompt.append || '') + '\n\n' + NOTIFICATION_MCP_SYSTEM_PROMPT;
+          }
         }
 
         // Widget guidelines: progressive loading strategy.
@@ -760,8 +827,10 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
             data: JSON.stringify(permEvent),
           }));
 
-          // Notify via Telegram (fire-and-forget)
-          notifyPermissionRequest(toolName, input as Record<string, unknown>, telegramOpts).catch(() => {});
+          // Notify via Telegram (fire-and-forget) — skip for auto-trigger turns
+          if (!autoTrigger) {
+            notifyPermissionRequest(toolName, input as Record<string, unknown>, telegramOpts).catch(() => {});
+          }
 
           // Notify runtime status change
           onRuntimeStatusChange?.('waiting_permission');
@@ -818,7 +887,12 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         // When NOT resuming (fresh or fallback), prepend DB history for context.
         function buildFinalPrompt(useHistory: boolean): string | AsyncIterable<SDKUserMessage> {
           const basePrompt = useHistory
-            ? buildPromptWithHistory(prompt, conversationHistory)
+            ? buildFallbackContext({
+                prompt,
+                history: conversationHistory,
+                sessionSummary: options.sessionSummary,
+                tokenBudget: options.fallbackTokenBudget,
+              })
             : prompt;
 
           if (!files || files.length === 0) return basePrompt;
@@ -837,18 +911,26 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           }
 
           if (imageFiles.length > 0) {
+            // Limit media items: keep the MOST RECENT images (drop oldest first),
+            // consistent with "preserve recent context" strategy.
+            const MAX_MEDIA_ITEMS = 100;
+            const limitedImages = imageFiles.length > MAX_MEDIA_ITEMS
+              ? imageFiles.slice(-MAX_MEDIA_ITEMS)
+              : imageFiles;
+            const droppedCount = imageFiles.length - limitedImages.length;
+
             // In imageAgentMode, skip file path references so Claude doesn't
             // try to use built-in tools to analyze images from disk. It will
             // see the images via vision (base64 content blocks) and follow the
             // IMAGE_AGENT_SYSTEM_PROMPT to output image-gen-request blocks.
-            // In normal mode, append disk paths so skills can reference them.
+            // In normal mode, append disk paths — only for the images actually included.
             const textWithImageRefs = imageAgentMode
               ? textPrompt
               : (() => {
                   const workDir = resolvedWorkingDirectory.path;
-                  const imagePaths = getUploadedFilePaths(imageFiles, workDir);
+                  const imagePaths = getUploadedFilePaths(limitedImages, workDir);
                   const imageReferences = imagePaths
-                    .map((p, i) => `[User attached image: ${p} (${imageFiles[i].name})]`)
+                    .map((p, i) => `[User attached image: ${p} (${limitedImages[i].name})]`)
                     .join('\n');
                   return `${imageReferences}\n\n${textPrompt}`;
                 })();
@@ -858,17 +940,30 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
               | { type: 'text'; text: string }
             > = [];
 
-            for (const img of imageFiles) {
+            for (const img of limitedImages) {
+              // Read base64 from disk if the data was cleared after upload
+              let imgData = img.data;
+              if (!imgData && img.filePath) {
+                try {
+                  imgData = fs.readFileSync(img.filePath).toString('base64');
+                } catch {
+                  continue; // Skip images whose files are missing
+                }
+              }
+              if (!imgData) continue;
               contentBlocks.push({
                 type: 'image',
                 source: {
                   type: 'base64',
                   media_type: (img.type || 'image/png') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-                  data: img.data,
+                  data: imgData,
                 },
               });
             }
 
+            if (droppedCount > 0) {
+              contentBlocks.push({ type: 'text', text: `[Note: ${droppedCount} older image(s) were omitted due to the ${MAX_MEDIA_ITEMS}-image limit per request.]` });
+            }
             contentBlocks.push({ type: 'text', text: textWithImageRefs });
 
             const userMessage: SDKUserMessage = {
@@ -1172,7 +1267,9 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
                       message: taskMsg.summary || '',
                     }),
                   }));
-                  notifyGeneric(title, taskMsg.summary || '', telegramOpts).catch(() => {});
+                  if (!autoTrigger) {
+                    notifyGeneric(title, taskMsg.summary || '', telegramOpts).catch(() => {});
+                  }
                 }
               }
               break;
@@ -1225,7 +1322,10 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
                   type: 'status',
                   data: JSON.stringify({ notification: true, title: errTitle, message: errMsg }),
                 }));
-                notifyGeneric(errTitle, errMsg, telegramOpts).catch(() => {});
+                // Skip Telegram for auto-trigger turns (onboarding/heartbeat)
+                if (!autoTrigger) {
+                  notifyGeneric(errTitle, errMsg, telegramOpts).catch(() => {});
+                }
               }
               break;
             }
@@ -1264,6 +1364,116 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           context1mEnabled: !!context1m,
           effortSet: !!effort,
         });
+
+        // ── Reactive compact: auto-compress and retry on CONTEXT_TOO_LONG ──
+        if (classified.category === 'CONTEXT_TOO_LONG' && !ptlRetryAttempted && conversationHistory && conversationHistory.length > 4) {
+          ptlRetryAttempted = true;
+          try {
+            console.log('[claude-client] CONTEXT_TOO_LONG detected — attempting auto-compress + retry');
+            controller.enqueue(formatSSE({ type: 'status', data: JSON.stringify({ notification: true, message: 'context_compressing_retry' }) }));
+
+            const { compressConversation } = await import('./context-compressor');
+            const { updateSessionSummary: updateSummary } = await import('@/lib/db');
+            const compResult = await compressConversation({
+              sessionId,
+              messages: conversationHistory,
+              existingSummary: options.sessionSummary,
+              providerId: options.providerId || options.sessionProviderId,
+              sessionModel: model,
+            });
+            updateSummary(sessionId, compResult.summary);
+            options.sessionSummary = compResult.summary;
+            // Recalculate fallback budget with new summary size
+            const newSummaryTokens = roughTokenEstimate(compResult.summary);
+            const promptTokens = roughTokenEstimate(prompt);
+            const systemTokens = roughTokenEstimate(systemPrompt || '');
+            // Use a conservative 50% of actual context window for retry
+            const { getContextWindow } = await import('./model-context');
+            const ctxWindow = getContextWindow(model || 'sonnet', { context1m: !!context1m }) || 200000;
+            const retryBudget = Math.max(10000, Math.floor(ctxWindow * 0.5 - systemTokens - newSummaryTokens - promptTokens));
+            console.log(`[claude-client] Compressed ${compResult.messagesCompressed} messages for PTL retry, budget=${retryBudget}`);
+
+            // Clear stale session so retry starts fresh
+            if (sessionId) {
+              try { updateSdkSessionId(sessionId, ''); } catch { /* best effort */ }
+            }
+
+            // Build retry prompt using compressed context with recalculated budget
+            const retryPrompt = buildFallbackContext({
+              prompt,
+              history: conversationHistory,
+              sessionSummary: options.sessionSummary,
+              tokenBudget: retryBudget,
+            });
+
+            // Rebuild minimal query options from closure variables
+            // (queryOptions is scoped to the try block and not accessible here)
+            const retryOptions: Options = {
+              cwd: options.workingDirectory || os.homedir(),
+              abortController,
+              permissionMode: 'bypassPermissions' as Options['permissionMode'],
+              allowDangerouslySkipPermissions: true,
+              env: { ...process.env as Record<string, string> },
+              maxTurns: undefined,
+            };
+            if (model) retryOptions.model = model;
+            if (systemPrompt) {
+              retryOptions.systemPrompt = { type: 'preset', preset: 'claude_code', append: systemPrompt };
+            }
+
+            const retryConversation = query({ prompt: retryPrompt, options: retryOptions });
+
+            // Forward retry stream events (simplified — covers the critical path)
+            for await (const msg of retryConversation) {
+              if (abortController?.signal.aborted) break;
+              switch (msg.type) {
+                case 'assistant': {
+                  const aMsg = msg as SDKAssistantMessage;
+                  for (const block of aMsg.message.content) {
+                    if (block.type === 'tool_use') {
+                      controller.enqueue(formatSSE({ type: 'tool_use', data: JSON.stringify({ id: block.id, name: block.name, input: block.input }) }));
+                    }
+                  }
+                  break;
+                }
+                case 'user': {
+                  const uMsg = msg as { type: 'user'; message: { content: Array<{ type: string; content?: string; tool_use_id?: string }> } };
+                  for (const block of uMsg.message.content) {
+                    if (block.type === 'tool_result' && typeof block.content === 'string') {
+                      controller.enqueue(formatSSE({ type: 'tool_result', data: JSON.stringify({ tool_use_id: block.tool_use_id, output: block.content.slice(0, 2000) }) }));
+                    }
+                  }
+                  break;
+                }
+                case 'stream_event': {
+                  const se = msg as { type: 'stream_event'; event: { type: string; delta?: { text?: string }; index?: number } };
+                  if (se.event.type === 'content_block_delta' && se.event.delta?.text) {
+                    controller.enqueue(formatSSE({ type: 'text', data: se.event.delta.text }));
+                  }
+                  break;
+                }
+                case 'result': {
+                  const rMsg = msg as SDKResultMessage;
+                  if ('result' in rMsg) {
+                    const usage = extractTokenUsage(rMsg as SDKResultSuccess);
+                    if (usage) {
+                      controller.enqueue(formatSSE({ type: 'result', data: JSON.stringify(usage) }));
+                    }
+                  }
+                  // Emit compression notification so frontend updates hasSummary
+                  controller.enqueue(formatSSE({ type: 'status', data: JSON.stringify({ notification: true, message: 'context_compressed' }) }));
+                  break;
+                }
+              }
+            }
+            controller.enqueue(formatSSE({ type: 'done', data: '' }));
+            controller.close();
+            return; // Retry succeeded — skip normal error path
+          } catch (retryErr) {
+            console.warn('[claude-client] PTL retry failed, falling through to error display:', retryErr);
+            // Fall through to normal error handling below
+          }
+        }
 
         // Send structured error JSON so frontend can parse category + hints
         // Falls back gracefully for older frontends that only read raw text

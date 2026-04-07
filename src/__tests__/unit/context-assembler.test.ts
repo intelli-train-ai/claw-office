@@ -7,8 +7,7 @@
  * 1. Desktop entry point includes widget prompt
  * 2. Bridge entry point does NOT include widget prompt
  * 3. Workspace prompt only injected for assistant project sessions
- * 4. Widget MCP keyword detection
- * 5. generative_ui_enabled=false skips widget even on desktop
+ * 4. generative_ui_enabled=false skips widget even on desktop
  */
 
 import { describe, it } from 'node:test';
@@ -63,7 +62,6 @@ describe('assembleContext', () => {
     });
 
     assert.equal(result.generativeUIEnabled, false);
-    assert.equal(result.needsWidgetMcp, false);
   });
 
   it('includes systemPromptAppend when provided', async () => {
@@ -91,53 +89,8 @@ describe('assembleContext', () => {
     assert.equal(result.assistantProjectInstructions, '');
   });
 
-  it('widget MCP detection: keyword triggers needsWidgetMcp on desktop', async () => {
-    const { assembleContext } = await import('../../lib/context-assembler');
-    const result = await assembleContext({
-      session: makeSession(),
-      entryPoint: 'desktop',
-      userPrompt: '帮我画一个可视化图表',
-    });
-
-    assert.equal(result.needsWidgetMcp, true);
-  });
-
-  it('widget MCP detection: no keyword means no widget MCP', async () => {
-    const { assembleContext } = await import('../../lib/context-assembler');
-    const result = await assembleContext({
-      session: makeSession(),
-      entryPoint: 'desktop',
-      userPrompt: '帮我写一个函数',
-    });
-
-    assert.equal(result.needsWidgetMcp, false);
-  });
-
-  it('widget MCP detection: conversation history with show-widget', async () => {
-    const { assembleContext } = await import('../../lib/context-assembler');
-    const result = await assembleContext({
-      session: makeSession(),
-      entryPoint: 'desktop',
-      userPrompt: '继续',
-      conversationHistory: [
-        { role: 'assistant', content: '```show-widget\n{"title":"test"}\n```' },
-      ],
-    });
-
-    assert.equal(result.needsWidgetMcp, true);
-  });
-
-  it('bridge: widget MCP is never enabled even with keywords', async () => {
-    const { assembleContext } = await import('../../lib/context-assembler');
-    const result = await assembleContext({
-      session: makeSession(),
-      entryPoint: 'bridge',
-      userPrompt: '帮我画一个可视化图表',
-    });
-
-    assert.equal(result.needsWidgetMcp, false);
-    assert.equal(result.generativeUIEnabled, false);
-  });
+  // Widget MCP keyword detection is now handled solely in claude-client.ts.
+  // context-assembler no longer computes needsWidgetMcp.
 
   it('session with empty system_prompt: does not throw', async () => {
     const { assembleContext } = await import('../../lib/context-assembler');
