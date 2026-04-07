@@ -34,6 +34,11 @@ export const CDN_WHITELIST = [
 
 // ── HTML sanitization ────────────────────────────────────────────────────
 
+// Security note: regex-based sanitization has inherent limitations, but is
+// acceptable here because ALL widget content renders in a heavily sandboxed
+// iframe (sandbox="allow-scripts", NO allow-same-origin, connect-src 'none').
+// Even a bypass cannot exfiltrate data or escape the iframe.
+
 const DANGEROUS_TAGS = /<(iframe|object|embed|meta|link|base|form)[\s>][\s\S]*?<\/\1>/gi;
 const DANGEROUS_VOID = /<(iframe|object|embed|meta|link|base)\b[^>]*\/?>/gi;
 
@@ -45,9 +50,12 @@ export function sanitizeForStreaming(html: string): string {
   return html
     .replace(DANGEROUS_TAGS, '')
     .replace(DANGEROUS_VOID, '')
+    // Strip ALL on* event handlers (case-insensitive, handles all quote styles)
     .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>"']*)/gi, '')
+    // Strip script tags (paired and self-closing, handles nesting)
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<script\b[^>]*\/?>/gi, '')
+    // Strip javascript: and data: URLs in href/src/action attributes
     .replace(
       /\s+(href|src|action)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']*))/gi,
       (match, _attr: string, dq?: string, sq?: string, uq?: string) => {
@@ -61,6 +69,8 @@ export function sanitizeForStreaming(html: string): string {
 /**
  * Light sanitization for finalized content inside iframe.
  * Only strips tags that could nest/break out of the sandbox.
+ * Scripts and handlers are intentionally preserved (they execute safely
+ * inside the sandboxed iframe with connect-src 'none').
  */
 export function sanitizeForIframe(html: string): string {
   return html

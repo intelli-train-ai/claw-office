@@ -1,0 +1,17 @@
+node_modules
+.next
+dist-electron
+release
+.git
+.claude
+.env*
+*.md
+!package.json
+playwright-report
+test-results
+coverage
+img_tmp
+资料
+.codepilot-uploads
+apps
+packages

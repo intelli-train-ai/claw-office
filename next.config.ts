@@ -7,6 +7,11 @@ const pkg = require("./package.json");
 const nextConfig: NextConfig = {
   output: 'standalone',
   serverExternalPackages: ['better-sqlite3', 'discord.js', '@discordjs/ws', 'zlib-sync'],
+  allowedDevOrigins: [
+    '**.ts.net',             // all Tailscale hostnames
+    '192.168.3.21',          // LAN IP
+    '100.92.96.30',          // Tailscale IP
+  ],
   env: {
     NEXT_PUBLIC_APP_VERSION: pkg.version,
     NEXT_PUBLIC_SENTRY_DSN: 'https://245dc3525425bcd8eb99dd4b9a2ca5cd@o4511161899548672.ingest.us.sentry.io/4511161904791552',

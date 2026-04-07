@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -26,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { ToolUIPart } from 'ai';
 import type { PermissionRequestEvent } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 interface ToolUseInfo {
   id: string;
@@ -245,7 +247,7 @@ function ExitPlanModeUI({
             onClick={async () => {
               setPlanLoading(true);
               try {
-                const res = await fetch(`/api/files/preview?path=${encodeURIComponent(planFilePath)}&maxLines=1000`);
+                const res = await authFetch(`/api/files/preview?path=${encodeURIComponent(planFilePath)}&maxLines=1000`);
                 if (res.ok) {
                   const data = await res.json();
                   setPlanContent(data.preview?.content || 'Failed to load plan');
@@ -303,6 +305,7 @@ function ExitPlanModeUI({
           <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Plan</DialogTitle>
+              <DialogDescription className="sr-only">Plan</DialogDescription>
             </DialogHeader>
             <div className="overflow-y-auto flex-1 min-h-0">
               <MessageResponse>{planContent}</MessageResponse>

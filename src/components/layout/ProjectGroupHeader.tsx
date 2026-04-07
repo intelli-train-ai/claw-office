@@ -4,12 +4,12 @@ import {
   Folder,
   CaretDown,
   CaretRight,
-  Plus,
   FolderOpen,
   FolderMinus,
   DotsThree,
   Copy,
   ArrowSquareOut,
+  Plus,
 } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import type { TranslationKey } from "@/i18n";
 import { useState } from "react";
 import { SPECIES_IMAGE_URL, EGG_IMAGE_URL, type Species } from "@/lib/buddy";
+import { authFetch } from '@/lib/api-client';
 
 interface ProjectGroupHeaderProps {
   workingDirectory: string;
@@ -34,7 +35,7 @@ interface ProjectGroupHeaderProps {
   onToggle: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  onCreateSession: (e: React.MouseEvent) => void;
+  onCreateSession?: (e: React.MouseEvent) => void;
   onRemoveProject?: (workingDirectory: string) => void;
   assistantName?: string;
   assistantMemoryCount?: number;
@@ -102,7 +103,7 @@ export function ProjectGroupHeader({
             if (w.electronAPI?.shell?.openPath) {
               w.electronAPI.shell.openPath(workingDirectory);
             } else {
-              fetch('/api/files/open', {
+              authFetch('/api/files/open', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: workingDirectory }),

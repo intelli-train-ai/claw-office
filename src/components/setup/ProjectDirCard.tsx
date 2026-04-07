@@ -7,6 +7,7 @@ import { FolderPicker } from '@/components/chat/FolderPicker';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useNativeFolderPicker } from '@/hooks/useNativeFolderPicker';
 import type { SetupCardStatus } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 interface ProjectDirCardProps {
   status: SetupCardStatus;
@@ -31,7 +32,7 @@ export function ProjectDirCard({ status, onStatusChange, defaultProject }: Proje
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
-    fetch('/api/setup/recent-projects')
+    authFetch('/api/setup/recent-projects')
       .then(r => r.ok ? r.json() : { projects: [] })
       .then(data => setRecentProjects(data.projects || []))
       .catch(() => {});
@@ -45,7 +46,7 @@ export function ProjectDirCard({ status, onStatusChange, defaultProject }: Proje
     // Notify other components (e.g. /chat page) that a project directory was selected
     window.dispatchEvent(new CustomEvent('project-directory-changed', { detail: { path } }));
     try {
-      await fetch('/api/setup', {
+      await authFetch('/api/setup', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ card: 'project', status: 'completed', value: path }),
@@ -65,7 +66,7 @@ export function ProjectDirCard({ status, onStatusChange, defaultProject }: Proje
   const handleSkip = useCallback(async () => {
     onStatusChange('skipped');
     try {
-      await fetch('/api/setup', {
+      await authFetch('/api/setup', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ card: 'project', status: 'skipped' }),

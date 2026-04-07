@@ -15,6 +15,7 @@ const IGNORED_DIRS = new Set([
   'coverage',
   '.output',
   'build',
+  '__MACOSX',
 ]);
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -118,7 +119,7 @@ async function scanDirectoryRecursive(dir: string, depth: number): Promise<FileT
 
   for (const entry of sorted) {
     // Skip hidden files/dirs (except common config files)
-    if (entry.name.startsWith('.') && !entry.name.startsWith('.env')) {
+    if (entry.name.startsWith('.') && !entry.name.startsWith('.env') && entry.name !== '.claude') {
       continue;
     }
 
@@ -127,13 +128,22 @@ async function scanDirectoryRecursive(dir: string, depth: number): Promise<FileT
     if (entry.isDirectory()) {
       if (IGNORED_DIRS.has(entry.name)) continue;
 
-      const children = await scanDirectoryRecursive(fullPath, depth - 1);
-      nodes.push({
-        name: entry.name,
-        path: fullPath,
-        type: 'directory',
-        children,
-      });
+      if (depth - 1 <= 0) {
+        // At depth boundary: omit children to signal "not yet loaded"
+        nodes.push({
+          name: entry.name,
+          path: fullPath,
+          type: 'directory',
+        });
+      } else {
+        const children = await scanDirectoryRecursive(fullPath, depth - 1);
+        nodes.push({
+          name: entry.name,
+          path: fullPath,
+          type: 'directory',
+          children,
+        });
+      }
     } else if (entry.isFile()) {
       const ext = path.extname(entry.name).replace(/^\./, '');
       let size: number | undefined;

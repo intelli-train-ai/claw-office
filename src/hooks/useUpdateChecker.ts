@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { UpdateInfo, UpdateContextValue } from "@/hooks/useUpdate";
+import { authFetch } from '@/lib/api-client';
 
 const CHECK_INTERVAL = 8 * 60 * 60 * 1000; // 8 hours
 const DISMISSED_VERSION_KEY = "codepilot_dismissed_update_version";
@@ -86,7 +87,7 @@ export function useUpdateChecker(): UpdateContextValue {
   const checkForUpdatesBrowser = useCallback(async () => {
     setChecking(true);
     try {
-      const res = await fetch("/api/app/updates");
+      const res = await authFetch("/api/app/updates");
       if (!res.ok) return;
       const data = await res.json();
       const info: UpdateInfo = {

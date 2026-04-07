@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TaskItem, TaskStatus } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface TaskListProps {
   sessionId: string;
@@ -19,7 +20,7 @@ export function TaskList({ sessionId }: TaskListProps) {
     if (!sessionId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/tasks?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await authFetch(`/api/tasks?session_id=${encodeURIComponent(sessionId)}`);
       if (res.ok) {
         const data = await res.json();
         setTasks(data.tasks || []);
@@ -45,7 +46,7 @@ export function TaskList({ sessionId }: TaskListProps) {
   const handleToggle = async (task: TaskItem) => {
     const nextStatus: TaskStatus = task.status === "completed" ? "pending" : "completed";
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
+      const res = await authFetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),

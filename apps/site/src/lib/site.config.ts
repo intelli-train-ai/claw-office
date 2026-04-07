@@ -10,11 +10,11 @@ export const siteConfig = {
 
   // Canonical repository
   repo: {
-    owner: 'op7418',
+    owner: 'intelli-train-ai',
     name: 'CodePilot',
-    url: 'https://github.com/op7418/CodePilot',
-    releases: 'https://github.com/op7418/CodePilot/releases',
-    issues: 'https://github.com/op7418/CodePilot/issues',
+    url: 'https://github.com/intelli-train-ai/CodePilot',
+    releases: 'https://github.com/intelli-train-ai/CodePilot/releases',
+    issues: 'https://github.com/intelli-train-ai/CodePilot/issues',
   },
 
   // External links

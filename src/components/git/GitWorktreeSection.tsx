@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
 import type { GitWorktree } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface GitWorktreeSectionProps {
   cwd: string;
@@ -25,7 +26,7 @@ export function GitWorktreeSection({ cwd, onDeriveWorktree }: GitWorktreeSection
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/git/worktrees?cwd=${encodeURIComponent(cwd)}`);
+        const res = await authFetch(`/api/git/worktrees?cwd=${encodeURIComponent(cwd)}`);
         const data = await res.json();
         if (!cancelled) setWorktrees(data.worktrees || []);
       } catch {
@@ -41,7 +42,7 @@ export function GitWorktreeSection({ cwd, onDeriveWorktree }: GitWorktreeSection
   const handleSwitchTo = async (worktreePath: string) => {
     // Find or create a session for this worktree's working directory
     try {
-      const res = await fetch(`/api/chat/sessions/by-cwd?cwd=${encodeURIComponent(worktreePath)}`);
+      const res = await authFetch(`/api/chat/sessions/by-cwd?cwd=${encodeURIComponent(worktreePath)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.sessionId) {
@@ -50,7 +51,7 @@ export function GitWorktreeSection({ cwd, onDeriveWorktree }: GitWorktreeSection
         }
       }
       // No existing session — create one
-      const createRes = await fetch('/api/chat/sessions', {
+      const createRes = await authFetch('/api/chat/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ working_directory: worktreePath }),

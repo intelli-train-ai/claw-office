@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, setSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 const BRIDGE_SETTING_KEYS = [
   'remote_bridge_enabled',
@@ -45,7 +46,10 @@ const BRIDGE_SETTING_KEYS = [
   'bridge_weixin_media_enabled',
 ] as const;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const settings: Record<string, string> = {};
     for (const key of BRIDGE_SETTING_KEYS) {
@@ -60,7 +64,10 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { settings } = body;

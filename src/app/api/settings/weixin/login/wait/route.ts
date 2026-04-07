@@ -3,9 +3,10 @@
  * POST { session_id } — polls the QR code status
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { pollQrLoginStatus, cancelQrLoginSession } from '@/lib/bridge/adapters/weixin/weixin-auth';
 import { getStatus, restart } from '@/lib/bridge/bridge-manager';
+import { requireAuth } from '@/lib/auth';
 
 async function restartIfRunning(): Promise<string | null> {
   if (!getStatus().running) {
@@ -19,7 +20,10 @@ async function restartIfRunning(): Promise<string | null> {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const sessionId = body.session_id;

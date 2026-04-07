@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshMcpStatus, getCachedMcpStatus, getCapabilityCacheAge } from '@/lib/agent-sdk-capabilities';
 import { getSession } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const sessionId = request.nextUrl.searchParams.get('sessionId');
     // Accept explicit providerId, or resolve from session's stored provider_id

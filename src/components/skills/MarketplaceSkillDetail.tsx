@@ -16,6 +16,7 @@ import { InstallProgressDialog } from "./InstallProgressDialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { MarketplaceSkill } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface MarketplaceSkillDetailProps {
   skill: MarketplaceSkill;
@@ -43,7 +44,7 @@ export function MarketplaceSkillDetail({
           source: skill.source,
           skillId: skill.skillId,
         });
-        const res = await fetch(`/api/skills/marketplace/readme?${params}`);
+        const res = await authFetch(`/api/skills/marketplace/readme?${params}`);
         if (!cancelled && res.ok) {
           const data = await res.json();
           setReadme(data.content || null);

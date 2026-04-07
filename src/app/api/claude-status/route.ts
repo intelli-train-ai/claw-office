@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { findClaudeBinary, getClaudeVersion, findAllClaudeBinaries, classifyClaudePath, isWindows, findGitBash, isWingetInstall } from '@/lib/platform';
 import type { ClaudeInstallInfo, ClaudeInstallType } from '@/lib/platform';
+import { requireAuth } from '@/lib/auth';
 
 /** Latest version cache */
 let cachedLatestVersion: string | null = null;
@@ -65,7 +66,10 @@ function versionGte(a: string, b: string): boolean {
   return true;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const claudePath = findClaudeBinary();
 

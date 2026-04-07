@@ -7,6 +7,7 @@ import { ChatView } from '@/components/chat/ChatView';
 import { SpinnerGap } from "@/components/ui/icon";
 import { usePanel } from '@/hooks/usePanel';
 import { useTranslation } from '@/hooks/useTranslation';
+import { authFetch } from '@/lib/api-client';
 
 interface ChatSessionPageProps {
   params: Promise<{ id: string }>;
@@ -39,7 +40,7 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
 
     async function loadSession() {
       try {
-        const sessionRes = await fetch(`/api/chat/sessions/${id}`);
+        const sessionRes = await authFetch(`/api/chat/sessions/${id}`);
         if (cancelled) return;
         if (sessionRes.ok) {
           const data: { session: ChatSession } = await sessionRes.json();
@@ -87,7 +88,7 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
 
     async function loadMessages() {
       try {
-        const res = await fetch(`/api/chat/sessions/${id}/messages?limit=30`);
+        const res = await authFetch(`/api/chat/sessions/${id}/messages?limit=30`);
         if (cancelled) return;
         if (!res.ok) {
           if (res.status === 404) {

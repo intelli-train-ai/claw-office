@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { PluginInfo, ErrorResponse, SuccessResponse } from '@/types';
 import { getPluginInfoList, setPluginEnabled } from '@/lib/plugin-discovery';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * Plugin ID format: "name@marketplace" (URL-encoded in the path segment).
@@ -24,6 +25,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<{ plugin: PluginInfo } | ErrorResponse>> {
+  const authError = requireAuth(request);
+  if (authError) return authError as any;
+
   const { id } = await params;
   const parsed = parsePluginId(id);
 
@@ -50,6 +54,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<(SuccessResponse & { layer?: string; escalated?: boolean }) | ErrorResponse>> {
+  const authError = requireAuth(request);
+  if (authError) return authError as any;
+
   try {
     const { id } = await params;
     const parsed = parsePluginId(id);

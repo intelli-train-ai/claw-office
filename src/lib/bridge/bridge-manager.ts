@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Bridge Manager — singleton orchestrator for the multi-IM bridge system.
  *
@@ -22,6 +23,7 @@ import { markdownToDiscordChunks } from './markdown/discord';
 import { getSetting, insertAuditLog, updateChannelBinding } from '../db';
 import { setBridgeModeActive } from '../telegram-bot';
 import { escapeHtml } from './adapters/telegram-utils';
+import { extractFilePathsFromText } from './file-extractor';
 import {
   validateWorkingDirectory,
   validateSessionId,
@@ -133,11 +135,14 @@ async function deliverResponse(
   }
   if (adapter.channelType === 'feishu') {
     // Feishu: pass markdown through for adapter to format as post/card
+    // Also detect file paths in response and attach them for upload
+    const attachments = extractFilePathsFromText(responseText);
     return deliver(adapter, {
       address,
       text: responseText,
       parseMode: 'Markdown',
       replyToMessageId,
+      attachments: attachments.length > 0 ? attachments : undefined,
     }, { sessionId });
   }
   if (adapter.channelType === 'qq') {

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Folder, FolderOpen, ArrowRight, CaretUp } from "@/components/ui/icon";
+import { authFetch } from '@/lib/api-client';
+import { Folder, FolderOpen, FolderPlus, ArrowRight, CaretUp, Check, X } from "@/components/ui/icon";
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -47,6 +49,9 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
   const [loading, setLoading] = useState(false);
   const [pathInput, setPathInput] = useState('');
   const [drives, setDrives] = useState<string[]>([]);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [createError, setCreateError] = useState('');
 
   const browse = useCallback(async (dir?: string) => {
     setLoading(true);
@@ -54,7 +59,7 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
       const url = dir
         ? `/api/files/browse?dir=${encodeURIComponent(dir)}`
         : '/api/files/browse';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) {
         const data: BrowseResponse = await res.json();
         setCurrentDir(data.current);
@@ -91,6 +96,36 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
     }
   };
 
+  const handleCreateFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    setCreateError('');
+    try {
+      const res = await authFetch('/api/files/browse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: currentDir, name }),
+      });
+      if (res.status === 409) {
+        setCreateError(t('folderPicker.folderExists'));
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setCreatingFolder(false);
+      setNewFolderName('');
+      browse(data.path);
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleCancelCreate = () => {
+    setCreatingFolder(false);
+    setNewFolderName('');
+    setCreateError('');
+  };
+
   const handleSelect = () => {
     onSelect(currentDir);
     onOpenChange(false);
@@ -101,6 +136,7 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
       <DialogContent className="max-w-lg overflow-hidden">
         <DialogHeader>
           <DialogTitle>{t('folderPicker.title')}</DialogTitle>
+          <DialogDescription className="sr-only">{t('folderPicker.title')}</DialogDescription>
         </DialogHeader>
 
         {/* Path input */}
@@ -154,9 +190,18 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <span className="min-w-0 overflow-x-auto whitespace-nowrap text-xs font-mono text-muted-foreground">
+            <span className="min-w-0 overflow-x-auto whitespace-nowrap text-xs font-mono text-muted-foreground flex-1">
               {currentDir}
             </span>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => { setCreatingFolder(true); setNewFolderName(''); setCreateError(''); }}
+              className="shrink-0"
+              title={t('folderPicker.newFolder')}
+            >
+              <FolderPlus size={16} />
+            </Button>
           </div>
 
           {/* Folder list */}
@@ -165,24 +210,53 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
               <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                 {t('folderPicker.loading')}
               </div>
-            ) : directories.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-                {t('folderPicker.noSubdirs')}
-              </div>
             ) : (
               <div className="p-1">
-                {directories.map((dir) => (
-                  <Button
-                    key={dir.path}
-                    variant="ghost"
-                    className="flex w-full items-center gap-2 justify-start px-3 py-1.5 text-sm text-left h-auto"
-                    onClick={() => handleNavigate(dir.path)}
-                  >
+                {creatingFolder && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5">
                     <Folder size={16} className="shrink-0 text-primary" />
-                    <span className="truncate">{dir.name}</span>
-                    <ArrowRight size={12} className="ml-auto shrink-0 text-muted-foreground" />
-                  </Button>
-                ))}
+                    <form
+                      className="flex flex-1 items-center gap-1"
+                      onSubmit={(e) => { e.preventDefault(); handleCreateFolder(); }}
+                    >
+                      <Input
+                        autoFocus
+                        value={newFolderName}
+                        onChange={(e) => { setNewFolderName(e.target.value); setCreateError(''); }}
+                        onKeyDown={(e) => { if (e.key === 'Escape') handleCancelCreate(); }}
+                        placeholder={t('folderPicker.newFolderPlaceholder')}
+                        className="h-7 text-sm flex-1"
+                      />
+                      <Button type="submit" variant="ghost" size="icon-sm" disabled={!newFolderName.trim()}>
+                        <Check size={14} />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon-sm" onClick={handleCancelCreate}>
+                        <X size={14} />
+                      </Button>
+                    </form>
+                    {createError && (
+                      <span className="text-xs text-destructive whitespace-nowrap">{createError}</span>
+                    )}
+                  </div>
+                )}
+                {directories.length === 0 && !creatingFolder ? (
+                  <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                    {t('folderPicker.noSubdirs')}
+                  </div>
+                ) : (
+                  directories.map((dir) => (
+                    <Button
+                      key={dir.path}
+                      variant="ghost"
+                      className="flex w-full items-center gap-2 justify-start px-3 py-1.5 text-sm text-left h-auto"
+                      onClick={() => handleNavigate(dir.path)}
+                    >
+                      <Folder size={16} className="shrink-0 text-primary" />
+                      <span className="truncate">{dir.name}</span>
+                      <ArrowRight size={12} className="ml-auto shrink-0 text-muted-foreground" />
+                    </Button>
+                  ))
+                )}
               </div>
             )}
           </ScrollArea>

@@ -12,8 +12,6 @@ export function HeroSection({
   content: MarketingContent['hero'];
   locale: string;
 }) {
-  const prefix = locale === 'en' ? '' : `/${locale}`;
-
   return (
     <section className="relative overflow-hidden">
       {/* Blue-gray gradient background */}

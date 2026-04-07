@@ -4,9 +4,10 @@
  * DELETE — remove account
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getWeixinAccount, setWeixinAccountEnabled, deleteWeixinAccount } from '@/lib/db';
 import { getStatus, restart } from '@/lib/bridge/bridge-manager';
+import { requireAuth } from '@/lib/auth';
 
 function isBenignRestartReason(reason: string): boolean {
   if (reason === 'no_channels_enabled') {
@@ -43,9 +44,12 @@ async function restartIfRunning(): Promise<string | null> {
 }
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ accountId: string }> },
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { accountId } = await params;
     const account = getWeixinAccount(accountId);
@@ -72,9 +76,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ accountId: string }> },
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { accountId } = await params;
     const deleted = deleteWeixinAccount(accountId);

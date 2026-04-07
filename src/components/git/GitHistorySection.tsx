@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { GitLogEntry } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface GitHistorySectionProps {
   cwd: string;
@@ -18,7 +19,7 @@ export function GitHistorySection({ cwd, onSelectCommit }: GitHistorySectionProp
     if (!cwd) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/git/log?cwd=${encodeURIComponent(cwd)}&limit=30`);
+      const res = await authFetch(`/api/git/log?cwd=${encodeURIComponent(cwd)}&limit=30`);
       const data = await res.json();
       setEntries(data.entries || []);
     } catch {

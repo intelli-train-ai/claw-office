@@ -6,6 +6,7 @@ import { Copy, Check } from '@/components/ui/icon';
 import { SetupCard } from './SetupCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { SetupCardStatus } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 const INSTALL_TYPE_LABELS: Record<string, string> = {
   native: 'Native',
@@ -69,7 +70,7 @@ export function ClaudeCodeCard({ status, onStatusChange }: ClaudeCodeCardProps) 
   const checkStatus = useCallback(async () => {
     setChecking(true);
     try {
-      const res = await fetch('/api/claude-status');
+      const res = await authFetch('/api/claude-status');
       if (res.ok) {
         const data: ClaudeStatus = await res.json();
         setClaudeStatus(data);
@@ -91,7 +92,7 @@ export function ClaudeCodeCard({ status, onStatusChange }: ClaudeCodeCardProps) 
   const handleSkip = useCallback(async () => {
     onStatusChange('skipped');
     try {
-      await fetch('/api/setup', {
+      await authFetch('/api/setup', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ card: 'claude', status: 'skipped' }),

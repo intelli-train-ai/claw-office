@@ -22,7 +22,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -49,6 +61,7 @@ import {
   COLLAPSED_INITIALIZED_KEY,
 } from "./chat-list-utils";
 import type { ChatSession } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface ChatListPanelProps {
   open: boolean;
@@ -68,6 +81,8 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
+  const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
+  const [confirmRemoveProject, setConfirmRemoveProject] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [expandedSessionGroups, setExpandedSessionGroups] = useState<Set<string>>(new Set());
@@ -107,7 +122,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
   const handleFolderSelect = useCallback(async (path: string) => {
     try {
       const { model, provider_id } = getCurrentModelAndProvider();
-      const res = await fetch("/api/chat/sessions", {
+      const res = await authFetch("/api/chat/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ working_directory: path, model, provider_id }),
@@ -138,7 +153,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     // Fall back to setup default project if no recent directory
     if (!lastDir) {
       try {
-        const setupRes = await fetch('/api/setup');
+        const setupRes = await authFetch('/api/setup');
         if (setupRes.ok) {
           const setupData = await setupRes.json();
           if (setupData.defaultProject) {
@@ -158,7 +173,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     // Validate the saved directory still exists
     setCreatingChat(true);
     try {
-      const checkRes = await fetch(
+      const checkRes = await authFetch(
         `/api/files/browse?dir=${encodeURIComponent(lastDir)}`
       );
       if (!checkRes.ok) {
@@ -166,11 +181,11 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
         localStorage.removeItem("codepilot:last-working-directory");
         let recovered = false;
         try {
-          const setupRes = await fetch('/api/setup');
+          const setupRes = await authFetch('/api/setup');
           if (setupRes.ok) {
             const setupData = await setupRes.json();
             if (setupData.defaultProject && setupData.defaultProject !== lastDir) {
-              const defaultCheck = await fetch(`/api/files/browse?dir=${encodeURIComponent(setupData.defaultProject)}`);
+              const defaultCheck = await authFetch(`/api/files/browse?dir=${encodeURIComponent(setupData.defaultProject)}`);
               if (defaultCheck.ok) {
                 lastDir = setupData.defaultProject;
                 localStorage.setItem('codepilot:last-working-directory', lastDir!);
@@ -191,7 +206,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       }
 
       const { model, provider_id } = getCurrentModelAndProvider();
-      const res = await fetch("/api/chat/sessions", {
+      const res = await authFetch("/api/chat/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ working_directory: lastDir, model, provider_id }),
@@ -232,7 +247,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const res = await fetch("/api/chat/sessions", { signal: controller.signal });
+      const res = await authFetch("/api/chat/sessions", { signal: controller.signal });
       if (res.ok) {
         const data = await res.json();
         setSessions(data.sessions || []);
@@ -278,16 +293,20 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     return () => clearInterval(interval);
   }, [fetchSessions]);
 
-  const handleDeleteSession = async (
+  const handleDeleteSessionClick = (
     e: React.MouseEvent,
     sessionId: string
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Delete this conversation?")) return;
+    setConfirmDeleteSessionId(sessionId);
+  };
+
+  const handleDeleteSessionConfirm = async (sessionId: string) => {
+    setConfirmDeleteSessionId(null);
     setDeletingSession(sessionId);
     try {
-      const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+      const res = await authFetch(`/api/chat/sessions/${sessionId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -309,7 +328,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
 
   const handleRenameSession = async (sessionId: string, newTitle: string) => {
     try {
-      const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+      const res = await authFetch(`/api/chat/sessions/${sessionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: newTitle }),
@@ -325,13 +344,17 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     }
   };
 
-  const handleRemoveProject = async (workingDirectory: string) => {
-    if (!confirm(`Remove project "${workingDirectory.split('/').pop()}" and all its conversations?`)) return;
+  const handleRemoveProjectClick = (workingDirectory: string) => {
+    setConfirmRemoveProject(workingDirectory);
+  };
+
+  const handleRemoveProjectConfirm = async (workingDirectory: string) => {
+    setConfirmRemoveProject(null);
     const projectSessions = sessions.filter((s) => s.working_directory === workingDirectory);
     const deletedIds = new Set<string>();
     for (const session of projectSessions) {
       try {
-        const res = await fetch(`/api/chat/sessions/${session.id}`, { method: "DELETE" });
+        const res = await authFetch(`/api/chat/sessions/${session.id}`, { method: "DELETE" });
         if (res.ok) {
           deletedIds.add(session.id);
           if (isInSplit(session.id)) {
@@ -354,27 +377,6 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     }
   };
 
-  const handleCreateSessionInProject = async (
-    e: React.MouseEvent,
-    workingDirectory: string
-  ) => {
-    e.stopPropagation();
-    try {
-      const { model, provider_id } = getCurrentModelAndProvider();
-      const res = await fetch("/api/chat/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ working_directory: workingDirectory, model, provider_id }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        window.dispatchEvent(new CustomEvent("session-created"));
-        router.push(`/chat/${data.session.id}`);
-      }
-    } catch {
-      // Silently fail
-    }
-  };
 
   const isSearching = searchQuery.length > 0;
 
@@ -443,7 +445,6 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     { href: "/skills", label: t('nav.skills' as TranslationKey), icon: Lightning },
     { href: "/mcp", label: t('nav.mcp' as TranslationKey), icon: Plug },
     { href: "/cli-tools", label: t('nav.cliTools' as TranslationKey), icon: Terminal },
-    { href: "/gallery", label: t('nav.gallery' as TranslationKey), icon: Image },
     { href: "/bridge", label: t('nav.bridge' as TranslationKey), icon: WifiHigh },
   ];
 
@@ -452,8 +453,9 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       className="hidden h-full shrink-0 flex-col overflow-hidden bg-sidebar/80 backdrop-blur-xl lg:flex"
       style={{ width: width ?? 240 }}
     >
-      {/* Header - extra top padding for macOS traffic lights */}
-      <div className="flex h-12 shrink-0 items-center justify-between px-3 mt-5">
+      {/* Logo + Connection Status */}
+      <div className="flex shrink-0 items-center justify-between px-3 mt-5 mb-3">
+        <img src="/logo.png" alt="CodePilot" className="h-6 object-contain" />
         <ConnectionStatus />
       </div>
 
@@ -515,13 +517,13 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
 
       {/* Section title + add folder button (fixed, not scrolling) */}
       <div className="flex items-center justify-between px-5 pt-2 pb-1.5 shrink-0">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
           {t('chatList.threads')}
         </span>
         <Button
           variant="ghost"
           size="sm"
-          className="h-5 gap-1 px-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground"
+          className="h-8 gap-1 px-2 text-xs text-muted-foreground/60 hover:text-foreground"
           onClick={() => openFolderPicker()}
         >
           <FolderPlus size={12} />
@@ -595,8 +597,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
                     onToggle={() => toggleProject(group.workingDirectory)}
                     onMouseEnter={() => setHoveredFolder(group.workingDirectory)}
                     onMouseLeave={() => setHoveredFolder(null)}
-                    onCreateSession={(e) => handleCreateSessionInProject(e, group.workingDirectory)}
-                    onRemoveProject={handleRemoveProject}
+                    onRemoveProject={handleRemoveProjectClick}
                     assistantName={assistantSummary?.name}
                     assistantMemoryCount={assistantSummary?.memoryCount}
                     lastHeartbeatDate={assistantSummary?.lastHeartbeatDate}
@@ -635,7 +636,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
                                 t={t}
                                 onMouseEnter={() => setHoveredSession(session.id)}
                                 onMouseLeave={() => setHoveredSession(null)}
-                                onDelete={handleDeleteSession}
+                                onDelete={handleDeleteSessionClick}
                                 onRename={handleRenameSession}
                                 onAddToSplit={(s) => addToSplit({
                                   sessionId: s.id,
@@ -703,6 +704,8 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       {/* Search Dialog */}
       <Dialog open={searchDialogOpen} onOpenChange={(open) => { setSearchDialogOpen(open); if (!open) setSearchQuery(""); }}>
         <DialogContent className="sm:max-w-md p-0 max-h-[60vh] flex flex-col overflow-hidden" showCloseButton={false}>
+          <DialogTitle className="sr-only">{t('chatList.searchSessions')}</DialogTitle>
+          <DialogDescription className="sr-only">{t('chatList.searchSessions')}</DialogDescription>
           <div className="p-3 shrink-0">
             <div className="relative">
               <MagnifyingGlass
@@ -761,6 +764,54 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
         onOpenChange={setFolderPickerOpen}
         onSelect={handleFolderSelect}
       />
+
+      {/* Delete conversation confirm */}
+      <AlertDialog
+        open={!!confirmDeleteSessionId}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteSessionId(null); }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('chatList.deleteConversation')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('chatList.deleteConversationConfirm')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => confirmDeleteSessionId && handleDeleteSessionConfirm(confirmDeleteSessionId)}
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove project confirm */}
+      <AlertDialog
+        open={!!confirmRemoveProject}
+        onOpenChange={(open) => { if (!open) setConfirmRemoveProject(null); }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('chatList.removeProject')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('chatList.removeProjectConfirm', { project: confirmRemoveProject?.split('/').pop() ?? '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => confirmRemoveProject && handleRemoveProjectConfirm(confirmRemoveProject)}
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </aside>
   );

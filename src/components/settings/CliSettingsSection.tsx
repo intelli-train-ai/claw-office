@@ -28,6 +28,7 @@ import {
 import { ImportSessionDialog } from "@/components/layout/ImportSessionDialog";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/i18n";
+import { authFetch } from '@/lib/api-client';
 
 interface SettingsData {
   [key: string]: unknown;
@@ -75,7 +76,7 @@ export function CliSettingsSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings");
+      const res = await authFetch("/api/settings");
       if (res.ok) {
         const data = await res.json();
         const s = data.settings || {};
@@ -115,7 +116,7 @@ export function CliSettingsSection() {
 
     setSaving(true);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await authFetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: dataToSave }),

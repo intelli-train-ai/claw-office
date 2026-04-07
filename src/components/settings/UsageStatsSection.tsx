@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
+import { authFetch } from '@/lib/api-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -196,7 +197,7 @@ export function UsageStatsSection() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/usage/stats?days=${d}`, { signal: controller.signal });
+      const res = await authFetch(`/api/usage/stats?days=${d}`, { signal: controller.signal });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);

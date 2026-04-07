@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { authFetch } from '@/lib/api-client';
 
 interface AccountInfo {
   email?: string;
@@ -19,7 +20,7 @@ export function useAccountInfo(): {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/sdk/account");
+      const res = await authFetch("/api/sdk/account");
       if (res.ok) {
         const data = await res.json();
         if (data.account) {

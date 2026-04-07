@@ -11,6 +11,7 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import type { ChatStatus } from 'ai';
 import { isSubmitEnabled } from '@/lib/message-input-logic';
+import { authFetch } from '@/lib/api-client';
 
 /**
  * Submit button that's aware of file attachments. Must be rendered inside PromptInput.
@@ -82,7 +83,7 @@ export function FileTreeAttachmentBridge() {
 
   const handleAttach = useCallback(async (filePath: string) => {
     try {
-      const res = await fetch(`/api/files/raw?path=${encodeURIComponent(filePath)}`);
+      const res = await authFetch(`/api/files/raw?path=${encodeURIComponent(filePath)}`);
       if (!res.ok) {
         // Fallback: insert as @mention if the raw API fails
         window.dispatchEvent(new CustomEvent('insert-file-mention', { detail: { path: filePath } }));

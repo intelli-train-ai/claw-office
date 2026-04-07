@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { requireAuth } from '@/lib/auth';
 
 const SETTINGS_PATH = path.join(os.homedir(), ".claude", "settings.json");
 
@@ -25,7 +26,10 @@ function writeSettingsFile(data: Record<string, unknown>): void {
   fs.writeFileSync(SETTINGS_PATH, JSON.stringify(data, null, 2), "utf-8");
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const settings = readSettingsFile();
     return NextResponse.json({ settings });
@@ -37,7 +41,10 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { settings } = body;

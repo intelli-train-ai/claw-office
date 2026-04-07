@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getActiveProvider, getSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 interface SkillInfo {
   name: string;
@@ -92,7 +93,10 @@ function resolveApiConfig(model?: string): ApiConfig {
   return { supported: true, url: messagesUrl, headers, model: modelId };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = (await request.json()) as SearchRequest;
     const { query, skills, model } = body;

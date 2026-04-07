@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readDashboard, removeWidget, updateSettings, moveWidget, reorderWidgets } from '@/lib/dashboard-store';
+import { requireAuth } from '@/lib/auth';
 
 /** GET /api/dashboard?dir={workingDirectory} — read dashboard config */
 export async function GET(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const dir = req.nextUrl.searchParams.get('dir');
     if (!dir) {
@@ -18,6 +22,9 @@ export async function GET(req: NextRequest) {
 
 /** PUT /api/dashboard — update settings or reorder widgets */
 export async function PUT(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { workingDirectory, settings, widgetId, move, widgetOrder } = body;
@@ -48,6 +55,9 @@ export async function PUT(req: NextRequest) {
 
 /** DELETE /api/dashboard?dir={workingDirectory}&widgetId={id} — remove a widget */
 export async function DELETE(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const dir = req.nextUrl.searchParams.get('dir');
     const widgetId = req.nextUrl.searchParams.get('widgetId');

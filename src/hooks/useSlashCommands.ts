@@ -3,6 +3,7 @@ import type { PopoverItem, PopoverMode, SkillKind } from '@/types';
 import { detectPopoverTrigger, resolveItemSelection } from '@/lib/message-input-logic';
 import { BUILT_IN_COMMANDS, COMMAND_PROMPTS } from '@/lib/constants/commands';
 import { COMMAND_ICONS } from '@/lib/constants/command-icons';
+import { authFetch } from '@/lib/api-client';
 
 // Re-export for backward compatibility
 export { BUILT_IN_COMMANDS, COMMAND_PROMPTS };
@@ -66,7 +67,7 @@ export function useSlashCommands(opts: {
       const params = new URLSearchParams();
       if (sessionId) params.set('session_id', sessionId);
       if (filter) params.set('q', filter);
-      const res = await fetch(`/api/files?${params.toString()}`);
+      const res = await authFetch(`/api/files?${params.toString()}`);
       if (!res.ok) return [];
       const data = await res.json();
       const tree = data.tree || [];
@@ -92,7 +93,7 @@ export function useSlashCommands(opts: {
       if (workingDirectory) params.set('cwd', workingDirectory);
       if (sessionId) params.set('sessionId', sessionId);
       const qs = params.toString();
-      const res = await fetch(`/api/skills${qs ? `?${qs}` : ''}`);
+      const res = await authFetch(`/api/skills${qs ? `?${qs}` : ''}`);
       if (res.ok) {
         const data = await res.json();
         const skills = data.skills || [];

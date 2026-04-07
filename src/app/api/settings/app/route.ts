@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, setSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * CodePilot app-level settings (stored in SQLite, separate from ~/.claude/settings.json).
@@ -18,7 +19,10 @@ const ALLOWED_KEYS = [
   'default_panel',
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const result: Record<string, string> = {};
     for (const key of ALLOWED_KEYS) {
@@ -40,6 +44,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { settings } = body;

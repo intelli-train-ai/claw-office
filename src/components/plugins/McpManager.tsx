@@ -11,6 +11,7 @@ import { ConfigEditor } from "@/components/plugins/ConfigEditor";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/i18n";
 import type { MCPServer } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface McpRuntimeStatus {
   name: string;
@@ -36,7 +37,7 @@ export function McpManager() {
   const fetchServers = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetch("/api/plugins/mcp");
+      const res = await authFetch("/api/plugins/mcp");
       const data = await res.json();
       if (data.mcpServers) {
         setServers(data.mcpServers);
@@ -55,7 +56,7 @@ export function McpManager() {
     setRuntimeLoading(true);
     try {
       // Try to get active session from stream manager
-      const sessionsRes = await fetch('/api/chat/sessions?status=active&limit=1');
+      const sessionsRes = await authFetch('/api/chat/sessions?status=active&limit=1');
       const sessionsData = await sessionsRes.json();
       const sessionId = sessionsData?.sessions?.[0]?.id;
 
@@ -66,7 +67,7 @@ export function McpManager() {
       }
 
       setActiveSessionId(sessionId);
-      const res = await fetch(`/api/plugins/mcp/status?sessionId=${encodeURIComponent(sessionId)}`);
+      const res = await authFetch(`/api/plugins/mcp/status?sessionId=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (data.servers) {
         setRuntimeStatus(data.servers);
@@ -100,7 +101,7 @@ export function McpManager() {
     updated[name] = { ...updated[name], enabled };
     setServers(updated);
     try {
-      const res = await fetch('/api/plugins/mcp', {
+      const res = await authFetch('/api/plugins/mcp', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mcpServers: updated }),
@@ -117,7 +118,7 @@ export function McpManager() {
 
   async function handleDelete(name: string) {
     try {
-      const res = await fetch(`/api/plugins/mcp/${encodeURIComponent(name)}`, {
+      const res = await authFetch(`/api/plugins/mcp/${encodeURIComponent(name)}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -143,7 +144,7 @@ export function McpManager() {
       delete updated[editingName];
       updated[name] = original?._source ? { ...server, _source: original._source } : server;
       try {
-        await fetch("/api/plugins/mcp", {
+        await authFetch("/api/plugins/mcp", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mcpServers: updated }),
@@ -158,7 +159,7 @@ export function McpManager() {
       const serverWithSource = original?._source ? { ...server, _source: original._source } : server;
       const updated = { ...servers, [name]: serverWithSource };
       try {
-        await fetch("/api/plugins/mcp", {
+        await authFetch("/api/plugins/mcp", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mcpServers: updated }),
@@ -169,7 +170,7 @@ export function McpManager() {
       }
     } else {
       try {
-        const res = await fetch("/api/plugins/mcp", {
+        const res = await authFetch("/api/plugins/mcp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, server }),
@@ -202,7 +203,7 @@ export function McpManager() {
         settingsServers[name] = { ...server, _source: 'settings.json' };
       }
       const merged = { ...claudeJsonServers, ...settingsServers };
-      await fetch("/api/plugins/mcp", {
+      await authFetch("/api/plugins/mcp", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mcpServers: merged }),

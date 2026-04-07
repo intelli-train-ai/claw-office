@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { requireAuth } from '@/lib/auth';
 
 type WorkspaceStatus = 'empty' | 'normal_directory' | 'existing_workspace' | 'partial_workspace' | 'invalid';
 
@@ -25,6 +26,9 @@ function countExistingCoreFiles(dir: string): number {
 }
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const inspectPath = searchParams.get('path');

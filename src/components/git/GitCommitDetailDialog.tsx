@@ -5,6 +5,7 @@ import { X, SpinnerGap } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { GitCommitDetail } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface GitCommitDetailDialogProps {
   cwd: string;
@@ -26,7 +27,7 @@ export function GitCommitDetailDialog({ cwd, sha, onClose }: GitCommitDetailDial
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/git/commit-detail/${sha}?cwd=${encodeURIComponent(cwd)}`);
+        const res = await authFetch(`/api/git/commit-detail/${sha}?cwd=${encodeURIComponent(cwd)}`);
         if (cancelled) return;
         if (!res.ok) throw new Error('Failed to load commit detail');
         const data = await res.json();

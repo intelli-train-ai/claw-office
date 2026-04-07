@@ -13,6 +13,7 @@ import { CliToolBatchDescribeDialog } from "./CliToolBatchDescribeDialog";
 import { SpinnerGap, Sparkle, ArrowSquareOut, Warning, Plus, Trash, Star } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { EXTRA_WELL_KNOWN_BINS } from "@/lib/cli-tools-catalog";
+import { authFetch } from '@/lib/api-client';
 
 type AutoDescCache = Record<string, { zh: string; en: string; structured?: unknown }>;
 
@@ -24,6 +25,7 @@ export function CliToolsManager() {
   const [extraDetected, setExtraDetected] = useState<CliToolRuntimeInfo[]>([]);
   const [platform, setPlatform] = useState<string>('');
   const [hasBrew, setHasBrew] = useState(true);
+  const [hasApt, setHasApt] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autoDescriptions, setAutoDescriptions] = useState<AutoDescCache>({});
   const [customTools, setCustomTools] = useState<CustomCliTool[]>([]);
@@ -37,8 +39,8 @@ export function CliToolsManager() {
   const fetchData = useCallback(async () => {
     try {
       const [catalogRes, installedRes] = await Promise.all([
-        fetch('/api/cli-tools/catalog'),
-        fetch('/api/cli-tools/installed'),
+        authFetch('/api/cli-tools/catalog'),
+        authFetch('/api/cli-tools/installed'),
       ]);
       const catalogData = await catalogRes.json();
       const installedData = await installedRes.json();
@@ -47,6 +49,7 @@ export function CliToolsManager() {
       setExtraDetected(installedData.extra || []);
       setPlatform(installedData.platform || '');
       setHasBrew(installedData.hasBrew !== false);
+      setHasApt(installedData.hasApt === true);
       setCustomTools(installedData.custom || []);
 
       // Load descriptions from DB (returned by installed API)
@@ -168,8 +171,9 @@ export function CliToolsManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
         <SpinnerGap size={24} className="animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">{t('cliTools.loading' as TranslationKey)}</span>
       </div>
     );
   }
@@ -341,8 +345,8 @@ export function CliToolsManager() {
       <section>
         <h2 className="text-sm font-medium text-muted-foreground mb-3">{t('cliTools.recommended')}</h2>
 
-        {/* Brew not installed warning */}
-        {!hasBrew && (platform === 'darwin' || platform === 'linux') && (
+        {/* Package manager not installed warning — skip on Linux with apt */}
+        {!hasBrew && platform === 'darwin' && (
           <div className="flex items-start gap-2 rounded-lg border border-status-warning-border bg-status-warning-muted px-3 py-2.5 mb-3">
             <Warning size={16} className="text-status-warning-foreground shrink-0 mt-0.5" />
             <div className="text-xs text-muted-foreground">
@@ -351,6 +355,15 @@ export function CliToolsManager() {
               <code className="block mt-1.5 bg-muted/50 rounded px-2 py-1 text-[11px] font-mono select-all">
                 /bin/bash -c &quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)&quot;
               </code>
+            </div>
+          </div>
+        )}
+        {platform === 'linux' && !hasApt && !hasBrew && (
+          <div className="flex items-start gap-2 rounded-lg border border-status-warning-border bg-status-warning-muted px-3 py-2.5 mb-3">
+            <Warning size={16} className="text-status-warning-foreground shrink-0 mt-0.5" />
+            <div className="text-xs text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">{t('cliTools.noPkgManager')}</p>
+              <p>{t('cliTools.noPkgManagerGuide')}</p>
             </div>
           </div>
         )}

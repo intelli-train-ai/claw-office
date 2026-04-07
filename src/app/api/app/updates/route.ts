@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { getRuntimeArchitectureInfo } from "@/lib/platform";
 import { selectRecommendedReleaseAsset, type ReleaseAsset } from "@/lib/update-release";
+import { requireAuth } from '@/lib/auth';
 
-const GITHUB_REPO = "op7418/CodePilot";
+const GITHUB_REPO = "intelli-train-ai/CodePilot";
 
 function compareSemver(a: string, b: string): number {
   const pa = a.replace(/^v/, "").split(".").map(Number);
@@ -14,18 +15,25 @@ function compareSemver(a: string, b: string): number {
   return 0;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const currentVersion = process.env.NEXT_PUBLIC_APP_VERSION || "0.0.0";
     const runtimeInfo = getRuntimeArchitectureInfo();
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
       {
         headers: { Accept: "application/vnd.github.v3+json" },
         next: { revalidate: 300 },
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeout);
 
     if (!res.ok) {
       return NextResponse.json(

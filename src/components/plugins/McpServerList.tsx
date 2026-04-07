@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import type { TranslationKey } from '@/i18n';
 import type { MCPServer } from '@/types';
 import { useState, useCallback } from 'react';
+import { authFetch } from '@/lib/api-client';
 
 interface McpRuntimeStatus {
   name: string;
@@ -64,7 +65,7 @@ export function McpServerList({ servers, onEdit, onDelete, onToggleEnabled, runt
     if (!activeSessionId) return;
     setReconnecting(prev => new Set(prev).add(serverName));
     try {
-      await fetch('/api/plugins/mcp/reconnect', {
+      await authFetch('/api/plugins/mcp/reconnect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: activeSessionId, serverName }),
@@ -84,7 +85,7 @@ export function McpServerList({ servers, onEdit, onDelete, onToggleEnabled, runt
     if (!activeSessionId) return;
     setToggling(prev => new Set(prev).add(serverName));
     try {
-      await fetch('/api/plugins/mcp/toggle', {
+      await authFetch('/api/plugins/mcp/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: activeSessionId, serverName, enabled }),

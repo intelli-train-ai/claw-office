@@ -65,6 +65,20 @@ export interface OutboundMessage {
   inlineButtons?: InlineButton[][];
   /** If replying to a specific message */
   replyToMessageId?: string;
+  /** File attachments (images, files, videos) to send */
+  attachments?: OutboundAttachment[];
+}
+
+/** Attachment to send to an IM channel */
+export interface OutboundAttachment {
+  /** Original file name */
+  name: string;
+  /** MIME type (e.g. image/png, video/mp4, application/pdf) */
+  mimeType: string;
+  /** File content as Buffer, or absolute path to file on disk */
+  data: Buffer | string;
+  /** File size in bytes */
+  size: number;
 }
 
 /** Inline keyboard button for permission prompts */

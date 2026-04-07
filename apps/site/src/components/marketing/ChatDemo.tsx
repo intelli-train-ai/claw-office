@@ -132,7 +132,6 @@ const DEMO_THEME_VARS = {
 /* ------------------------------------------------------------------ */
 
 function BadgeIcon({ type }: { type: string }) {
-  const cls = 'h-3 w-3';
   switch (type) {
     case 'skill': return <Lightning size={12} />;
     case 'mcp': return <Plug size={12} />;

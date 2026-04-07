@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, setSetting, getDb } from '@/lib/db';
 import { findClaudeBinary } from '@/lib/platform';
+import { requireAuth } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     // Check if setup was already completed
     const completedRaw = getSetting('setup_completed');
@@ -84,6 +88,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { card, status, value } = body;

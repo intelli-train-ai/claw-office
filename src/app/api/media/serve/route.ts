@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import fs from 'fs/promises';
 import { createReadStream, statSync } from 'fs';
 import path from 'path';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,9 @@ const VIDEO_AUDIO_TYPES = new Set(
  * Supports HTTP Range requests for video/audio seeking.
  */
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const filePath = request.nextUrl.searchParams.get('path');
 
   if (!filePath) {

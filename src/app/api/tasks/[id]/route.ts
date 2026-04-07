@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateTask, deleteTask, getTask, getScheduledTask, deleteScheduledTask } from '@/lib/db';
 import type { TaskResponse, ErrorResponse, UpdateTaskRequest } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -34,6 +35,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {
@@ -64,7 +68,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {

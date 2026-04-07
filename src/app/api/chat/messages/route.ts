@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addMessage, updateMessageContent, updateMessageBySessionAndHint, getSession } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -9,6 +10,9 @@ export const runtime = 'nodejs';
  * Used by image-gen mode to write user/assistant messages directly.
  */
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { session_id, role, content, token_usage } = body as {
@@ -47,6 +51,9 @@ export async function POST(request: NextRequest) {
  * searching by session_id + prompt_hint for the real DB message.
  */
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { message_id, content, session_id, prompt_hint, raw_request_block } = body as {

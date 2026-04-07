@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getLocalDateString } from "@/lib/utils";
+import { authFetch } from '@/lib/api-client';
 
 interface FileStatus {
   exists: boolean;
@@ -33,7 +34,7 @@ export function useAssistantWorkspace() {
   const refetch = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetch("/api/settings/workspace");
+      const res = await authFetch("/api/settings/workspace");
       if (res.ok) {
         const data = await res.json();
         setWorkspace(data);
@@ -53,7 +54,7 @@ export function useAssistantWorkspace() {
 
   const setWorkspacePath = useCallback(async (path: string) => {
     try {
-      const res = await fetch("/api/settings/workspace", {
+      const res = await authFetch("/api/settings/workspace", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path }),
@@ -67,7 +68,7 @@ export function useAssistantWorkspace() {
   const initializeWorkspace = useCallback(async () => {
     if (!workspace?.path) return;
     try {
-      const res = await fetch("/api/settings/workspace", {
+      const res = await authFetch("/api/settings/workspace", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: workspace.path, initialize: true }),

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
+import { authFetch } from '@/lib/api-client';
 
 interface DeriveWorktreeDialogProps {
   cwd: string;
@@ -34,7 +35,7 @@ export function DeriveWorktreeDialog({ cwd, repoName, sessionId, onClose }: Deri
     setCreating(true);
     setError(null);
     try {
-      const res = await fetch('/api/git/worktrees/derive', {
+      const res = await authFetch('/api/git/worktrees/derive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cwd, branch: branch.trim(), sourceSessionId: sessionId }),

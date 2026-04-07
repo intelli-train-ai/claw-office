@@ -24,6 +24,7 @@ import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { FieldRow } from "@/components/patterns/FieldRow";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
 import { AppearanceSection } from "./AppearanceSection";
+import { authFetch } from '@/lib/api-client';
 
 function UpdateCard() {
   const { updateInfo, checking, checkForUpdates, downloadUpdate, quitAndInstall, setShowDialog } = useUpdate();
@@ -94,7 +95,7 @@ function UpdateCard() {
                     className="h-auto p-0 text-xs text-muted-foreground"
                     onClick={() => setShowDialog(true)}
                   >
-                    {t('gallery.viewDetails')}
+                    {t('settings.viewRelease')}
                   </Button>
                 )}
               </div>
@@ -134,7 +135,7 @@ export function GeneralSection() {
 
   const fetchAppSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/app");
+      const res = await authFetch("/api/settings/app");
       if (res.ok) {
         const data = await res.json();
         const appSettings = data.settings || {};
@@ -164,7 +165,7 @@ export function GeneralSection() {
   const saveSkipPermissions = async (enabled: boolean) => {
     setSkipPermSaving(true);
     try {
-      const res = await fetch("/api/settings/app", {
+      const res = await authFetch("/api/settings/app", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -198,7 +199,7 @@ export function GeneralSection() {
   const handleGenerativeUIToggle = async (checked: boolean) => {
     setGenerativeUISaving(true);
     try {
-      const res = await fetch("/api/settings/app", {
+      const res = await authFetch("/api/settings/app", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

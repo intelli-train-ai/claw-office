@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { MarketplaceSkillCard } from "./MarketplaceSkillCard";
 import { MarketplaceSkillDetail } from "./MarketplaceSkillDetail";
 import type { MarketplaceSkill } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface MarketplaceBrowserProps {
   onInstalled: () => void;
@@ -28,7 +29,7 @@ export function MarketplaceBrowser({ onInstalled }: MarketplaceBrowserProps) {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       params.set("limit", "20");
-      const res = await fetch(`/api/skills/marketplace/search?${params}`);
+      const res = await authFetch(`/api/skills/marketplace/search?${params}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `HTTP ${res.status}`);

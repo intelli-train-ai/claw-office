@@ -18,7 +18,7 @@ export function ScrollNav({ locale }: { locale: string }) {
   }, []);
 
   useEffect(() => {
-    fetch('https://api.github.com/repos/op7418/CodePilot', { next: { revalidate: 3600 } } as RequestInit)
+    fetch('https://api.github.com/repos/intelli-train-ai/CodePilot', { next: { revalidate: 3600 } } as RequestInit)
       .then((r) => r.json())
       .then((d) => {
         if (d.stargazers_count != null) {
@@ -77,7 +77,7 @@ export function ScrollNav({ locale }: { locale: string }) {
 
           {/* GitHub + stars */}
           <a
-            href="https://github.com/op7418/CodePilot"
+            href="https://github.com/intelli-train-ai/CodePilot"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"

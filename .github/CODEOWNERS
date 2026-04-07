@@ -1,0 +1,2 @@
+# Require review from repo owner for CI/CD and security-sensitive files
+/.github/ @op7418

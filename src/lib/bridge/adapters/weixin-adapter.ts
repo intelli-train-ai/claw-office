@@ -247,14 +247,19 @@ export class WeixinAdapter extends BaseChannelAdapter {
     return null;
   }
 
-  isAuthorized(_userId: string, chatId: string): boolean {
+  isAuthorized(userId: string, chatId: string): boolean {
     // Decode the synthetic chatId to get accountId
     const decoded = decodeWeixinChatId(chatId);
     if (!decoded) return false;
 
     // Check per-account allowed_users (stored in settings)
-    // For now, all users are allowed (WeChat bot already restricts to paired users)
-    return true;
+    const allowedRaw = getSetting('bridge_weixin_allowed_users') ?? '';
+    const allowedUsers = allowedRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+    // If no allowlist configured, allow all (WeChat bot already restricts to paired users)
+    if (allowedUsers.length === 0) return true;
+
+    return allowedUsers.includes(userId);
   }
 
   // ── Per-Account Poll Loop ──────────────────────────────────

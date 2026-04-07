@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { activateProvider, deactivateAllProviders, getProvider } from '@/lib/db';
 import type { ErrorResponse } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {

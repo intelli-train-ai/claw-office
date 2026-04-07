@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { GitBranch } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 export function useGitBranches(cwd: string) {
   const [branches, setBranches] = useState<GitBranch[]>([]);
@@ -13,7 +14,7 @@ export function useGitBranches(cwd: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/git/branches?cwd=${encodeURIComponent(cwd)}`);
+      const res = await authFetch(`/api/git/branches?cwd=${encodeURIComponent(cwd)}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to fetch branches');

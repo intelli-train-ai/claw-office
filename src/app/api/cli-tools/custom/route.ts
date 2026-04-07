@@ -1,15 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { access, constants } from 'fs/promises';
 import path from 'path';
 import { getAllCustomCliTools, createCustomCliTool } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 const execFileAsync = promisify(execFile);
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const tools = getAllCustomCliTools();
     return NextResponse.json({ tools });
@@ -22,7 +26,10 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { binPath, name } = body as { binPath?: string; name?: string };

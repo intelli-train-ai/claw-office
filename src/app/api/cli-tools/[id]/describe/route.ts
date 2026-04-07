@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { CLI_TOOLS_CATALOG, EXTRA_WELL_KNOWN_BINS } from '@/lib/cli-tools-catalog';
 import { generateTextViaSdk } from '@/lib/claude-client';
 import { upsertCliToolDescription, getCustomCliTool } from '@/lib/db';
-import { detectAllCliTools } from '@/lib/cli-tools-detect';
 import { getExpandedPath } from '@/lib/platform';
+import { requireAuth } from '@/lib/auth';
 
 const execFileAsync = promisify(execFile);
 
@@ -32,9 +32,12 @@ function extractJson(raw: string): Record<string, unknown> {
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
 
   const catalogTool = CLI_TOOLS_CATALOG.find(t => t.id === id);

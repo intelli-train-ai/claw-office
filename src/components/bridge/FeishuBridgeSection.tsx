@@ -16,6 +16,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { FieldRow } from "@/components/patterns/FieldRow";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
+import { authFetch } from '@/lib/api-client';
 
 interface FeishuBridgeSettings {
   bridge_feishu_app_id: string;
@@ -125,7 +126,7 @@ export function FeishuBridgeSection() {
   // ── Fetch ──
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/feishu");
+      const res = await authFetch("/api/settings/feishu");
       if (res.ok) {
         const data = await res.json();
         const s = { ...DEFAULT_SETTINGS, ...data.settings };
@@ -167,7 +168,7 @@ export function FeishuBridgeSection() {
 
   // ── Save helpers ──
   const saveToApi = async (updates: Partial<FeishuBridgeSettings>) => {
-    const res = await fetch("/api/settings/feishu", {
+    const res = await authFetch("/api/settings/feishu", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ settings: updates }),
@@ -233,7 +234,7 @@ export function FeishuBridgeSection() {
         return;
       }
 
-      const res = await fetch("/api/settings/feishu/verify", {
+      const res = await authFetch("/api/settings/feishu/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

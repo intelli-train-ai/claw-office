@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import fs from "fs";
 import path from "path";
 import os from "os";
 import crypto from "crypto";
 import type { SkillKind } from "@/types";
+import { requireAuth } from '@/lib/auth';
 
 function getGlobalCommandsDir(): string {
   return path.join(os.homedir(), ".claude", "commands");
@@ -237,12 +238,15 @@ function findSkillFile(
 }
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { name } = await params;
-    const url = new URL(_request.url);
+    const url = new URL(request.url);
     const sourceParam = url.searchParams.get("source");
     const cwdParam = url.searchParams.get("cwd") || undefined;
     const installedSource =
@@ -304,9 +308,12 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { name } = await params;
     const body = await request.json();
@@ -368,12 +375,15 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { name } = await params;
-    const url = new URL(_request.url);
+    const url = new URL(request.url);
     const sourceParam = url.searchParams.get("source");
     const cwdParam = url.searchParams.get("cwd") || undefined;
     const installedSource =

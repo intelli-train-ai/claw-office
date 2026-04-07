@@ -5,6 +5,7 @@ import {
   getSnapshot,
   clearSnapshot,
 } from '@/lib/stream-session-manager';
+import { authFetch } from '@/lib/api-client';
 import { transferPendingToMessage } from '@/lib/image-ref-store';
 
 interface UseStreamSubscriptionOpts {
@@ -41,7 +42,7 @@ export function useStreamSubscription({
         if (existing.phase === 'completed') {
           // Normal completion — both messages are persisted. Re-fetch from DB
           // to get canonical state and avoid duplicating the temp assistant message.
-          fetch(`/api/chat/sessions/${sessionId}/messages?limit=50`)
+          authFetch(`/api/chat/sessions/${sessionId}/messages?limit=50`)
             .then(res => res.ok ? res.json() : null)
             .then(data => {
               if (data?.messages) {
@@ -111,8 +112,6 @@ export function useStreamSubscription({
             created_at: new Date().toISOString(),
             token_usage: event.snapshot.tokenUsage ? JSON.stringify(event.snapshot.tokenUsage) : null,
           };
-          // Transfer pending reference images to this message ID
-          transferPendingToMessage(assistantMessage.id);
           setMessages((prev) => [...prev, assistantMessage]);
         }
 

@@ -9,6 +9,7 @@ import type {
   ErrorResponse,
   SuccessResponse,
 } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 function getSettingsPath(): string {
   return path.join(os.homedir(), '.claude', 'settings.json');
@@ -41,7 +42,10 @@ function writeSettings(settings: Record<string, unknown>): void {
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
 }
 
-export async function GET(): Promise<NextResponse<MCPConfigResponse | ErrorResponse>> {
+export async function GET(request: NextRequest): Promise<NextResponse<MCPConfigResponse | ErrorResponse>> {
+  const authError = requireAuth(request);
+  if (authError) return authError as any;
+
   try {
     const settings = readSettings();
     const userConfig = readJsonFile(getUserConfigPath());
@@ -86,6 +90,9 @@ export async function GET(): Promise<NextResponse<MCPConfigResponse | ErrorRespo
 export async function PUT(
   request: NextRequest
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const authError = requireAuth(request);
+  if (authError) return authError as any;
+
   try {
     const body = await request.json();
     const incoming = body.mcpServers as Record<string, MCPServerConfig & { _source?: string }>;
@@ -143,6 +150,9 @@ export async function PUT(
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const authError = requireAuth(request);
+  if (authError) return authError as any;
+
   try {
     const body = await request.json();
     const { name, server } = body as { name: string; server: MCPServerConfig };

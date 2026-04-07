@@ -102,7 +102,7 @@ export function SessionListItem({
         {/* Right area — fixed width, time or dots swap via opacity */}
         <span className="shrink-0 w-[38px] flex items-center justify-end">
           <span className={cn(
-            "text-[11px] text-muted-foreground/40 truncate transition-opacity",
+            "text-xs text-muted-foreground/40 truncate transition-opacity",
             showActions ? "opacity-0" : "opacity-100"
           )}>
             {formatRelativeTime(session.updated_at, t)}
@@ -116,7 +116,7 @@ export function SessionListItem({
             variant="ghost"
             size="icon"
             className={cn(
-              "absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-opacity h-5 w-5 p-0",
+              "absolute right-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-opacity h-7 w-7 p-0",
               showActions ? "opacity-100" : "opacity-0 pointer-events-none"
             )}
             onPointerDown={(e) => e.stopPropagation()}
