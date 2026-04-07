@@ -15,7 +15,7 @@ import type {
 } from '../types';
 import type { FileAttachment } from '@/types';
 import { BaseChannelAdapter, registerAdapterFactory } from '../channel-adapter';
-import { callTelegramApi, sendMessageDraft } from './telegram-utils';
+import { callTelegramApi, sendMessageDraft, telegramFetch } from './telegram-utils';
 import {
   isImageEnabled,
   downloadPhoto,
@@ -475,7 +475,7 @@ export class TelegramAdapter extends BaseChannelAdapter {
         }
 
         const url = `${TELEGRAM_API}/bot${token}/getUpdates`;
-        const res = await fetch(url, {
+        const res = await telegramFetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, setSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * Feishu Bot bridge settings.
@@ -19,7 +20,10 @@ const FEISHU_KEYS = [
   'bridge_feishu_require_mention',
 ] as const;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const result: Record<string, string> = {};
     for (const key of FEISHU_KEYS) {
@@ -42,6 +46,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { settings } = body;

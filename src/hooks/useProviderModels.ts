@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { ProviderModelGroup } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 // Default Claude model options — used as fallback when API is unavailable
 export const DEFAULT_MODEL_OPTIONS = [
@@ -29,7 +30,7 @@ export function useProviderModels(
   const [globalDefaultProvider, setGlobalDefaultProvider] = useState<string | undefined>();
 
   const fetchAll = useCallback(() => {
-    fetch('/api/providers/models')
+    authFetch('/api/providers/models')
       .then((r) => r.json())
       .then((data) => {
         if (data.groups && data.groups.length > 0) {
@@ -55,7 +56,7 @@ export function useProviderModels(
       });
 
     // Fetch global default model
-    fetch('/api/providers/options?providerId=__global__')
+    authFetch('/api/providers/options?providerId=__global__')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         setGlobalDefaultModel(data?.options?.default_model || undefined);

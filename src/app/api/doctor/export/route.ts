@@ -1,8 +1,9 @@
 import os from 'os';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getLastDiagnosisResult, runDiagnosis, getLastLiveProbeError } from '@/lib/provider-doctor';
 import { getRecentLogs } from '@/lib/runtime-log';
 import { resolveProvider } from '@/lib/provider-resolver';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -98,7 +99,10 @@ function sanitizeValue(value: unknown): unknown {
   return value;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     // Use cached diagnosis if available (avoid re-running live probe).
     // Only run fresh diagnosis if Doctor hasn't been opened yet.

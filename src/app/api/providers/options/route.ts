@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProviderOptions, setProviderOptions } from '@/lib/db';
 import type { ProviderOptions } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * GET /api/providers/options?providerId=xxx
  * Returns per-provider options (thinking_mode, context_1m).
  */
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const providerId = request.nextUrl.searchParams.get('providerId') || 'env';
   const options = getProviderOptions(providerId);
   return NextResponse.json({ options });
@@ -17,6 +21,9 @@ export async function GET(request: NextRequest) {
  * Update per-provider options. Body: { providerId, options: { thinking_mode?, context_1m? } }
  */
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { providerId = 'env', options } = body as { providerId?: string; options: ProviderOptions };

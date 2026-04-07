@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { CliToolItem, PopoverMode } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 export interface UseCliToolsFetchReturn {
   cliTools: CliToolItem[];
@@ -41,8 +42,8 @@ export function useCliToolsFetch(opts: {
   const fetchCliTools = useCallback(async () => {
     try {
       const [installedRes, catalogRes] = await Promise.all([
-        fetch('/api/cli-tools/installed'),
-        fetch('/api/cli-tools/catalog'),
+        authFetch('/api/cli-tools/installed'),
+        authFetch('/api/cli-tools/catalog'),
       ]);
       const installedData = await installedRes.json();
       const catalogData = await catalogRes.json();

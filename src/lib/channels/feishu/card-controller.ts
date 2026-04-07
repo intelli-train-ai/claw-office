@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Feishu Card Streaming Controller
  *
@@ -259,11 +260,11 @@ class FeishuCardStreamController implements CardStreamController {
     }
 
     try {
-      // Close streaming mode
+      // Close streaming mode via card settings
       state.sequence++;
       await getCardKitV2(this.client).card.setStreamingMode({
         path: { card_id: state.cardId },
-        data: { streaming_mode: false, sequence: state.sequence },
+        data: { settings: JSON.stringify({ streaming_mode: false }), sequence: state.sequence },
       });
 
       // Build final card elements
@@ -328,7 +329,7 @@ class FeishuCardStreamController implements CardStreamController {
       state.sequence++;
       await getCardKitV2(this.client).card.update({
         path: { card_id: state.cardId },
-        data: { type: 'card_json', data: JSON.stringify(finalCard), sequence: state.sequence },
+        data: { card: { type: 'card_json', data: JSON.stringify(finalCard) }, sequence: state.sequence },
       });
     } catch (err: unknown) {
       console.error(LOG_TAG, 'Finalize failed:', errMsg(err));

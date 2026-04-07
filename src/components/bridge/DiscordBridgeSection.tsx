@@ -16,6 +16,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { FieldRow } from "@/components/patterns/FieldRow";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
+import { authFetch } from '@/lib/api-client';
 
 interface DiscordBridgeSettings {
   bridge_discord_bot_token: string;
@@ -61,7 +62,7 @@ export function DiscordBridgeSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/discord");
+      const res = await authFetch("/api/settings/discord");
       if (res.ok) {
         const data = await res.json();
         const s = { ...DEFAULT_SETTINGS, ...data.settings };
@@ -86,7 +87,7 @@ export function DiscordBridgeSection() {
   const saveSettings = async (updates: Partial<DiscordBridgeSettings>) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/settings/discord", {
+      const res = await authFetch("/api/settings/discord", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: updates }),
@@ -132,7 +133,7 @@ export function DiscordBridgeSection() {
         return;
       }
 
-      const res = await fetch("/api/settings/discord/verify", {
+      const res = await authFetch("/api/settings/discord/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bot_token: botToken }),

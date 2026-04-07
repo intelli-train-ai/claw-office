@@ -1,15 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Feishu outbound message rendering and sending.
  *
  * Text messages use `post` format with `md` tag for markdown rendering.
  * Card messages (buttons, permissions) use Schema V2 interactive cards.
+ * Media messages (images, files, videos) are uploaded then sent as separate messages.
  *
  * Markdown is optimized for Feishu: heading demotion, table spacing,
  * code block padding, and invalid image key stripping.
  */
 
+import * as fs from 'fs';
 import type * as lark from '@larksuiteoapi/node-sdk';
-import type { OutboundMessage, SendResult } from '../../bridge/types';
+import type { OutboundAttachment, OutboundMessage, SendResult } from '../../bridge/types';
 
 /** Extract error message from unknown catch value */
 function errMsg(err: unknown): string {
@@ -102,12 +105,193 @@ function htmlToFeishuMarkdown(text: string): string {
     .replace(/<\/?[^>]+>/g, '');
 }
 
+// ─── Media upload limits ─────────────────────────────────────────────────────
+
+const IMAGE_MAX_SIZE = 10 * 1024 * 1024;  // 10 MB
+const FILE_MAX_SIZE = 30 * 1024 * 1024;   // 30 MB
+
+/** Map MIME type to Feishu file_type for im.file.create */
+function resolveFileType(mimeType: string): 'opus' | 'mp4' | 'pdf' | 'doc' | 'xls' | 'ppt' | 'stream' {
+  if (mimeType.startsWith('video/') || mimeType === 'video/mp4') return 'mp4';
+  if (mimeType.startsWith('audio/')) return 'opus';
+  if (mimeType === 'application/pdf') return 'pdf';
+  if (mimeType.includes('word') || mimeType.includes('msword')) return 'doc';
+  if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'xls';
+  if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ppt';
+  return 'stream';
+}
+
+/** Read attachment data as Buffer */
+function readAttachmentBuffer(attachment: OutboundAttachment): Buffer {
+  if (Buffer.isBuffer(attachment.data)) return attachment.data;
+  // string → file path
+  return fs.readFileSync(attachment.data);
+}
+
+// ─── Media upload ────────────────────────────────────────────────────────────
+
+/**
+ * Upload an image to Feishu and return the image_key.
+ * Supports JPEG, PNG, WEBP, GIF, TIFF, BMP, ICO. Max 10 MB.
+ */
+export async function uploadImage(
+  client: lark.Client,
+  attachment: OutboundAttachment,
+): Promise<string> {
+  if (attachment.size > IMAGE_MAX_SIZE) {
+    throw new Error(`Image too large: ${attachment.size} bytes (max ${IMAGE_MAX_SIZE})`);
+  }
+  const buf = readAttachmentBuffer(attachment);
+  const resp = await (client.im.image.create as any)({
+    data: { image_type: 'message', image: buf },
+  });
+  const imageKey = resp?.data?.image_key || resp?.image_key;
+  if (!imageKey) throw new Error('Upload image failed: no image_key returned');
+  console.log(LOG_TAG, 'Uploaded image:', imageKey, `(${attachment.name})`);
+  return imageKey;
+}
+
+/**
+ * Upload a file (document, video, audio, etc.) to Feishu and return the file_key.
+ * Max 30 MB.
+ */
+export async function uploadFile(
+  client: lark.Client,
+  attachment: OutboundAttachment,
+): Promise<string> {
+  if (attachment.size > FILE_MAX_SIZE) {
+    throw new Error(`File too large: ${attachment.size} bytes (max ${FILE_MAX_SIZE})`);
+  }
+  const buf = readAttachmentBuffer(attachment);
+  const fileType = resolveFileType(attachment.mimeType);
+  const resp = await (client.im.file.create as any)({
+    data: {
+      file_type: fileType,
+      file_name: attachment.name,
+      file: buf,
+    },
+  });
+  const fileKey = resp?.data?.file_key || resp?.file_key;
+  if (!fileKey) throw new Error('Upload file failed: no file_key returned');
+  console.log(LOG_TAG, 'Uploaded file:', fileKey, `(${attachment.name}, type=${fileType})`);
+  return fileKey;
+}
+
+// ─── Media message sending ───────────────────────────────────────────────────
+
+/** Send an uploaded image as a standalone message */
+async function sendImageMessage(
+  client: lark.Client,
+  chatId: string,
+  imageKey: string,
+  replyToMessageId?: string,
+): Promise<SendResult> {
+  const content = JSON.stringify({ image_key: imageKey });
+  let resp: any;
+  if (replyToMessageId) {
+    resp = await client.im.message.reply({
+      path: { message_id: replyToMessageId },
+      data: { content, msg_type: 'image' },
+    });
+  } else {
+    resp = await client.im.message.create({
+      params: { receive_id_type: 'chat_id' },
+      data: { receive_id: chatId, content, msg_type: 'image' },
+    });
+  }
+  const msgId = resp?.data?.message_id || '';
+  console.log(LOG_TAG, 'Sent image message:', msgId);
+  return { ok: true, messageId: msgId };
+}
+
+/** Send an uploaded video as a standalone message */
+async function sendVideoMessage(
+  client: lark.Client,
+  chatId: string,
+  fileKey: string,
+  imageKey?: string,
+  replyToMessageId?: string,
+): Promise<SendResult> {
+  const content = JSON.stringify({
+    file_key: fileKey,
+    image_key: imageKey || '',  // cover image (optional)
+  });
+  let resp: any;
+  if (replyToMessageId) {
+    resp = await client.im.message.reply({
+      path: { message_id: replyToMessageId },
+      data: { content, msg_type: 'media' },
+    });
+  } else {
+    resp = await client.im.message.create({
+      params: { receive_id_type: 'chat_id' },
+      data: { receive_id: chatId, content, msg_type: 'media' },
+    });
+  }
+  const msgId = resp?.data?.message_id || '';
+  console.log(LOG_TAG, 'Sent video message:', msgId);
+  return { ok: true, messageId: msgId };
+}
+
+/** Send an uploaded file as a standalone message */
+async function sendFileMessage(
+  client: lark.Client,
+  chatId: string,
+  fileKey: string,
+  replyToMessageId?: string,
+): Promise<SendResult> {
+  const content = JSON.stringify({ file_key: fileKey });
+  let resp: any;
+  if (replyToMessageId) {
+    resp = await client.im.message.reply({
+      path: { message_id: replyToMessageId },
+      data: { content, msg_type: 'file' },
+    });
+  } else {
+    resp = await client.im.message.create({
+      params: { receive_id_type: 'chat_id' },
+      data: { receive_id: chatId, content, msg_type: 'file' },
+    });
+  }
+  const msgId = resp?.data?.message_id || '';
+  console.log(LOG_TAG, 'Sent file message:', msgId);
+  return { ok: true, messageId: msgId };
+}
+
+/**
+ * Upload and send a single attachment. Automatically picks the right
+ * upload API and message type based on MIME type.
+ */
+export async function sendAttachment(
+  client: lark.Client,
+  chatId: string,
+  attachment: OutboundAttachment,
+  replyToMessageId?: string,
+): Promise<SendResult> {
+  const mime = attachment.mimeType;
+
+  if (mime.startsWith('image/')) {
+    const imageKey = await uploadImage(client, attachment);
+    return sendImageMessage(client, chatId, imageKey, replyToMessageId);
+  }
+
+  if (mime.startsWith('video/')) {
+    const fileKey = await uploadFile(client, attachment);
+    return sendVideoMessage(client, chatId, fileKey, undefined, replyToMessageId);
+  }
+
+  // Everything else → file message
+  const fileKey = await uploadFile(client, attachment);
+  return sendFileMessage(client, chatId, fileKey, replyToMessageId);
+}
+
 // ─── Message sending ─────────────────────────────────────────────────────────
 
 /**
  * Send a message to Feishu.
  *
  * - With inlineButtons → interactive card (Schema V2)
+ * - With attachments → upload & send each attachment, then text (if any)
  * - Without → post format with md tag (supports markdown rendering)
  */
 export async function sendMessage(
@@ -117,6 +301,24 @@ export async function sendMessage(
   try {
     const chatId = message.address.chatId.split(':thread:')[0];
     const replyId = message.replyToMessageId;
+
+    // Send attachments first (each as a separate message)
+    if (message.attachments && message.attachments.length > 0) {
+      let lastResult: SendResult = { ok: true };
+      for (const attachment of message.attachments) {
+        try {
+          lastResult = await sendAttachment(client, chatId, attachment, replyId);
+        } catch (err: any) {
+          console.error(LOG_TAG, `Failed to send attachment "${attachment.name}":`, err?.message || err);
+          // Continue with remaining attachments
+        }
+      }
+      // If there's also text, send it after the attachments
+      if (message.text.trim()) {
+        return sendAsPost(client, chatId, message.text, message.parseMode, replyId);
+      }
+      return lastResult;
+    }
 
     // Interactive card for messages with buttons
     if (message.inlineButtons && message.inlineButtons.length > 0) {

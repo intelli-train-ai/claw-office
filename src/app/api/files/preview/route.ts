@@ -3,8 +3,12 @@ import path from 'path';
 import os from 'os';
 import { readFilePreview, isPathSafe, isRootPath } from '@/lib/files';
 import type { FilePreviewResponse, ErrorResponse } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { searchParams } = request.nextUrl;
   const filePath = searchParams.get('path');
   const maxLines = parseInt(searchParams.get('maxLines') || '200', 10);

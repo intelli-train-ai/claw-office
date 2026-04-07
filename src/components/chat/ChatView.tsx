@@ -9,13 +9,10 @@ import { ChatComposerActionBar } from './ChatComposerActionBar';
 import { ModeIndicator } from './ModeIndicator';
 import { ChatPermissionSelector } from './ChatPermissionSelector';
 import { ContextUsageIndicator } from './ContextUsageIndicator';
-import { ImageGenToggle } from './ImageGenToggle';
 import { Button } from '@/components/ui/button';
 import { usePanel } from '@/hooks/usePanel';
 import { useTranslation } from '@/hooks/useTranslation';
 import { PermissionPrompt } from './PermissionPrompt';
-import { BatchExecutionDashboard, BatchContextSync } from './batch-image-gen';
-import { setLastGeneratedImages, loadLastGenerated } from '@/lib/image-ref-store';
 import { useChatCommands } from '@/hooks/useChatCommands';
 import { useAssistantTrigger } from '@/hooks/useAssistantTrigger';
 import { useStreamSubscription } from '@/hooks/useStreamSubscription';
@@ -26,6 +23,7 @@ import {
   getRewindPoints,
   respondToPermission,
 } from '@/lib/stream-session-manager';
+import { authFetch } from '@/lib/api-client';
 
 interface ChatViewProps {
   sessionId: string;
@@ -119,7 +117,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
   useEffect(() => {
     const pid = currentProviderId || 'env';
     const controller = new AbortController();
-    fetch(`/api/providers/options?providerId=${encodeURIComponent(pid)}`, { signal: controller.signal })
+    authFetch(`/api/providers/options?providerId=${encodeURIComponent(pid)}`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!controller.signal.aborted) {
@@ -131,9 +129,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
     return () => controller.abort();
   }, [currentProviderId]);
   useEffect(() => { if (initialPermissionProfile) setPermissionProfile(initialPermissionProfile); }, [initialPermissionProfile]);
-
-  // Restore session-scoped last-generated images from sessionStorage
-  useEffect(() => { loadLastGenerated(sessionId); }, [sessionId]);
 
   // Stream snapshot from the manager — drives all streaming UI
   const [streamSnapshot, setStreamSnapshot] = useState<SessionStreamSnapshot | null>(
@@ -159,7 +154,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
   const handleModeChange = useCallback((newMode: string) => {
     setMode(newMode);
     if (sessionId) {
-      fetch(`/api/chat/sessions/${sessionId}`, {
+      authFetch(`/api/chat/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: newMode }),
@@ -167,7 +162,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         window.dispatchEvent(new CustomEvent('session-updated'));
       }).catch(() => { /* silent */ });
 
-      fetch('/api/chat/mode', {
+      authFetch('/api/chat/mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, mode: newMode }),
@@ -178,7 +173,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
   const handleProviderModelChange = useCallback((newProviderId: string, model: string) => {
     setCurrentProviderId(newProviderId);
     setCurrentModel(model);
-    fetch(`/api/chat/sessions/${sessionId}`, {
+    authFetch(`/api/chat/sessions/${sessionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, provider_id: newProviderId }),
@@ -263,7 +258,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/settings/workspace');
+        const res = await authFetch('/api/settings/workspace');
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (cancelled) return;
@@ -271,7 +266,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         if (data.path && workingDirectory !== data.path) {
           setIsAssistantProject(false);
           setIsAssistantWorkspace(false);
-          const inspectRes = await fetch(`/api/workspace/inspect?path=${encodeURIComponent(workingDirectory)}`);
+          const inspectRes = await authFetch(`/api/workspace/inspect?path=${encodeURIComponent(workingDirectory)}`);
           if (!inspectRes.ok || cancelled) return;
           const inspectData = await inspectRes.json();
           if (inspectData.hasAssistantData) {
@@ -326,7 +321,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
     try {
       const model = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') || '' : '';
       const provider_id = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') || '' : '';
-      const res = await fetch('/api/workspace/session', {
+      const res = await authFetch('/api/workspace/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'checkin', model, provider_id }),
@@ -349,7 +344,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
       const earliest = messages[0];
       const earliestRowId = (earliest as Message & { _rowid?: number })._rowid;
       if (!earliestRowId) return;
-      const res = await fetch(`/api/chat/sessions/${sessionId}/messages?limit=100&before=${earliestRowId}`);
+      const res = await authFetch(`/api/chat/sessions/${sessionId}/messages?limit=100&before=${earliestRowId}`);
       if (!res.ok) return;
       const data: MessagesResponse = await res.json();
       setHasMore(data.hasMore ?? false);
@@ -402,11 +397,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
       };
       cappedSetMessages((prev) => [...prev, userMessage]);
 
-      const notices = pendingImageNoticesRef.current.length > 0
-        ? [...pendingImageNoticesRef.current]
-        : undefined;
-      if (notices) pendingImageNoticesRef.current = [];
-
       startStream({
         sessionId,
         content,
@@ -415,7 +405,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         providerId: currentProviderId,
         files,
         systemPromptAppend,
-        pendingImageNotices: notices,
         effort: selectedEffort,
         thinking: buildThinkingConfig(),
         context1m,
@@ -511,33 +500,31 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
 
   const handleCommand = useChatCommands({ sessionId, messages, setMessages: cappedSetMessages, sendMessage });
 
-  // Listen for image generation completion
+  // Listen for feedback from FilePreview region selector and recording panel
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!detail) return;
-      const paths = (detail.images || [])
-        .map((img: { localPath?: string }) => img.localPath)
-        .filter(Boolean);
-      const pathInfo = paths.length > 0 ? `\nGenerated image file paths:\n${paths.map((p: string) => `- ${p}`).join('\n')}` : '';
-      const notice = `[Image generation completed]\n- Prompt: "${detail.prompt}"\n- Aspect ratio: ${detail.aspectRatio}\n- Resolution: ${detail.resolution}${pathInfo}`;
+      if (!detail?.content) return;
 
-      if (paths.length > 0) {
-        setLastGeneratedImages(sessionId, paths);
+      // Support pre-built attachments array (from recording) or single screenshot
+      let attachments: FileAttachment[] = [];
+      if (detail.attachments && Array.isArray(detail.attachments)) {
+        attachments = detail.attachments;
+      } else if (detail.screenshot) {
+        attachments = [{
+          id: `feedback-${Date.now()}`,
+          name: `${detail.fileName || 'feedback'}.png`,
+          type: 'image/png',
+          size: Math.round((detail.screenshot as string).length * 0.75),
+          data: (detail.screenshot as string).replace(/^data:image\/png;base64,/, ''),
+        }];
       }
 
-      pendingImageNoticesRef.current.push(notice);
-
-      const dbNotice = `[__IMAGE_GEN_NOTICE__ prompt: "${detail.prompt}", aspect ratio: ${detail.aspectRatio}, resolution: ${detail.resolution}${paths.length > 0 ? `, file path: ${paths.join(', ')}` : ''}]`;
-      fetch('/api/chat/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, role: 'user', content: dbNotice }),
-      }).catch(() => {});
+      sendMessageRef.current?.(detail.content, attachments.length > 0 ? attachments : undefined);
     };
-    window.addEventListener('image-gen-completed', handler);
-    return () => window.removeEventListener('image-gen-completed', handler);
-  }, [sessionId]);
+    window.addEventListener('send-feedback-to-chat', handler);
+    return () => window.removeEventListener('send-feedback-to-chat', handler);
+  }, []);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -580,10 +567,6 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         toolUses={toolUses}
         permissionProfile={permissionProfile}
       />
-      {/* Batch image generation panels */}
-      <BatchExecutionDashboard />
-      <BatchContextSync />
-
       <MessageInput
         key={sessionId}
         onSend={sendMessage}
@@ -605,7 +588,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         hasMessages={messages.length > 0}
       />
       <ChatComposerActionBar
-        left={<><ModeIndicator mode={mode} onModeChange={handleModeChange} disabled={isStreaming} /><ImageGenToggle /></>}
+        left={<ModeIndicator mode={mode} onModeChange={handleModeChange} disabled={isStreaming} />}
         center={
           <ChatPermissionSelector
             sessionId={sessionId}

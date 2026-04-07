@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "apps/site/.source/**",
     // External reference materials / vendored packages (not part of the main codebase)
     "资料/**",
+    // Vendored minified files
+    "public/**/*.min.*",
   ]),
 
   // ── Governance rules for business components ──
@@ -111,6 +113,20 @@ const eslintConfig = defineConfig([
   // ESLint cannot lint inside className strings. Use `npm run lint:colors` (grep-based)
   // to check for raw green/red/yellow/orange/blue-{400-700} usage in business components.
   // Add `// lint-allow-raw-color` on lines where raw colors are intentional (e.g. diff syntax).
+
+  // ── Third-party SDK integration: relax no-explicit-any ──
+  // Feishu SDK, plugin MCP routes, and test files interface with
+  // third-party APIs that lack proper TypeScript types.
+  {
+    files: [
+      "src/lib/channels/feishu/**/*.ts",
+      "src/app/api/plugins/**/*.ts",
+      "src/__tests__/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 
   // ── Component file size limit ──
   {

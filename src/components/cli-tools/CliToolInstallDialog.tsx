@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { SpinnerGap, CheckCircle, X } from "@/components/ui/icon";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { CliToolDefinition } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface CliToolInstallDialogProps {
   open: boolean;
@@ -44,7 +45,7 @@ export function CliToolInstallDialog({
     abortRef.current = controller;
 
     try {
-      const res = await fetch(`/api/cli-tools/${tool.id}/install`, {
+      const res = await authFetch(`/api/cli-tools/${tool.id}/install`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ method }),

@@ -3,6 +3,7 @@ import { readDashboard, updateWidget } from '@/lib/dashboard-store';
 import { resolveGlobs, readSourceFiles } from '@/lib/dashboard-file-reader';
 import { executeCLISource } from '@/lib/dashboard-cli-reader';
 import { generateTextViaSdk } from '@/lib/claude-client';
+import { requireAuth } from '@/lib/auth';
 import type { DashboardWidget } from '@/types/dashboard';
 
 const REFRESH_SYSTEM_PROMPT = `You are updating a dashboard widget with fresh data. Your job is to preserve the visual design, layout, colors, and style of the original widget EXACTLY, and only update the data-driven content.
@@ -74,6 +75,9 @@ async function refreshWidget(workDir: string, widget: DashboardWidget): Promise<
 
 /** POST /api/dashboard/refresh — refresh one or all widgets */
 export async function POST(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { workingDirectory, widgetId } = body;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProvider, updateProvider, deleteProvider, getDefaultProviderId, setDefaultProviderId, getAllProviders } from '@/lib/db';
 import type { ProviderResponse, ErrorResponse, UpdateProviderRequest, ApiProvider } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -14,7 +15,10 @@ function maskApiKey(provider: ApiProvider): ApiProvider {
   return { ...provider, api_key: maskedKey };
 }
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {
@@ -36,6 +40,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {
@@ -71,7 +78,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await context.params;
 
   try {

@@ -11,6 +11,7 @@ import { GitHistorySection } from "./GitHistorySection";
 import { GitWorktreeSection } from "./GitWorktreeSection";
 import { GitCommitDetailDialog } from "./GitCommitDetailDialog";
 import { DeriveWorktreeDialog } from "./DeriveWorktreeDialog";
+import { authFetch } from '@/lib/api-client';
 
 export function GitPanel() {
   const { workingDirectory, sessionId } = usePanel();
@@ -28,7 +29,7 @@ export function GitPanel() {
   const [showDeriveDialog, setShowDeriveDialog] = useState(false);
 
   const handleCheckout = useCallback(async (branch: string) => {
-    const res = await fetch('/api/git/checkout', {
+    const res = await authFetch('/api/git/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cwd: workingDirectory, branch }),

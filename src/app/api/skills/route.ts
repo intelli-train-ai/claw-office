@@ -4,6 +4,7 @@ import path from "path";
 import os from "os";
 import crypto from "crypto";
 import type { SkillKind } from "@/types";
+import { requireAuth } from '@/lib/auth';
 
 interface SkillFile {
   name: string;
@@ -288,6 +289,9 @@ function scanDirectory(
 }
 
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     // Accept optional cwd query param for project-level skills
     const cwd = request.nextUrl.searchParams.get("cwd") || undefined;
@@ -421,7 +425,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { name, content, scope, cwd } = body as {

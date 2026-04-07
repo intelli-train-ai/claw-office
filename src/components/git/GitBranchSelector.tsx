@@ -5,6 +5,7 @@ import { GitBranch, Check, Lock } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { GitBranch as GitBranchType } from "@/types";
+import { authFetch } from '@/lib/api-client';
 
 interface GitBranchSelectorProps {
   cwd: string;
@@ -24,7 +25,7 @@ export function GitBranchSelector({ cwd, currentBranch, dirty, onCheckout, error
   useEffect(() => {
     if (!isOpen || !cwd) return;
     setLoading(true);
-    fetch(`/api/git/branches?cwd=${encodeURIComponent(cwd)}`)
+    authFetch(`/api/git/branches?cwd=${encodeURIComponent(cwd)}`)
       .then(res => res.json())
       .then(data => setBranches(data.branches || []))
       .catch(() => {})

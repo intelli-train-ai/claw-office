@@ -8,11 +8,15 @@ import {
   updateSessionProviderId,
   setSetting,
 } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const { action, params } = (await request.json()) as {
       action: string;

@@ -5,6 +5,7 @@ import { GitCommit } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
+import { authFetch } from '@/lib/api-client';
 
 interface GitCommitSectionProps {
   cwd: string;
@@ -23,7 +24,7 @@ export function GitCommitSection({ cwd, dirty, onCommitSuccess }: GitCommitSecti
     setCommitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/git/commit', {
+      const res = await authFetch('/api/git/commit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cwd, message: message.trim() }),

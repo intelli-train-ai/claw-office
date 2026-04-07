@@ -52,6 +52,7 @@ export function UpdateBanner() {
   const { updateInfo, quitAndInstall } = useUpdate();
   const { t } = useTranslation();
 
+
   const rosettaDismissKey = useMemo(
     () => getRosettaDismissKey(updateInfo?.downloadAssetName || '', updateInfo?.latestVersion || ''),
     [updateInfo?.downloadAssetName, updateInfo?.latestVersion],

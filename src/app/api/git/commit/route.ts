@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as gitService from '@/lib/git/service';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const { cwd, message } = await req.json();
     if (!cwd) {

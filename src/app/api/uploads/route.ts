@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,9 @@ const MIME_TYPES: Record<string, string> = {
  * Only allows reading from paths that contain '.codepilot-uploads/' to prevent directory traversal.
  */
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const filePath = request.nextUrl.searchParams.get('path');
 
   if (!filePath) {

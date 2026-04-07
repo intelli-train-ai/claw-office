@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { Message, FileAttachment } from '@/types';
 // getLocalDateString removed — heartbeat no longer auto-triggers
 import { startStream } from '@/lib/stream-session-manager';
+import { authFetch } from '@/lib/api-client';
 
 // ── localStorage heartbeat for cross-tab liveness detection ──
 // The session that owns the onboarding lock writes {sessionId, ts} every 10s.
@@ -120,7 +121,7 @@ export function useAssistantTrigger({
     if (isStreaming || assistantTriggerFiredRef.current) return;
 
     try {
-      const res = await fetch('/api/settings/workspace');
+      const res = await authFetch('/api/settings/workspace');
       if (!res.ok) return;
       const data = await res.json();
       if (!data.path) return;
@@ -144,7 +145,7 @@ export function useAssistantTrigger({
         // is still the stale session we observed).  If another tab already swapped
         // in, the server returns owner_mismatch and we bail out.
         try {
-          const clearRes = await fetch('/api/workspace/hook-triggered', {
+          const clearRes = await authFetch('/api/workspace/hook-triggered', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -192,7 +193,7 @@ export function useAssistantTrigger({
       // CAS: only set owner if currently unowned (null).  If another tab set itself
       // as owner between our clear and this call, the server rejects and we bail.
       try {
-        const setRes = await fetch('/api/workspace/hook-triggered', {
+        const setRes = await authFetch('/api/workspace/hook-triggered', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, expectedOwner: null }),

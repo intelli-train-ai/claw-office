@@ -8,7 +8,6 @@ import { MessageInput } from '@/components/chat/MessageInput';
 import { ChatComposerActionBar } from '@/components/chat/ChatComposerActionBar';
 import { ModeIndicator } from '@/components/chat/ModeIndicator';
 import { ChatPermissionSelector } from '@/components/chat/ChatPermissionSelector';
-import { ImageGenToggle } from '@/components/chat/ImageGenToggle';
 import { PermissionPrompt } from '@/components/chat/PermissionPrompt';
 import { ChatEmptyState } from '@/components/chat/ChatEmptyState';
 import { OnboardingWizard } from '@/components/assistant/OnboardingWizard';
@@ -17,6 +16,7 @@ import { FolderPicker } from '@/components/chat/FolderPicker';
 import { useNativeFolderPicker } from '@/hooks/useNativeFolderPicker';
 import { useTranslation } from '@/hooks/useTranslation';
 import { usePanel } from '@/hooks/usePanel';
+import { authFetch } from '@/lib/api-client';
 
 interface ToolUseInfo {
   id: string;
@@ -92,7 +92,7 @@ export default function NewChatPage() {
   useEffect(() => {
     const pid = currentProviderId || 'env';
     const controller = new AbortController();
-    fetch(`/api/providers/options?providerId=${encodeURIComponent(pid)}`, { signal: controller.signal })
+    authFetch(`/api/providers/options?providerId=${encodeURIComponent(pid)}`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!controller.signal.aborted) {
@@ -111,8 +111,8 @@ export default function NewChatPage() {
     let cancelled = false;
 
     // Fetch models and global default in parallel
-    const modelsP = fetch('/api/providers/models').then(r => r.ok ? r.json() : null);
-    const globalP = fetch('/api/providers/options?providerId=__global__').then(r => r.ok ? r.json() : null);
+    const modelsP = authFetch('/api/providers/models').then(r => r.ok ? r.json() : null);
+    const globalP = authFetch('/api/providers/options?providerId=__global__').then(r => r.ok ? r.json() : null);
 
     Promise.all([modelsP, globalP]).then(([modelsData, globalData]) => {
       if (cancelled || !modelsData?.groups || modelsData.groups.length === 0) {
@@ -195,7 +195,7 @@ export default function NewChatPage() {
 
     const validateDir = async (path: string): Promise<boolean> => {
       try {
-        const res = await fetch(`/api/files/browse?dir=${encodeURIComponent(path)}`);
+        const res = await authFetch(`/api/files/browse?dir=${encodeURIComponent(path)}`);
         return res.ok;
       } catch {
         return false;
@@ -204,7 +204,7 @@ export default function NewChatPage() {
 
     const tryFallbackToDefault = async () => {
       try {
-        const res = await fetch('/api/setup');
+        const res = await authFetch('/api/setup');
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (cancelled || !data?.defaultProject) return;
@@ -245,7 +245,7 @@ export default function NewChatPage() {
 
   // Load recent projects for empty state
   useEffect(() => {
-    fetch('/api/setup/recent-projects')
+    authFetch('/api/setup/recent-projects')
       .then(r => r.ok ? r.json() : { projects: [] })
       .then(data => setRecentProjects(data.projects || []))
       .catch(() => {});
@@ -269,7 +269,7 @@ export default function NewChatPage() {
     const checkProvider = () => {
       // Lock sending while we re-resolve the model/provider
       setModelReady(false);
-      fetch('/api/setup')
+      authFetch('/api/setup')
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data) {
@@ -281,8 +281,8 @@ export default function NewChatPage() {
       const savedProviderId = localStorage.getItem('codepilot:last-provider-id');
 
       // Fetch models + global default in parallel
-      const modelsP = fetch('/api/providers/models').then(r => r.ok ? r.json() : null);
-      const globalP = fetch('/api/providers/options?providerId=__global__').then(r => r.ok ? r.json() : null);
+      const modelsP = authFetch('/api/providers/models').then(r => r.ok ? r.json() : null);
+      const globalP = authFetch('/api/providers/options?providerId=__global__').then(r => r.ok ? r.json() : null);
 
       Promise.all([modelsP, globalP]).then(([modelsData, globalData]) => {
         if (!modelsData?.groups || modelsData.groups.length === 0) {
@@ -410,7 +410,7 @@ export default function NewChatPage() {
     setPendingApprovalSessionId('');
 
     try {
-      await fetch('/api/chat/permission', {
+      await authFetch('/api/chat/permission', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -469,7 +469,7 @@ export default function NewChatPage() {
           provider_id: currentProviderId,
         };
 
-        const createRes = await fetch('/api/chat/sessions', {
+        const createRes = await authFetch('/api/chat/sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(createBody),
@@ -504,7 +504,7 @@ export default function NewChatPage() {
           : thinkingMode === 'adaptive' ? { type: 'adaptive' } : undefined;
 
         // Send the message via streaming API
-        const response = await fetch('/api/chat', {
+        const response = await authFetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -594,7 +594,7 @@ export default function NewChatPage() {
                   try {
                     const statusData = JSON.parse(event.data);
                     if (statusData.session_id) {
-                      setStatusText(`Connected (${statusData.model || 'claude'})`);
+                      setStatusText(`Connected (${statusData.display_model || statusData.requested_model || statusData.model || 'claude'})`);
                       setTimeout(() => setStatusText(undefined), 2000);
                     } else if (statusData.notification) {
                       setStatusText(statusData.message || statusData.title || undefined);
@@ -816,7 +816,7 @@ export default function NewChatPage() {
         initialValue={prefillText}
       />
       <ChatComposerActionBar
-        left={<><ModeIndicator mode={mode} onModeChange={setMode} disabled={isStreaming} /><ImageGenToggle /></>}
+        left={<ModeIndicator mode={mode} onModeChange={setMode} disabled={isStreaming} />}
         center={
           <ChatPermissionSelector
             permissionProfile={permissionProfile}

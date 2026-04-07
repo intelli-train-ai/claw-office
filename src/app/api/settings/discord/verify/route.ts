@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * POST /api/settings/discord/verify
@@ -8,6 +9,9 @@ import { getSetting } from '@/lib/db';
  * If bot_token starts with "***" (masked), falls back to the stored token.
  */
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     let { bot_token } = body;

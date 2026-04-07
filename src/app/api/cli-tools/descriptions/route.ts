@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { bulkUpsertCliToolDescriptions } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +8,10 @@ export const dynamic = 'force-dynamic';
  * POST /api/cli-tools/descriptions/migrate
  * Bulk-import descriptions from the client's localStorage migration.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const descriptions = body.descriptions as Record<string, { zh: string; en: string }> | undefined;

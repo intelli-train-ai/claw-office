@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyBot, detectChatId } from '@/lib/telegram-bot';
 import { getSetting } from '@/lib/db';
 import { callTelegramApi } from '@/lib/bridge/adapters/telegram-utils';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * POST /api/settings/telegram/verify
@@ -15,6 +16,9 @@ import { callTelegramApi } from '@/lib/bridge/adapters/telegram-utils';
  * If bot_token is omitted, also falls back to the stored token.
  */
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { action, chat_id } = body;

@@ -26,9 +26,11 @@ const en = {
   'chatList.newConversation': 'New Conversation',
   'chatList.delete': 'Delete',
   'chatList.deleteConversation': 'Delete Conversation',
+  'chatList.deleteConversationConfirm': 'This conversation will be permanently deleted. This action cannot be undone.',
   'chatList.copySessionId': 'Copy Conversation ID',
   'chatList.renameConversation': 'Rename Conversation',
   'chatList.removeProject': 'Remove Project',
+  'chatList.removeProjectConfirm': 'Remove project "{project}" and all its conversations? This action cannot be undone.',
   'chatList.openFolder': 'Open Folder',
   'chatList.copyFolderPath': 'Copy Folder Path',
   'chatList.searchSessions': 'Search sessions...',
@@ -56,7 +58,7 @@ const en = {
   'messageInput.reviewDesc': 'Review code quality',
   'messageInput.terminalSetupDesc': 'Configure terminal settings',
   'messageInput.memoryDesc': 'Edit project memory file',
-  'messageInput.modeCode': 'Code',
+  'messageInput.modeCode': 'Execute',
   'messageInput.modePlan': 'Plan',
   'messageInput.aiSuggested': 'AI Suggested',
 
@@ -201,6 +203,15 @@ const en = {
   'fileTree.refresh': 'Refresh',
   'fileTree.noFiles': 'No files found',
   'fileTree.selectFolder': 'Select a project folder to view files',
+  'fileTree.dropHint': 'Drop files here to upload',
+  'fileTree.dropActive': 'Drop to upload',
+  'fileTree.uploading': 'Uploading...',
+  'fileTree.uploadSuccess': '{count} file(s) uploaded',
+  'fileTree.archiveExtracted': 'Archive extracted',
+  'fileTree.deleteConfirmTitle': 'Delete',
+  'fileTree.deleteConfirmFile': 'Are you sure you want to delete "{name}"?',
+  'fileTree.deleteConfirmFolder': 'Are you sure you want to delete folder "{name}" and all its contents?',
+  'fileTree.delete': 'Delete',
 
   // ── File preview ────────────────────────────────────────────
   'filePreview.backToTree': 'Back to file tree',
@@ -209,8 +220,38 @@ const en = {
   'filePreview.copyPath': 'Copy path',
   'filePreview.failedToLoad': 'Failed to load file',
 
+  // ── Feedback ────────────────────────────────────────────────
+  'feedback.toggleTooltip': 'Feedback mode — select a region to screenshot',
+  'feedback.selectionHint': 'Drag to select a region, then add your feedback',
+  'feedback.placeholder': 'Describe the issue or suggestion…',
+  'feedback.send': 'Send',
+  'feedback.cancel': 'Cancel',
+  'feedback.file': 'File',
+  'feedback.lineRange': 'Lines',
+  'feedback.page': 'Page',
+  'feedback.pageRange': 'Pages',
+
+  // ── Recording ───────────────────────────────────────────────
+  'recording.toggleTooltip': 'Record interactions',
+  'recording.recording': 'Recording',
+  'recording.stopped': 'Recording stopped',
+  'recording.events': 'events',
+  'recording.snapshot': 'Screenshot',
+  'recording.addNote': 'Note',
+  'recording.stop': 'Stop',
+  'recording.discard': 'Discard',
+  'recording.notePlaceholder': 'Add a note about this interaction…',
+  'recording.summaryPlaceholder': 'Overall feedback…',
+  'recording.duration': 'Duration',
+  'recording.interactionSequence': 'Interaction sequence',
+  'recording.steps': 'steps',
+
   // ── Doc preview ─────────────────────────────────────────────
   'docPreview.htmlPreview': 'HTML Preview',
+  'docPreview.edit': 'Edit',
+  'docPreview.saving': 'Saving…',
+  'docPreview.saved': 'Saved',
+  'docPreview.saveFailed': 'Save failed',
 
   // ── Extensions page ─────────────────────────────────────────
   'extensions.title': 'Extensions',
@@ -244,6 +285,8 @@ const en = {
   'skills.placeholder': 'Write your skill prompt in Markdown...',
   'skills.description': 'Manage reusable prompt patterns and automation skills',
   'skills.mySkills': 'My Skills',
+  'skills.plugins': 'Plugins',
+  'skills.noPlugins': 'No plugins found',
   'skills.marketplace': 'Marketplace',
   'skills.marketplaceSearch': 'Search Skills.sh...',
   'skills.install': 'Install',
@@ -289,6 +332,9 @@ const en = {
   'folderPicker.noSubdirs': 'No subdirectories',
   'folderPicker.cancel': 'Cancel',
   'folderPicker.select': 'Select This Folder',
+  'folderPicker.newFolder': 'New Folder',
+  'folderPicker.newFolderPlaceholder': 'Folder name',
+  'folderPicker.folderExists': 'Folder already exists',
 
   // ── Import session dialog ───────────────────────────────────
   'import.title': 'Import Session from Claude CLI',
@@ -536,8 +582,6 @@ const en = {
 
   // ── Provider: Gemini Image ──────────────────────────────────
   'provider.chatProviders': 'Chat Providers',
-  'provider.mediaProviders': 'Media Providers',
-  'provider.geminiImageDesc': 'Nano Banana Pro — AI image generation by Google Gemini',
   'provider.diagnose': 'Diagnose',
   'provider.doctor.title': 'Provider Doctor',
   'provider.doctor.running': 'Running diagnostics...',
@@ -991,8 +1035,6 @@ const en = {
   'composer.manageSkills': 'Manage skills',
   'composer.searchModels': 'Search models...',
   'composer.manageProviders': 'Manage providers',
-  'composer.designAgent': 'Design Agent',
-  'composer.designAgentTooltip': 'Enable AI design & image generation',
 
   // ── Permission ────────────────────────────────────────────
   'permission.default': 'Default',
@@ -1071,6 +1113,7 @@ const en = {
   'cliTools.installing': 'Installing',
   'cliTools.installSuccess': 'Installation Complete',
   'cliTools.installFailed': 'Installation Failed',
+  'cliTools.loading': 'Loading CLI tools…',
   'cliTools.detail': 'Details',
   'cliTools.detailIntro': 'Introduction',
   'cliTools.useCases': 'Use Cases',
@@ -1085,6 +1128,8 @@ const en = {
   'cliTools.path': 'Path',
   'cliTools.brewNotInstalled': 'Homebrew not detected',
   'cliTools.brewInstallGuide': 'Most recommended tools require Homebrew. Run this command in your terminal to install it:',
+  'cliTools.noPkgManager': 'No package manager detected',
+  'cliTools.noPkgManagerGuide': 'No supported package manager (apt, brew) was found. Please install tools manually or set up a package manager.',
   'cliTools.viewDocs': 'View CodePilot documentation',
   'cliTools.searchPlaceholder': 'Search CLI tools...',
   'cliTools.noToolsDetected': 'No installed CLI tools detected',
@@ -1344,6 +1389,17 @@ const en = {
   'wizard.summaryStyle': 'Style:',
   'wizard.summaryBoundaries': 'Boundaries:',
 
+  // ── Share / Replay ──────────────────────────────────────────
+  'share.copyLink': 'Share Replay',
+  'share.linkCopied': 'Replay link copied',
+  'share.noMessages': 'No messages to share',
+  'share.replayTitle': 'Conversation Replay',
+  'share.replayOf': 'Replay: {title}',
+  'share.generatedBy': 'Generated by CodePilot',
+  'share.skipReplay': 'Skip Replay',
+  'share.startReplay': 'Start Replay',
+  'share.sessionNotFound': 'Session not found',
+
   // ── Widget (Generative UI) ────────────────────────────────
   'widget.loading': 'Rendering widget...',
   'widget.streaming': 'Rendering visualization',
@@ -1385,6 +1441,35 @@ const en = {
   'buddy.namePlaceholder': 'Give your buddy a name...',
   'buddy.nameHint': 'This will be your buddy\'s name',
   'buddy.reset': 'Reset buddy',
+
+  // ── Auth ─────────────────────────────────────────────────────
+  'auth.title': 'Authentication Required',
+  'auth.subtitle': 'Enter your access token to continue',
+  'auth.tokenPlaceholder': 'Access token',
+  'auth.unlock': 'Unlock',
+  'auth.verifying': 'Verifying...',
+  'auth.invalidToken': 'Invalid token',
+  'auth.networkError': 'Network error, please try again',
+  'auth.logout': 'Logout',
+
+  // ── Settings: Security ──────────────────────────────────────
+  'settings.security': 'Security',
+  'settings.security.accessToken': 'Access Token',
+  'settings.security.accessTokenDesc': 'Require a token to access CodePilot. Useful when exposed on a public network.',
+  'settings.security.tokenConfigured': 'Token is configured',
+  'settings.security.tokenNotConfigured': 'No token configured (open access)',
+  'settings.security.tokenFromEnv': 'Token is set via CODEPILOT_ACCESS_TOKEN environment variable',
+  'settings.security.setToken': 'Set Token',
+  'settings.security.changeToken': 'Change Token',
+  'settings.security.removeToken': 'Remove Token',
+  'settings.security.newTokenPlaceholder': 'Enter new access token (min 6 characters)',
+  'settings.security.save': 'Save',
+  'settings.security.cancel': 'Cancel',
+  'settings.security.tokenSaved': 'Access token saved',
+  'settings.security.tokenRemoved': 'Access token removed',
+  'settings.security.tokenError': 'Failed to update token',
+  'settings.security.logout': 'Logout current session',
+  'settings.security.logoutDesc': 'Clear the stored token in this browser. You will need to re-enter it.',
 } as const;
 
 export type TranslationKey = keyof typeof en;

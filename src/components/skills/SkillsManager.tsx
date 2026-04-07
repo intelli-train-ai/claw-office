@@ -14,8 +14,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/i18n";
 import { cn } from "@/lib/utils";
 import type { SkillItem } from "./SkillListItem";
+import { authFetch } from '@/lib/api-client';
 
-type ViewTab = "local" | "marketplace";
+type ViewTab = "local" | "plugins" | "marketplace";
 
 export function SkillsManager() {
   const { workingDirectory } = usePanel();
@@ -30,7 +31,7 @@ export function SkillsManager() {
   const fetchSkills = useCallback(async () => {
     try {
       const cwdParam = workingDirectory ? `?cwd=${encodeURIComponent(workingDirectory)}` : '';
-      const res = await fetch(`/api/skills${cwdParam}`);
+      const res = await authFetch(`/api/skills${cwdParam}`);
       if (res.ok) {
         const data = await res.json();
         setSkills((data.skills || []).filter((s: SkillItem) => s.source !== "project"));
@@ -48,7 +49,7 @@ export function SkillsManager() {
 
   const handleCreate = useCallback(
     async (name: string, scope: "global" | "project", content: string) => {
-      const res = await fetch("/api/skills", {
+      const res = await authFetch("/api/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, content, scope, cwd: workingDirectory || undefined }),
@@ -187,6 +188,19 @@ export function SkillsManager() {
             size="sm"
             className={cn(
               "px-3 py-1 text-xs font-medium rounded h-auto",
+              viewTab === "plugins"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setViewTab("plugins")}
+          >
+            {t('skills.plugins')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "px-3 py-1 text-xs font-medium rounded h-auto",
               viewTab === "marketplace"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -201,6 +215,63 @@ export function SkillsManager() {
       {/* Main content */}
       {viewTab === "marketplace" ? (
         <MarketplaceBrowser onInstalled={fetchSkills} />
+      ) : viewTab === "plugins" ? (
+        <div className="flex flex-1 min-h-0">
+          <div className="w-64 shrink-0 flex flex-col overflow-hidden pl-4">
+            <div className="px-2 pt-4 pb-2">
+              <div className="relative">
+                <MagnifyingGlass size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder={t('skills.searchSkills')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-7 h-8 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="p-1">
+                {pluginSkills.map((skill) => (
+                  <SkillListItem
+                    key={skill.filePath || `${skill.source}:${skill.installedSource ?? "default"}:${skill.name}`}
+                    skill={skill}
+                    selected={
+                      selected?.name === skill.name &&
+                      selected?.source === skill.source &&
+                      selected?.installedSource === skill.installedSource
+                    }
+                    onSelect={() => setSelected(skill)}
+                    onDelete={handleDelete}
+                  />
+                ))}
+                {pluginSkills.length === 0 && (
+                  <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                    <Lightning size={32} className="opacity-40" />
+                    <p className="text-xs">{t('skills.noPlugins')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Divider */}
+          <div className="shrink-0 w-px bg-border/50" />
+          {/* Right: editor */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            {selected && selected.source === "plugin" ? (
+              <SkillEditor
+                key={`${selected.source}:${selected.name}`}
+                skill={selected}
+                onSave={handleSave}
+                onDelete={handleDelete}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+                <Lightning size={48} className="opacity-30" />
+                <p className="text-sm">{t('skills.selectOrCreate')}</p>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
       <div className="flex flex-1 min-h-0">
         {/* Left: skill list */}
@@ -258,27 +329,7 @@ export function SkillsManager() {
                   ))}
                 </div>
               )}
-              {pluginSkills.length > 0 && (
-                <div className="mb-1">
-                  <span className="px-3 py-1 text-[10px] font-medium uppercase text-muted-foreground">
-                    Plugins
-                  </span>
-                  {pluginSkills.map((skill) => (
-                    <SkillListItem
-                      key={skill.filePath || `${skill.source}:${skill.installedSource ?? "default"}:${skill.name}`}
-                      skill={skill}
-                      selected={
-                        selected?.name === skill.name &&
-                        selected?.source === skill.source &&
-                        selected?.installedSource === skill.installedSource
-                      }
-                      onSelect={() => setSelected(skill)}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </div>
-              )}
-              {filtered.length === 0 && (
+              {(globalSkills.length + installedSkills.length) === 0 && (
                 <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                   <Lightning size={32} className="opacity-40" />
                   <p className="text-xs">

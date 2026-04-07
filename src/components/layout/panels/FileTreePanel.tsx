@@ -32,7 +32,6 @@ export function FileTreePanel() {
     // Truly non-previewable: archives, binaries, office docs, fonts
     const NON_PREVIEWABLE = new Set([
       "zip", "tar", "gz", "rar", "7z", "bz2",
-      "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
       "exe", "dll", "so", "dylib", "bin", "dmg", "iso",
       "woff", "woff2", "ttf", "otf", "eot",
       "flv", "wmv", "wma",

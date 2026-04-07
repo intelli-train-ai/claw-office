@@ -8,6 +8,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { showToast } from "@/hooks/useToast";
 import { SettingsCard } from "@/components/patterns/SettingsCard";
 import { StatusBanner } from "@/components/patterns/StatusBanner";
+import { authFetch } from '@/lib/api-client';
 
 interface WeixinAccount {
   account_id: string;
@@ -36,7 +37,7 @@ export function WeixinBridgeSection() {
 
   const fetchAccounts = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/weixin/accounts");
+      const res = await authFetch("/api/settings/weixin/accounts");
       if (res.ok) {
         const data = await res.json();
         setAccounts(data.accounts || []);
@@ -63,7 +64,7 @@ export function WeixinBridgeSection() {
 
   const handleToggleAccount = async (accountId: string, enabled: boolean) => {
     try {
-      const res = await fetch(`/api/settings/weixin/accounts/${accountId}`, {
+      const res = await authFetch(`/api/settings/weixin/accounts/${accountId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled }),
@@ -99,7 +100,7 @@ export function WeixinBridgeSection() {
 
   const handleDeleteAccount = async (accountId: string) => {
     try {
-      const res = await fetch(`/api/settings/weixin/accounts/${accountId}`, {
+      const res = await authFetch(`/api/settings/weixin/accounts/${accountId}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => null) as
@@ -137,7 +138,7 @@ export function WeixinBridgeSection() {
 
   const pollQrStatus = useCallback(async (sessionId: string) => {
     try {
-      const res = await fetch("/api/settings/weixin/login/wait", {
+      const res = await authFetch("/api/settings/weixin/login/wait", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId }),
@@ -208,7 +209,7 @@ export function WeixinBridgeSection() {
     setQrStatus("");
     setQrBridgeError(null);
     try {
-      const res = await fetch("/api/settings/weixin/login/start", { method: "POST" });
+      const res = await authFetch("/api/settings/weixin/login/start", { method: "POST" });
       if (!res.ok) throw new Error("Failed to start QR login");
       const data = await res.json();
       setQrImage(data.qr_image);

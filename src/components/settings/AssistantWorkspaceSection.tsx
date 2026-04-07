@@ -15,6 +15,7 @@ import { OnboardingWizard } from "@/components/assistant/OnboardingWizard";
 import { AssistantAvatar } from "@/components/ui/AssistantAvatar";
 import type { TranslationKey } from "@/i18n/en";
 import type { TaxonomyCategoryInfo, IndexStats, WorkspaceInfo, TabId, PathValidationStatus } from "./workspace-types";
+import { authFetch } from '@/lib/api-client';
 
 interface WorkspaceSummary {
   configured: boolean;
@@ -55,7 +56,7 @@ export function AssistantWorkspaceSection() {
 
   const fetchWorkspace = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/workspace");
+      const res = await authFetch("/api/settings/workspace");
       if (res.ok) {
         const data = await res.json();
         setWorkspace(data);
@@ -90,7 +91,7 @@ export function AssistantWorkspaceSection() {
 
   const fetchTaxonomy = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/workspace");
+      const res = await authFetch("/api/settings/workspace");
       if (res.ok) {
         const data = await res.json();
         if (data.taxonomy) setTaxonomy(data.taxonomy);
@@ -100,7 +101,7 @@ export function AssistantWorkspaceSection() {
 
   const fetchIndexStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/workspace/index");
+      const res = await authFetch("/api/workspace/index");
       if (res.ok) {
         const data = await res.json();
         setIndexStats(data);
@@ -137,7 +138,7 @@ export function AssistantWorkspaceSection() {
     setPathValidation('checking');
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/workspace/inspect?path=${encodeURIComponent(path.trim())}`);
+        const res = await authFetch(`/api/workspace/inspect?path=${encodeURIComponent(path.trim())}`);
         if (!res.ok) {
           setPathValidation('invalid');
           setPathError(t('assistant.inspectFailed'));
@@ -186,7 +187,7 @@ export function AssistantWorkspaceSection() {
     try {
       const body: Record<string, unknown> = { path: newPath, initialize };
       if (resetOnboarding) body.resetOnboarding = true;
-      const res = await fetch("/api/settings/workspace", {
+      const res = await authFetch("/api/settings/workspace", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -204,7 +205,7 @@ export function AssistantWorkspaceSection() {
           const model = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') || '' : '';
           const provider_id = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') || '' : '';
           const sessionMode = navigateMode === 'reuse' ? 'checkin' : 'onboarding';
-          const sessionRes = await fetch("/api/workspace/session", {
+          const sessionRes = await authFetch("/api/workspace/session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ mode: sessionMode, model, provider_id }),
@@ -233,7 +234,7 @@ export function AssistantWorkspaceSection() {
 
     setInspecting(true);
     try {
-      const res = await fetch(`/api/workspace/inspect?path=${encodeURIComponent(pathInput.trim())}`);
+      const res = await authFetch(`/api/workspace/inspect?path=${encodeURIComponent(pathInput.trim())}`);
       if (!res.ok) {
         setPathValidation('invalid');
         setPathError(t('assistant.inspectFailed'));
@@ -313,7 +314,7 @@ export function AssistantWorkspaceSection() {
   const handleRefreshDocs = useCallback(async () => {
     setRefreshingDocs(true);
     try {
-      await fetch("/api/workspace/docs", { method: "POST" });
+      await authFetch("/api/workspace/docs", { method: "POST" });
     } catch (e) {
       console.error("Failed to refresh docs:", e);
     } finally {
@@ -331,7 +332,7 @@ export function AssistantWorkspaceSection() {
   const handleReindex = useCallback(async () => {
     setReindexing(true);
     try {
-      await fetch("/api/workspace/index", { method: "POST" });
+      await authFetch("/api/workspace/index", { method: "POST" });
       await fetchIndexStats();
     } catch (e) {
       console.error("Failed to reindex:", e);
@@ -343,7 +344,7 @@ export function AssistantWorkspaceSection() {
   const handleArchive = useCallback(async () => {
     setArchiving(true);
     try {
-      await fetch("/api/workspace/organize", {
+      await authFetch("/api/workspace/organize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: 'archive' }),
@@ -520,7 +521,7 @@ export function AssistantWorkspaceSection() {
           autoTriggerEnabled={workspace.state?.heartbeatEnabled === true}
           onAutoTriggerChange={async (enabled) => {
             try {
-              const res = await fetch('/api/settings/workspace', {
+              const res = await authFetch('/api/settings/workspace', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ heartbeatEnabled: enabled }),

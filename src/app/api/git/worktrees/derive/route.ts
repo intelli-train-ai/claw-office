@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import * as gitService from '@/lib/git/service';
 import { getSession, createSession } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const { cwd, branch, sourceSessionId } = await req.json();
     if (!cwd || !branch) {

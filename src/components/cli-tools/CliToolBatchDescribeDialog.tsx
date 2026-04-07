@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { SpinnerGap, CheckCircle, XCircle, Sparkle } from "@/components/ui/icon";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/i18n";
+import { authFetch } from '@/lib/api-client';
 
 interface ProviderModelGroup {
   provider_id: string;
@@ -71,7 +72,7 @@ export function CliToolBatchDescribeDialog({
     resultsRef.current = {};
     setToolResults([]);
 
-    fetch("/api/providers/models")
+    authFetch("/api/providers/models")
       .then(r => r.json())
       .then(data => {
         const allGroups: ProviderModelGroup[] = data.groups || [];
@@ -138,7 +139,7 @@ export function CliToolBatchDescribeDialog({
           body.model = selectedModel;
         }
 
-        const res = await fetch(`/api/cli-tools/${toolId}/describe`, {
+        const res = await authFetch(`/api/cli-tools/${toolId}/describe`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),

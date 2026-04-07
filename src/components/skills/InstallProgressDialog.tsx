@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -153,6 +154,13 @@ export function InstallProgressDialog({
                 ? t('skills.installSuccess')
                 : t('skills.installFailed')}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {phase === "running"
+              ? t('skills.installing')
+              : phase === "success"
+                ? t('skills.installSuccess')
+                : t('skills.installFailed')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="bg-muted/50 rounded-md p-3 max-h-64 overflow-y-auto font-mono text-xs leading-relaxed">

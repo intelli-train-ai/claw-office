@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllProviders, createProvider, getSetting } from '@/lib/db';
 import type { ProviderResponse, ErrorResponse, CreateProviderRequest, ApiProvider } from '@/types';
+import { requireAuth } from '@/lib/auth';
 
 function maskApiKey(provider: ApiProvider): ApiProvider {
   let maskedKey = provider.api_key;
@@ -34,7 +35,10 @@ function detectEnvVars(): Record<string, string> {
   return detected;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const providers = getAllProviders().map(maskApiKey);
     const envDetected = detectEnvVars();
@@ -52,6 +56,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body: CreateProviderRequest = await request.json();
 

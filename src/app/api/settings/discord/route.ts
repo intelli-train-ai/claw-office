@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, setSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * Discord Bot bridge settings.
@@ -22,7 +23,10 @@ const DISCORD_KEYS = [
   'bridge_discord_image_enabled',
 ] as const;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const result: Record<string, string> = {};
     for (const key of DISCORD_KEYS) {
@@ -45,6 +49,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { settings } = body;

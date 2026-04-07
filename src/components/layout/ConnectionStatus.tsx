@@ -15,6 +15,7 @@ import { Warning } from "@/components/ui/icon";
 
 import { useTranslation } from "@/hooks/useTranslation";
 import { InstallWizard } from "@/components/layout/InstallWizard";
+import { authFetch } from '@/lib/api-client';
 
 interface ClaudeInstallInfo {
   path: string;
@@ -94,7 +95,7 @@ export function ConnectionStatus() {
 
   const checkStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/claude-status");
+      const res = await authFetch("/api/claude-status");
       if (res.ok) {
         const data: ClaudeStatus = await res.json();
         if (lastConnectedRef.current === data.connected) {
@@ -136,7 +137,7 @@ export function ConnectionStatus() {
   // Invalidate server-side caches then refresh — called after install success
   const handleInstallComplete = useCallback(async () => {
     try {
-      await fetch('/api/claude-status/invalidate', { method: 'POST' });
+      await authFetch('/api/claude-status/invalidate', { method: 'POST' });
     } catch { /* best-effort */ }
     stableCountRef.current = 0;
     checkStatus();
@@ -227,7 +228,7 @@ export function ConnectionStatus() {
         size="sm"
         onClick={() => setDialogOpen(true)}
         className={cn(
-          "h-7 rounded-full px-2.5 text-[11px] font-medium gap-1.5",
+          "h-8 rounded-full px-2.5 text-xs font-medium gap-1.5",
           status === null
             ? "bg-muted text-muted-foreground"
             : connected

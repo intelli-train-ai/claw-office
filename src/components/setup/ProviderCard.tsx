@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { SetupCard } from './SetupCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { SetupCardStatus, ApiProvider } from '@/types';
+import { authFetch } from '@/lib/api-client';
 
 interface ProviderCardProps {
   status: SetupCardStatus;
@@ -20,7 +21,7 @@ export function ProviderCard({ status, onStatusChange }: ProviderCardProps) {
   const fetchProviders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/providers');
+      const res = await authFetch('/api/providers');
       if (res.ok) {
         const data = await res.json();
         setProviders(data.providers || []);
@@ -30,7 +31,7 @@ export function ProviderCard({ status, onStatusChange }: ProviderCardProps) {
         // Also check legacy app-settings token
         if (!hasEnv) {
           try {
-            const settingsRes = await fetch('/api/settings/app');
+            const settingsRes = await authFetch('/api/settings/app');
             if (settingsRes.ok) {
               const settingsData = await settingsRes.json();
               const appToken = settingsData.settings?.anthropic_auth_token;
@@ -58,7 +59,7 @@ export function ProviderCard({ status, onStatusChange }: ProviderCardProps) {
   const handleSkip = useCallback(async () => {
     onStatusChange('skipped');
     try {
-      await fetch('/api/setup', {
+      await authFetch('/api/setup', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ card: 'provider', status: 'skipped' }),

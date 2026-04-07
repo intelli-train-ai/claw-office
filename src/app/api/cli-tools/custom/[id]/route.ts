@@ -1,10 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { deleteCustomCliTool, getCustomCliTool } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
 
   const tool = getCustomCliTool(id);

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as gitService from '@/lib/git/service';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ sha: string }> }
 ) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   const { sha } = await params;
   const cwd = req.nextUrl.searchParams.get('cwd');
   if (!cwd) {

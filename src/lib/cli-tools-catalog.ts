@@ -9,7 +9,8 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Swiss army knife for audio/video — transcode, trim, merge, stream',
     categories: ['media'],
     installMethods: [
-      { method: 'brew', command: 'brew install ffmpeg', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install ffmpeg', platforms: ['darwin'] },
+      { method: 'apt', command: 'sudo apt install -y ffmpeg', platforms: ['linux'] },
     ],
     setupType: 'simple',
     detailIntro: {
@@ -42,7 +43,8 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Lightweight JSON processor — query, filter, transform',
     categories: ['data'],
     installMethods: [
-      { method: 'brew', command: 'brew install jq', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install jq', platforms: ['darwin'] },
+      { method: 'apt', command: 'sudo apt install -y jq', platforms: ['linux'] },
     ],
     setupType: 'simple',
     detailIntro: {
@@ -75,7 +77,8 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Ultra-fast text search tool — orders of magnitude faster than grep',
     categories: ['search'],
     installMethods: [
-      { method: 'brew', command: 'brew install ripgrep', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install ripgrep', platforms: ['darwin'] },
+      { method: 'apt', command: 'sudo apt install -y ripgrep', platforms: ['linux'] },
       { method: 'cargo', command: 'cargo install ripgrep', platforms: ['darwin', 'linux', 'win32'] },
     ],
     setupType: 'simple',
@@ -108,7 +111,8 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Powerful video downloader supporting thousands of websites',
     categories: ['download', 'media'],
     installMethods: [
-      { method: 'brew', command: 'brew install yt-dlp', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install yt-dlp', platforms: ['darwin'] },
+      { method: 'apt', command: 'sudo apt install -y yt-dlp', platforms: ['linux'] },
       { method: 'pipx', command: 'pipx install yt-dlp', platforms: ['darwin', 'linux', 'win32'] },
     ],
     setupType: 'simple',
@@ -142,7 +146,8 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Universal document converter — Markdown, HTML, PDF, DOCX, and more',
     categories: ['document'],
     installMethods: [
-      { method: 'brew', command: 'brew install pandoc', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install pandoc', platforms: ['darwin'] },
+      { method: 'apt', command: 'sudo apt install -y pandoc', platforms: ['linux'] },
     ],
     setupType: 'simple',
     detailIntro: {
@@ -174,7 +179,8 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Powerful image processing tool — convert, resize, crop, effects',
     categories: ['media'],
     installMethods: [
-      { method: 'brew', command: 'brew install imagemagick', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install imagemagick', platforms: ['darwin'] },
+      { method: 'apt', command: 'sudo apt install -y imagemagick', platforms: ['linux'] },
     ],
     setupType: 'simple',
     detailIntro: {
@@ -283,7 +289,7 @@ export const CLI_TOOLS_CATALOG: CliToolDefinition[] = [
     summaryEn: 'Build, test, and manage Stripe payment integrations from the command line',
     categories: ['productivity'],
     installMethods: [
-      { method: 'brew', command: 'brew install stripe/stripe-cli/stripe', platforms: ['darwin', 'linux'] },
+      { method: 'brew', command: 'brew install stripe/stripe-cli/stripe', platforms: ['darwin'] },
     ],
     setupType: 'needs_auth',
     detailIntro: {

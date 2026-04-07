@@ -2,7 +2,7 @@ appId: com.codepilot.app
 productName: CodePilot
 publish:
   provider: github
-  owner: op7418
+  owner: intelli-train-ai
   repo: CodePilot
 directories:
   output: release
