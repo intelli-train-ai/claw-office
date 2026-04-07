@@ -36,8 +36,8 @@ interface CardKitV2 {
   card: {
     create(payload: { data: { type: string; data: string } }): Promise<{ data?: { card_id?: string } }>;
     streamContent(payload: { path: { card_id: string }; data: { content: string; sequence: number } }): Promise<unknown>;
-    setStreamingMode(payload: { path: { card_id: string }; data: { streaming_mode: boolean; sequence: number } }): Promise<unknown>;
-    update(payload: { path: { card_id: string }; data: { type: string; data: string; sequence: number } }): Promise<unknown>;
+    setStreamingMode(payload: { path: { card_id: string }; data: { settings: string; sequence: number } }): Promise<unknown>;
+    update(payload: { path: { card_id: string }; data: { card: { type: string; data: string }; sequence: number } }): Promise<unknown>;
   };
 }
 
