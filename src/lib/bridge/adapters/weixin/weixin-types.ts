@@ -59,7 +59,7 @@ export interface VoiceItem {
 export interface FileItem {
   media?: CDNMedia;
   file_name?: string;
-  file_size?: number;
+  len?: string;
 }
 
 export interface VideoItem {

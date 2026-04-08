@@ -232,7 +232,7 @@ export class WeixinAdapter extends BaseChannelAdapter {
     } else if (itemType === MessageItemType.VIDEO) {
       item.video_item = { media: cdnMedia };
     } else {
-      item.file_item = { media: cdnMedia, file_name: attachment.name, file_size: data.length };
+      item.file_item = { media: cdnMedia, file_name: attachment.name, len: String(data.length) };
     }
 
     await sendMessage(creds, peerUserId, [item], contextToken);
