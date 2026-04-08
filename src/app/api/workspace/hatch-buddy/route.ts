@@ -27,8 +27,11 @@ export async function POST(request: Request) {
     // If buddy already exists, update name if provided
     if (state.buddy) {
       if (buddyName) {
+        const oldName = state.buddy.buddyName;
         state.buddy.buddyName = buddyName;
         saveState(workspacePath, state);
+        // Sync name change to soul.md to avoid conflicting identity
+        await syncBuddyNameToSoul(fs, path, workspacePath, buddyName, oldName);
       }
       return NextResponse.json({ buddy: state.buddy, alreadyHatched: true });
     }
@@ -56,6 +59,11 @@ export async function POST(request: Request) {
         }
         break;
       }
+    }
+
+    // Sync buddy name to soul.md to avoid conflicting identity
+    if (buddyName) {
+      await syncBuddyNameToSoul(fs, path, workspacePath, buddyName);
     }
 
     // Insert celebration message with show-widget card into chat
@@ -115,5 +123,50 @@ export async function POST(request: Request) {
   } catch (e) {
     console.error('[workspace/hatch-buddy] POST failed:', e);
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed' }, { status: 500 });
+  }
+}
+
+/**
+ * Sync buddy name to soul.md so the identity layer doesn't conflict
+ * with the buddy personality prompt. Replaces old name references if
+ * provided, otherwise just ensures the current name is present.
+ */
+async function syncBuddyNameToSoul(
+  fs: typeof import('fs'),
+  path: typeof import('path'),
+  workspacePath: string,
+  newName: string,
+  oldName?: string,
+): Promise<void> {
+  const soulVariants = ['soul.md', 'Soul.md', 'SOUL.md'];
+  for (const variant of soulVariants) {
+    const soulPath = path.join(workspacePath, variant);
+    if (!fs.existsSync(soulPath)) continue;
+
+    let content = fs.readFileSync(soulPath, 'utf-8');
+
+    // Replace old name references if renaming
+    if (oldName && oldName !== newName) {
+      content = content.replaceAll(oldName, newName);
+    }
+
+    // Ensure an explicit name declaration exists in soul.md.
+    // If there's already a "## Name" section, update it; otherwise append.
+    const nameSection = `## Name\n我的名字是${newName}。`;
+    const nameSectionRegex = /## Name\n[^\n#]*/;
+    if (nameSectionRegex.test(content)) {
+      content = content.replace(nameSectionRegex, nameSection);
+    } else {
+      // Insert after the first heading line so it's near the top
+      const firstHeadingEnd = content.indexOf('\n');
+      if (firstHeadingEnd !== -1) {
+        content = content.slice(0, firstHeadingEnd + 1) + '\n' + nameSection + '\n' + content.slice(firstHeadingEnd + 1);
+      } else {
+        content += '\n\n' + nameSection + '\n';
+      }
+    }
+
+    fs.writeFileSync(soulPath, content, 'utf-8');
+    break;
   }
 }
