@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { DEFAULT_BRIDGE_SYSTEM_PROMPT } from "@/lib/bridge-prompt";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,11 @@ function AssistantConnectionStatus() {
   );
 }
 
+/** Strip XML wrapper tags from the default prompt for display */
+function stripBridgePromptTags(prompt: string): string {
+  return prompt.replace(/<\/?bridge-instructions>/g, '').trim();
+}
+
 interface BridgeSettings {
   remote_bridge_enabled: string;
   bridge_telegram_enabled: string;
@@ -87,6 +93,7 @@ interface BridgeSettings {
   bridge_default_work_dir: string;
   bridge_default_model: string;
   bridge_default_provider_id: string;
+  bridge_system_prompt: string;
 }
 
 const DEFAULT_SETTINGS: BridgeSettings = {
@@ -100,6 +107,7 @@ const DEFAULT_SETTINGS: BridgeSettings = {
   bridge_default_work_dir: "",
   bridge_default_model: "",
   bridge_default_provider_id: "",
+  bridge_system_prompt: "",
 };
 
 export function BridgeSection() {
@@ -107,6 +115,7 @@ export function BridgeSection() {
   const [saving, setSaving] = useState(false);
   const [workDir, setWorkDir] = useState("");
   const [model, setModel] = useState("");
+  const [bridgePrompt, setBridgePrompt] = useState("");
   const [providerGroups, setProviderGroups] = useState<ProviderModelGroup[]>([]);
   const { bridgeStatus, starting, stopping, startBridge, stopBridge } = useBridgeStatus();
   const { t } = useTranslation();
@@ -119,6 +128,7 @@ export function BridgeSection() {
         const s = { ...DEFAULT_SETTINGS, ...data.settings };
         setSettings(s);
         setWorkDir(s.bridge_default_work_dir);
+        setBridgePrompt(s.bridge_system_prompt || stripBridgePromptTags(DEFAULT_BRIDGE_SYSTEM_PROMPT));
         // Build composite value for Select: "provider_id::model"
         if (s.bridge_default_provider_id && s.bridge_default_model) {
           setModel(`${s.bridge_default_provider_id}::${s.bridge_default_model}`);
@@ -203,6 +213,7 @@ export function BridgeSection() {
       bridge_default_work_dir: workDir,
       bridge_default_model: modelValue,
       bridge_default_provider_id: providerId,
+      bridge_system_prompt: bridgePrompt,
     });
   };
 
@@ -548,6 +559,22 @@ export function BridgeSection() {
               )}
               <p className="text-xs text-muted-foreground mt-1">
                 {t("bridge.defaultModelHint")}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                {t("bridge.systemPrompt")}
+              </label>
+              <textarea
+                value={bridgePrompt}
+                onChange={(e) => setBridgePrompt(e.target.value)}
+                placeholder=""
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono min-h-[120px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                rows={8}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("bridge.systemPromptHint")}
               </p>
             </div>
           </div>

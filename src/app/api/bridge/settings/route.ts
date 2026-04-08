@@ -44,6 +44,7 @@ const BRIDGE_SETTING_KEYS = [
   'bridge_qq_max_image_size',
   'bridge_weixin_enabled',
   'bridge_weixin_media_enabled',
+  'bridge_system_prompt',
 ] as const;
 
 export async function GET(request: NextRequest) {
