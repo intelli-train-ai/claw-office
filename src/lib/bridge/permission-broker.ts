@@ -16,6 +16,36 @@ import { deliver } from './delivery-layer';
 import { insertPermissionLink, getPermissionLink, markPermissionLinkResolved, getSession, getDb } from '../db';
 import { resolvePendingPermission } from '../permission-registry';
 import { escapeHtml } from './adapters/telegram-utils';
+import path from 'path';
+
+/**
+ * Format a tool call into a human-readable one-line summary for IM display.
+ */
+function formatToolSummary(toolName: string, input: Record<string, unknown>): string {
+  const i = input || {};
+  switch (toolName) {
+    case 'Write':
+    case 'write':
+      return `📝 写入文件: ${path.basename(String(i.file_path || i.path || '未知文件'))}`;
+    case 'Edit':
+    case 'edit':
+      return `✏️ 编辑文件: ${path.basename(String(i.file_path || i.path || '未知文件'))}`;
+    case 'Read':
+    case 'read':
+      return `📖 读取文件: ${path.basename(String(i.file_path || i.path || '未知文件'))}`;
+    case 'Bash':
+    case 'bash': {
+      const cmd = String(i.command || '').slice(0, 80);
+      return `💻 执行命令: ${cmd}${String(i.command || '').length > 80 ? '...' : ''}`;
+    }
+    default: {
+      // Generic: show tool name + first string value as context
+      const firstVal = Object.values(i).find(v => typeof v === 'string' && v.length > 0);
+      const hint = firstVal ? `: ${String(firstVal).slice(0, 60)}` : '';
+      return `🔧 ${toolName}${hint}`;
+    }
+  }
+}
 
 /**
  * Dedup recent permission forwards to prevent duplicate cards.
@@ -70,6 +100,9 @@ export async function forwardPermissionRequest(
   // permission commands. Check if the adapter ignores inlineButtons.
   const supportsButtons = !['qq', 'weixin'].includes(adapter.channelType);
 
+  // Human-readable summary for IM channels (no raw JSON)
+  const friendlySummary = formatToolSummary(toolName, toolInput);
+
   const textLines = supportsButtons
     ? [
         `<b>Permission Required</b>`,
@@ -80,15 +113,14 @@ export async function forwardPermissionRequest(
         `Choose an action:`,
       ]
     : [
-        `⚠ Permission Required`,
+        `⚠️ 需要授权`,
         ``,
-        `Tool: ${toolName}`,
-        truncatedInput,
+        friendlySummary,
         ``,
-        `Reply with one of:`,
-        `/perm allow ${permissionRequestId}`,
-        `/perm allow_session ${permissionRequestId}`,
-        `/perm deny ${permissionRequestId}`,
+        `回复以下指令：`,
+        `✅ /perm allow ${permissionRequestId}`,
+        `🔓 /perm allow_session ${permissionRequestId}`,
+        `❌ /perm deny ${permissionRequestId}`,
       ];
 
   const text = textLines.join('\n');
