@@ -9,6 +9,7 @@ import { ChatComposerActionBar } from './ChatComposerActionBar';
 import { ModeIndicator } from './ModeIndicator';
 import { ChatPermissionSelector } from './ChatPermissionSelector';
 import { ContextUsageIndicator } from './ContextUsageIndicator';
+import { FolderPicker } from './FolderPicker';
 import { Button } from '@/components/ui/button';
 import { usePanel } from '@/hooks/usePanel';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -52,6 +53,14 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
 
   // Workspace mismatch banner state
   const [workspaceMismatchPath, setWorkspaceMismatchPath] = useState<string | null>(null);
+  // Assistant mode: cwd IS workspace, can attach a project directory as add-dir
+  const [cwdIsWorkspace, setCwdIsWorkspace] = useState(false);
+  const [attachedProjectDir, setAttachedProjectDir] = useState<string | null>(null);
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  // Project mode: toggle to attach/detach assistant workspace as add-dir
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
+  const [assistantWorkspacePath, setAssistantWorkspacePath] = useState<string | null>(null);
+  const [assistantConfigured, setAssistantConfigured] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
@@ -264,7 +273,29 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
         const data = await res.json();
         if (cancelled) return;
 
+        // Track workspace config for assistant toggle
+        const wsConfigured = !!data.state?.onboardingComplete;
+        setAssistantWorkspacePath(data.path || null);
+        setAssistantConfigured(wsConfigured);
+
+        // Check if assistant workspace is accessible: either as cwd or via additional_directories
+        let assistantViaAddDir = false;
         if (data.path && workingDirectory !== data.path) {
+          // Check if the session has the assistant workspace in additional_directories
+          try {
+            const sessionRes = await authFetch(`/api/chat/sessions/${sessionId}`);
+            if (sessionRes.ok && !cancelled) {
+              const sessionData = await sessionRes.json();
+              const addDirs: string[] = (() => {
+                try { return JSON.parse(sessionData.session?.additional_directories || '[]'); } catch { return []; }
+              })();
+              assistantViaAddDir = addDirs.includes(data.path);
+              setAssistantEnabled(assistantViaAddDir);
+            }
+          } catch { /* ignore */ }
+        }
+
+        if (data.path && workingDirectory !== data.path && !assistantViaAddDir) {
           setIsAssistantProject(false);
           setIsAssistantWorkspace(false);
           const inspectRes = await authFetch(`/api/workspace/inspect?path=${encodeURIComponent(workingDirectory)}`);
@@ -276,11 +307,32 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
             setWorkspaceMismatchPath(null);
           }
         } else {
-          // workingDirectory matches assistant workspace path
+          // workingDirectory matches assistant workspace path, or workspace is in add-dirs
           const isAssistant = !!data.path;
           setIsAssistantProject(isAssistant);
           setWorkspaceMismatchPath(null);
           setIsAssistantWorkspace(isAssistant);
+          setCwdIsWorkspace(workingDirectory === data.path);
+          // Load existing attached project dir from session additional_directories
+          if (assistantViaAddDir) {
+            // In project mode with assistant as add-dir: no attached project dir display needed
+          } else if (workingDirectory === data.path) {
+            // In assistant mode: check if there's a project dir in add-dirs
+            try {
+              const sessRes = await authFetch(`/api/chat/sessions/${sessionId}`);
+              if (sessRes.ok && !cancelled) {
+                const sessData = await sessRes.json();
+                const addDirs: string[] = (() => {
+                  try { return JSON.parse(sessData.session?.additional_directories || '[]'); } catch { return []; }
+                })();
+                // Find non-workspace dirs
+                const projectDirs = addDirs.filter((d: string) => d !== data.path);
+                if (projectDirs.length > 0) {
+                  setAttachedProjectDir(projectDirs[0]);
+                }
+              }
+            } catch { /* ignore */ }
+          }
           // Default panel is now controlled by the user's "Default Side Panel" setting
           // in chat/[id]/page.tsx — no longer force-override for assistant workspaces.
           // Load assistant name for avatar display
@@ -501,6 +553,69 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
 
   const handleCommand = useChatCommands({ sessionId, messages, setMessages: cappedSetMessages, sendMessage });
 
+  // Handler: attach/detach a project directory in assistant mode
+  const handleAttachProjectDir = useCallback(async (dirPath: string | null) => {
+    try {
+      // Build new additional_directories: workspace + optional project dir
+      const sessRes = await authFetch(`/api/chat/sessions/${sessionId}`);
+      if (!sessRes.ok) return;
+      const sessData = await sessRes.json();
+      const currentAddDirs: string[] = (() => {
+        try { return JSON.parse(sessData.session?.additional_directories || '[]'); } catch { return []; }
+      })();
+
+      let newAddDirs: string[];
+      if (dirPath) {
+        // Add new project dir, keep workspace if present
+        const nonProject = currentAddDirs.filter((d: string) => d === workingDirectory);
+        newAddDirs = [...nonProject, dirPath];
+      } else {
+        // Remove project dirs, keep only workspace-related
+        newAddDirs = currentAddDirs.filter((d: string) => d === workingDirectory);
+      }
+
+      await authFetch(`/api/chat/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additional_directories: newAddDirs }),
+      });
+      setAttachedProjectDir(dirPath);
+    } catch { /* ignore */ }
+  }, [sessionId, workingDirectory]);
+
+  // Handler: toggle assistant workspace as add-dir for project sessions
+  const handleToggleAssistant = useCallback(async () => {
+    if (!assistantWorkspacePath) return;
+    const newEnabled = !assistantEnabled;
+    setAssistantEnabled(newEnabled);
+    try {
+      const sessRes = await authFetch(`/api/chat/sessions/${sessionId}`);
+      if (!sessRes.ok) return;
+      const sessData = await sessRes.json();
+      const currentAddDirs: string[] = (() => {
+        try { return JSON.parse(sessData.session?.additional_directories || '[]'); } catch { return []; }
+      })();
+
+      let newAddDirs: string[];
+      if (newEnabled) {
+        newAddDirs = currentAddDirs.includes(assistantWorkspacePath)
+          ? currentAddDirs
+          : [...currentAddDirs, assistantWorkspacePath];
+      } else {
+        newAddDirs = currentAddDirs.filter((d: string) => d !== assistantWorkspacePath);
+      }
+
+      await authFetch(`/api/chat/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additional_directories: newAddDirs }),
+      });
+      setIsAssistantProject(newEnabled);
+    } catch {
+      setAssistantEnabled(!newEnabled); // rollback on failure
+    }
+  }, [sessionId, assistantWorkspacePath, assistantEnabled]);
+
   // Listen for feedback from FilePreview region selector and recording panel
   useEffect(() => {
     const handler = (e: Event) => {
@@ -599,14 +714,65 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
           />
         }
         right={
-          <ContextUsageIndicator
-            messages={messages}
-            modelName={currentModel}
-            context1m={context1m}
-            hasSummary={hasSummary}
-          />
+          <div className="flex items-center gap-2">
+            {!cwdIsWorkspace && assistantConfigured && (
+              <button
+                type="button"
+                onClick={handleToggleAssistant}
+                disabled={isStreaming}
+                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
+                  assistantEnabled
+                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                    : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+                } ${isStreaming ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'}`}
+                title={assistantEnabled ? t('chat.assistantToggle.enabled') : t('chat.assistantToggle.disabled')}
+              >
+                <span className="text-sm">🤖</span>
+                <span>{t('chat.assistantToggle.label')}</span>
+              </button>
+            )}
+            {cwdIsWorkspace && (
+              attachedProjectDir ? (
+                <button
+                  type="button"
+                  onClick={() => handleAttachProjectDir(null)}
+                  className="flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                  title={t('chat.projectDir.detach')}
+                >
+                  <span className="max-w-[120px] truncate">{attachedProjectDir.split('/').pop()}</span>
+                  <span className="text-blue-400">×</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setProjectPickerOpen(true)}
+                  className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                  title={t('chat.projectDir.attach')}
+                >
+                  <span>📁</span>
+                  <span>{t('chat.projectDir.label')}</span>
+                </button>
+              )
+            )}
+            <ContextUsageIndicator
+              messages={messages}
+              modelName={currentModel}
+              context1m={context1m}
+              hasSummary={hasSummary}
+            />
+          </div>
         }
       />
+      {projectPickerOpen && (
+        <FolderPicker
+          open={projectPickerOpen}
+          onOpenChange={setProjectPickerOpen}
+          onSelect={(path) => {
+            setProjectPickerOpen(false);
+            handleAttachProjectDir(path);
+          }}
+        />
+      )}
     </div>
   );
 }

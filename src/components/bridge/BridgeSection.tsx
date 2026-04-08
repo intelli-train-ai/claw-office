@@ -23,6 +23,59 @@ import { StatusBanner } from "@/components/patterns/StatusBanner";
 import type { ProviderModelGroup } from "@/types";
 import { authFetch } from '@/lib/api-client';
 
+/** Inline component: shows assistant connection status in bridge defaults */
+function AssistantConnectionStatus() {
+  const { t } = useTranslation();
+  const [status, setStatus] = useState<{ path?: string; name?: string; configured?: boolean } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await authFetch('/api/settings/workspace');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.path) {
+          let name = '';
+          try {
+            const summaryRes = await authFetch('/api/workspace/summary');
+            if (summaryRes.ok) {
+              const summary = await summaryRes.json();
+              name = summary.buddy?.buddyName || summary.name || '';
+            }
+          } catch { /* ignore */ }
+          setStatus({ path: data.path, name, configured: !!data.state?.onboardingComplete });
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  if (!status) return null;
+
+  return (
+    <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+      status.configured
+        ? 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30'
+        : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+    }`}>
+      <span className="text-base">{status.configured ? '🤖' : '⚠️'}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-xs">
+          {status.configured
+            ? t('bridge.assistantConnected').replace('{name}', status.name || t('bridge.assistantDefault'))
+            : t('bridge.assistantNotConfigured')
+          }
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {status.configured
+            ? t('bridge.assistantConnectedHint')
+            : t('bridge.assistantNotConfiguredHint')
+          }
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface BridgeSettings {
   remote_bridge_enabled: string;
   bridge_telegram_enabled: string;
@@ -432,6 +485,9 @@ export function BridgeSection() {
           description={t("bridge.defaultsDesc")}
         >
           <div className="space-y-3">
+            {/* Assistant connection status */}
+            <AssistantConnectionStatus />
+
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
                 {t("bridge.defaultWorkDir")}

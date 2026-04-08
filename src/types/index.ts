@@ -24,6 +24,8 @@ export interface ChatSession {
   permission_profile?: 'default' | 'full_access';
   context_summary?: string;
   context_summary_updated_at?: string;
+  /** JSON array of additional directories (--add-dir) for this session */
+  additional_directories: string;
 }
 
 // ==========================================
@@ -306,6 +308,8 @@ export interface CreateSessionRequest {
   mode?: string;
   provider_id?: string;
   permission_profile?: string;
+  /** Additional directories for --add-dir (e.g. assistant workspace path) */
+  additional_directories?: string[];
 }
 
 export interface SendMessageRequest {
@@ -1051,6 +1055,8 @@ export interface ClaudeStreamOptions {
   context1m?: boolean;
   /** Enable generative UI widget guidelines MCP server (default: true) */
   generativeUI?: boolean;
+  /** Additional directories to add via --add-dir (e.g. assistant workspace) */
+  additionalDirectories?: string[];
 }
 
 // ==========================================

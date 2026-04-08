@@ -55,6 +55,7 @@ export default function NewChatPage() {
   const [showWizard, setShowWizard] = useState(false);
   const [assistantConfigured, setAssistantConfigured] = useState(false);
   const [assistantWorkspacePath, setAssistantWorkspacePath] = useState('');
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [mode, setMode] = useState('code');
   // Model/provider start empty — populated by the async global-default fetch.
   // This prevents the race where a user sends before the fetch completes and
@@ -254,12 +255,17 @@ export default function NewChatPage() {
 
   // Detect assistant workspace status
   useEffect(() => {
-    fetch('/api/settings/workspace')
+    authFetch('/api/settings/workspace')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.path && data?.valid !== false) {
           setAssistantWorkspacePath(data.path);
-          setAssistantConfigured(!!data.state?.onboardingComplete);
+          const configured = !!data.state?.onboardingComplete;
+          setAssistantConfigured(configured);
+          // Auto-enable assistant toggle when workspace is fully configured
+          if (configured) {
+            setAssistantEnabled(true);
+          }
         }
       })
       .catch(() => {});
@@ -461,13 +467,17 @@ export default function NewChatPage() {
 
       try {
         // Create a new session with working directory + model/provider
-        const createBody: Record<string, string> = {
+        const additionalDirs = assistantEnabled && assistantWorkspacePath
+          ? [assistantWorkspacePath]
+          : [];
+        const createBody: Record<string, unknown> = {
           title: content.slice(0, 50),
           mode,
           working_directory: workingDir.trim(),
           permission_profile: permissionProfile,
           model: currentModel,
           provider_id: currentProviderId,
+          ...(additionalDirs.length > 0 && { additional_directories: additionalDirs }),
         };
 
         const createRes = await authFetch('/api/chat/sessions', {
@@ -824,6 +834,22 @@ export default function NewChatPage() {
             onPermissionChange={setPermissionProfile}
           />
         }
+        right={assistantConfigured ? (
+          <button
+            type="button"
+            onClick={() => setAssistantEnabled(prev => !prev)}
+            disabled={isStreaming}
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
+              assistantEnabled
+                ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+            } ${isStreaming ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'}`}
+            title={assistantEnabled ? t('chat.assistantToggle.enabled') : t('chat.assistantToggle.disabled')}
+          >
+            <span className="text-sm">🤖</span>
+            <span>{t('chat.assistantToggle.label')}</span>
+          </button>
+        ) : undefined}
       />
       <FolderPicker
         open={folderPickerOpen}

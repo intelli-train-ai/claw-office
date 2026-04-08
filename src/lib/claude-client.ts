@@ -433,6 +433,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
     autoTrigger,
     context1m,
     generativeUI,
+    additionalDirectories,
   } = options;
 
   return new ReadableStream<string>({
@@ -515,6 +516,10 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           // settingSources excludes 'user' to prevent ~/.claude/settings.json
           // env overrides from replacing the provider's injected credentials.
           settingSources: resolved.settingSources as Options['settingSources'],
+          // Additional directories (--add-dir) for assistant workspace access
+          ...(additionalDirectories && additionalDirectories.length > 0 && {
+            additionalDirectories,
+          }),
         };
 
         if (skipPermissions) {
@@ -561,11 +566,17 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           queryOptions.mcpServers = toSdkMcpConfig(mcpServers);
         }
 
-        // Memory MCP: always registered in assistant mode for memory search/retrieval.
-        // Unlike other MCPs which are keyword-gated, memory search is a core assistant capability.
+        // Memory MCP: always registered when assistant workspace is accessible
+        // (either as cwd or via additionalDirectories). Unlike other MCPs which
+        // are keyword-gated, memory search is a core assistant capability.
         {
           const assistantWorkspacePath = getSetting('assistant_workspace_path');
-          if (assistantWorkspacePath && resolvedWorkingDirectory.path === assistantWorkspacePath) {
+          const addDirs = additionalDirectories || [];
+          const assistantAccessible = assistantWorkspacePath && (
+            resolvedWorkingDirectory.path === assistantWorkspacePath ||
+            addDirs.includes(assistantWorkspacePath)
+          );
+          if (assistantAccessible && assistantWorkspacePath) {
             const { createMemorySearchMcpServer, MEMORY_SEARCH_SYSTEM_PROMPT } = await import('@/lib/memory-search-mcp');
             queryOptions.mcpServers = {
               ...(queryOptions.mcpServers || {}),

@@ -34,6 +34,7 @@ function makeSession(overrides: Partial<ChatSession> = {}): ChatSession {
     runtime_status: 'idle',
     runtime_updated_at: '',
     runtime_error: '',
+    additional_directories: '[]',
     ...overrides,
   };
 }

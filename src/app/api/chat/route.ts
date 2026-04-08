@@ -228,6 +228,11 @@ export async function POST(request: NextRequest) {
     // not just any systemPromptAppend (which could come from CLI badges or skills).
     const isImageAgentMode = !!systemPromptAppend && systemPromptAppend.includes('image-gen-request');
 
+    // Parse additional directories from session (e.g. assistant workspace as add-dir)
+    const sessionAddDirs: string[] = (() => {
+      try { return JSON.parse(session.additional_directories || '[]'); } catch { return []; }
+    })();
+
     // Unified context assembly — extracts workspace, CLI tools, widget prompt
     const assembled = await assembleContext({
       session,
@@ -237,6 +242,7 @@ export async function POST(request: NextRequest) {
       conversationHistory: historyMsgs,
       imageAgentMode: isImageAgentMode,
       autoTrigger: !!autoTrigger,
+      additionalDirectories: sessionAddDirs,
     });
     const finalSystemPrompt = assembled.systemPrompt;
     const generativeUIEnabled = assembled.generativeUIEnabled;
@@ -364,6 +370,7 @@ export async function POST(request: NextRequest) {
       generativeUI: generativeUIEnabled,
       enableFileCheckpointing: enableFileCheckpointing ?? true,
       autoTrigger: !!autoTrigger,
+      additionalDirectories: sessionAddDirs.length > 0 ? sessionAddDirs : undefined,
       onRuntimeStatusChange: (status: string) => {
         try { setSessionRuntimeStatus(session_id, status); } catch { /* best effort */ }
       },
@@ -667,6 +674,13 @@ async function collectStreamResponse(
       }
     }
   } finally {
+    // Helper: check if assistant workspace is accessible for this session
+    const isAssistantSession = (s: import('@/types').ChatSession | undefined, wsPath: string | undefined): wsPath is string => {
+      if (!wsPath || !s) return false;
+      if (s.working_directory === wsPath) return true;
+      try { return (JSON.parse(s.additional_directories || '[]') as string[]).includes(wsPath); } catch { return false; }
+    };
+
     // ── Server-side completion detection (reliable path) ──
     // After persisting the assistant message, check for onboarding/checkin
     // fences and process them directly on the server. This ensures completion
@@ -682,7 +696,7 @@ async function collectStreamResponse(
       if (completion) {
         const workspacePath = getSetting('assistant_workspace_path');
         const session = getSession(sessionId);
-        if (workspacePath && session && session.working_directory === workspacePath) {
+        if (isAssistantSession(session, workspacePath)) {
           await processCompletionServerSide(completion, workspacePath, sessionId);
         }
       }
@@ -693,7 +707,7 @@ async function collectStreamResponse(
         try {
           const workspacePath = getSetting('assistant_workspace_path');
           const session = getSession(sessionId);
-          if (workspacePath && session && session.working_directory === workspacePath) {
+          if (isAssistantSession(session, workspacePath)) {
             const { loadState, saveState, shouldRunHeartbeat } = await import('@/lib/assistant-workspace');
             const { getLocalDateString } = await import('@/lib/utils');
             const st = loadState(workspacePath);
@@ -715,7 +729,7 @@ async function collectStreamResponse(
         try {
           const workspacePath = getSetting('assistant_workspace_path');
           const session = getSession(sessionId);
-          if (workspacePath && session && session.working_directory === workspacePath) {
+          if (isAssistantSession(session, workspacePath)) {
             const { stripHeartbeatToken } = await import('@/lib/heartbeat');
             const { loadState, saveState } = await import('@/lib/assistant-workspace');
             const { getLocalDateString } = await import('@/lib/utils');
@@ -757,7 +771,7 @@ async function collectStreamResponse(
       try {
         const workspacePath = getSetting('assistant_workspace_path');
         const session = getSession(sessionId);
-        if (workspacePath && session && session.working_directory === workspacePath) {
+        if (isAssistantSession(session, workspacePath)) {
           const { shouldExtractMemory, hasMemoryWritesInResponse, extractMemories } = await import('@/lib/memory-extractor');
 
           const fullTextForMemory = contentBlocks

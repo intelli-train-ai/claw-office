@@ -388,6 +388,9 @@ function migrateDb(db: Database.Database): void {
   if (!colNames.includes('context_summary_updated_at')) {
     safeAddColumn(db, "ALTER TABLE chat_sessions ADD COLUMN context_summary_updated_at TEXT NOT NULL DEFAULT ''");
   }
+  if (!colNames.includes('additional_directories')) {
+    safeAddColumn(db, "ALTER TABLE chat_sessions ADD COLUMN additional_directories TEXT NOT NULL DEFAULT '[]'");
+  }
   db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_runtime_status ON chat_sessions(runtime_status)");
 
   // Migrate is_active provider to default_provider_id setting
@@ -969,16 +972,18 @@ export function createSession(
   mode?: string,
   providerId?: string,
   permissionProfile?: string,
+  additionalDirectories?: string[],
 ): ChatSession {
   const db = getDb();
   const id = crypto.randomBytes(16).toString('hex');
   const now = new Date().toISOString().replace('T', ' ').split('.')[0];
   const wd = workingDirectory || '';
   const projectName = path.basename(wd);
+  const addDirs = JSON.stringify(additionalDirectories || []);
 
   db.prepare(
-    'INSERT INTO chat_sessions (id, title, created_at, updated_at, model, system_prompt, working_directory, sdk_session_id, project_name, status, mode, sdk_cwd, provider_id, permission_profile) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(id, title || 'New Chat', now, now, model || '', systemPrompt || '', wd, '', projectName, 'active', mode || 'code', wd, providerId || '', permissionProfile || 'default');
+    'INSERT INTO chat_sessions (id, title, created_at, updated_at, model, system_prompt, working_directory, sdk_session_id, project_name, status, mode, sdk_cwd, provider_id, permission_profile, additional_directories) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, title || 'New Chat', now, now, model || '', systemPrompt || '', wd, '', projectName, 'active', mode || 'code', wd, providerId || '', permissionProfile || 'default', addDirs);
 
   return getSession(id)!;
 }
@@ -1061,6 +1066,11 @@ export function updateSessionMode(id: string, mode: string): void {
 export function updateSessionPermissionProfile(id: string, profile: string): void {
   const db = getDb();
   db.prepare('UPDATE chat_sessions SET permission_profile = ? WHERE id = ?').run(profile, id);
+}
+
+export function updateSessionAdditionalDirectories(id: string, directories: string[]): void {
+  const db = getDb();
+  db.prepare('UPDATE chat_sessions SET additional_directories = ? WHERE id = ?').run(JSON.stringify(directories), id);
 }
 
 // ==========================================

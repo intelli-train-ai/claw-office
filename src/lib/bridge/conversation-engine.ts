@@ -195,12 +195,18 @@ export async function processMessage(
     // All other MCP servers are auto-loaded by the SDK via settingSources.
     const mcpServers = loadCodePilotMcpServers();
 
+    // Parse additional directories from session (e.g. assistant workspace as add-dir)
+    const sessionAddDirs: string[] = (() => {
+      try { return JSON.parse(session?.additional_directories || '[]'); } catch { return []; }
+    })();
+
     // Unified context assembly — adds CLI tools context (and workspace prompt if applicable)
     const assembled = await assembleContext({
       session: session!,
       entryPoint: 'bridge',
       userPrompt: text,
       conversationHistory: historyMsgs,
+      additionalDirectories: sessionAddDirs,
     });
 
     // Resolve a valid working directory from multiple candidates
@@ -235,6 +241,7 @@ export async function processMessage(
       conversationHistory: historyMsgs,
       files,
       bypassPermissions,
+      additionalDirectories: sessionAddDirs.length > 0 ? sessionAddDirs : undefined,
       // Bridge-specific SDK options
       thinking: { type: 'disabled' as const },
       effort: 'medium' as const,

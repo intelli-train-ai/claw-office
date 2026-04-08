@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { deleteSession, getSession, updateSessionWorkingDirectory, updateSessionTitle, updateSessionMode, updateSessionModel, updateSessionProviderId, clearSessionMessages, updateSdkSessionId, updateSessionPermissionProfile } from '@/lib/db';
+import { deleteSession, getSession, updateSessionWorkingDirectory, updateSessionTitle, updateSessionMode, updateSessionModel, updateSessionProviderId, clearSessionMessages, updateSdkSessionId, updateSessionPermissionProfile, updateSessionAdditionalDirectories } from '@/lib/db';
 import { autoApprovePendingForSession } from '@/lib/bridge/permission-broker';
 import { requireAuth } from '@/lib/auth';
 
@@ -90,6 +90,13 @@ export async function PATCH(
         } catch (err) {
           console.warn('[session-api] Failed to auto-approve pending permissions:', err);
         }
+      }
+    }
+    if (Array.isArray(body.additional_directories)) {
+      updateSessionAdditionalDirectories(id, body.additional_directories);
+      // Changing add-dirs may affect SDK context, clear stale session
+      if (session.sdk_session_id && body.sdk_session_id === undefined) {
+        updateSdkSessionId(id, '');
       }
     }
     if (body.clear_messages) {

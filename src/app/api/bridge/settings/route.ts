@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSetting, setSetting } from '@/lib/db';
+import { getSetting, setSetting, listChannelBindings, updateChannelBinding, updateSessionWorkingDirectory, updateSdkSessionId } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 const BRIDGE_SETTING_KEYS = [
@@ -82,6 +82,21 @@ export async function PUT(request: NextRequest) {
     for (const [key, value] of Object.entries(settings)) {
       if (BRIDGE_SETTING_KEYS.includes(key as typeof BRIDGE_SETTING_KEYS[number])) {
         setSetting(key, String(value));
+      }
+    }
+
+    // When work dir changes, propagate to all existing bindings + their sessions
+    if (settings.bridge_default_work_dir !== undefined) {
+      const newDir = String(settings.bridge_default_work_dir);
+      if (newDir) {
+        const bindings = listChannelBindings();
+        for (const binding of bindings) {
+          if (binding.workingDirectory !== newDir) {
+            updateChannelBinding(binding.id, { workingDirectory: newDir, sdkSessionId: '' });
+            updateSessionWorkingDirectory(binding.codepilotSessionId, newDir);
+            updateSdkSessionId(binding.codepilotSessionId, '');
+          }
+        }
       }
     }
 

@@ -597,6 +597,10 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
                     onToggle={() => toggleProject(group.workingDirectory)}
                     onMouseEnter={() => setHoveredFolder(group.workingDirectory)}
                     onMouseLeave={() => setHoveredFolder(null)}
+                    onCreateSession={(e) => {
+                      e.stopPropagation();
+                      handleFolderSelect(group.workingDirectory);
+                    }}
                     onRemoveProject={handleRemoveProjectClick}
                     assistantName={assistantSummary?.name}
                     assistantMemoryCount={assistantSummary?.memoryCount}

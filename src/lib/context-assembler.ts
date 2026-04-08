@@ -31,6 +31,8 @@ export interface ContextAssemblyConfig {
   imageAgentMode?: boolean;
   /** Whether this is an auto-trigger turn (heartbeat, onboarding hook, etc.) */
   autoTrigger?: boolean;
+  /** Additional directories attached to this session (from session.additional_directories) */
+  additionalDirectories?: string[];
 }
 
 export interface AssembledContext {
@@ -40,14 +42,14 @@ export interface AssembledContext {
   generativeUIEnabled: boolean;
   /** Onboarding/checkin instructions (route.ts uses this for server-side completion detection) */
   assistantProjectInstructions: string;
-  /** Whether this session is in the assistant workspace */
+  /** Whether this session has the assistant workspace accessible (as cwd or add-dir) */
   isAssistantProject: boolean;
 }
 
 // ── Main function ────────────────────────────────────────────────────
 
 export async function assembleContext(config: ContextAssemblyConfig): Promise<AssembledContext> {
-  const { session, entryPoint, userPrompt, systemPromptAppend, conversationHistory, imageAgentMode, autoTrigger } = config;
+  const { session, entryPoint, userPrompt, systemPromptAppend, conversationHistory, imageAgentMode, autoTrigger, additionalDirectories } = config;
   const t0 = Date.now();
 
   let workspacePrompt = '';
@@ -55,12 +57,15 @@ export async function assembleContext(config: ContextAssemblyConfig): Promise<As
   let assistantProjectInstructions = '';
   let isAssistantProject = false;
 
-  // ── Layer 1: Workspace prompt (if assistant project session) ──────
+  // ── Layer 1: Workspace prompt (if assistant is accessible) ──────
+  // Assistant identity loads whenever the workspace path is accessible:
+  // either as the session's cwd OR via additional_directories (--add-dir).
   try {
     const workspacePath = getSetting('assistant_workspace_path');
     if (workspacePath) {
       const sessionWd = session.working_directory || '';
-      isAssistantProject = sessionWd === workspacePath;
+      const addDirs = additionalDirectories || [];
+      isAssistantProject = sessionWd === workspacePath || addDirs.includes(workspacePath);
 
       if (isAssistantProject) {
         const { loadWorkspaceFiles, assembleWorkspacePrompt, loadState, shouldRunHeartbeat } =

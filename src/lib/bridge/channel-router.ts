@@ -99,6 +99,10 @@ export function createBinding(
   const defaultModel = getSetting('bridge_default_model') || '';
   const defaultProviderId = getSetting('bridge_default_provider_id') || '';
 
+  // Auto-attach assistant workspace as additional directory for bridge sessions
+  const assistantPath = getSetting('assistant_workspace_path');
+  const additionalDirs = assistantPath ? [assistantPath] : undefined;
+
   const displayName = address.displayName || address.chatId;
   const session = createSession(
     `Bridge: ${displayName}`,
@@ -106,6 +110,9 @@ export function createBinding(
     undefined,
     defaultCwd,
     'code',
+    undefined, // providerId
+    undefined, // permissionProfile
+    additionalDirs,
   );
 
   if (defaultProviderId) {
