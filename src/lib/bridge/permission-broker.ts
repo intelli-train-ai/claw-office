@@ -70,25 +70,26 @@ export async function forwardPermissionRequest(
   // permission commands. Check if the adapter ignores inlineButtons.
   const supportsButtons = !['qq', 'weixin'].includes(adapter.channelType);
 
-  const textLines = [
-    `<b>Permission Required</b>`,
-    ``,
-    `Tool: <code>${escapeHtml(toolName)}</code>`,
-    `<pre>${escapeHtml(truncatedInput)}</pre>`,
-    ``,
-  ];
-
-  if (supportsButtons) {
-    textLines.push(`Choose an action:`);
-  } else {
-    // Text-based permission commands for channels without inline buttons
-    textLines.push(
-      `Reply with one of:`,
-      `/perm allow ${permissionRequestId}`,
-      `/perm allow_session ${permissionRequestId}`,
-      `/perm deny ${permissionRequestId}`,
-    );
-  }
+  const textLines = supportsButtons
+    ? [
+        `<b>Permission Required</b>`,
+        ``,
+        `Tool: <code>${escapeHtml(toolName)}</code>`,
+        `<pre>${escapeHtml(truncatedInput)}</pre>`,
+        ``,
+        `Choose an action:`,
+      ]
+    : [
+        `⚠ Permission Required`,
+        ``,
+        `Tool: ${toolName}`,
+        truncatedInput,
+        ``,
+        `Reply with one of:`,
+        `/perm allow ${permissionRequestId}`,
+        `/perm allow_session ${permissionRequestId}`,
+        `/perm deny ${permissionRequestId}`,
+      ];
 
   const text = textLines.join('\n');
 

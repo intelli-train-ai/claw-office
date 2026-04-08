@@ -2,7 +2,7 @@
  * WeChat Adapter — implements BaseChannelAdapter for WeChat ilink bot API.
  *
  * Uses HTTP long-polling (one worker per enabled account) for real-time
- * message consumption. Text-only outbound. No streaming preview.
+ * message consumption. Supports outbound text + media (image/video/file). No streaming preview.
  * No inline buttons — permission handled via /perm text command.
  *
  * Multi-account: each QR-linked account runs its own poll loop.
@@ -28,11 +28,11 @@ import {
   getSetting,
 } from '../../db';
 import type { WeixinAccountRow } from '../../db';
-import { getUpdates, sendTextMessage, sendTyping as apiSendTyping, getConfig } from './weixin/weixin-api';
+import { getUpdates, sendTextMessage, sendMessage, sendTyping as apiSendTyping, getConfig } from './weixin/weixin-api';
 import type { WeixinCredentials, WeixinMessage, MessageItem, GetUpdatesResponse } from './weixin/weixin-types';
-import { MessageItemType, TypingStatus, ERRCODE_SESSION_EXPIRED } from './weixin/weixin-types';
+import { MessageItemType, UploadMediaType, TypingStatus, ERRCODE_SESSION_EXPIRED } from './weixin/weixin-types';
 import { encodeWeixinChatId, decodeWeixinChatId } from './weixin/weixin-ids';
-import { downloadMediaFromItem } from './weixin/weixin-media';
+import { downloadMediaFromItem, uploadMediaToCdn } from './weixin/weixin-media';
 import { isPaused, setPaused, clearAllPauses } from './weixin/weixin-session-guard';
 
 /** Max number of message_ids to keep for dedup per account. */
@@ -166,12 +166,28 @@ export class WeixinAdapter extends BaseChannelAdapter {
 
       const creds = this.accountToCreds(account);
 
+      // Send attachments first (each as a separate message)
+      if (message.attachments && message.attachments.length > 0) {
+        for (const attachment of message.attachments) {
+          try {
+            await this.sendAttachment(creds, peerUserId, contextToken, attachment);
+          } catch (err) {
+            console.error('[weixin] Failed to send attachment:', attachment.name, err instanceof Error ? err.message : err);
+          }
+        }
+      }
+
+      // Send text after attachments (skip if no text content)
+      const text = message.text.trim();
+      if (!text) {
+        return { ok: true };
+      }
+
       // Strip HTML/Markdown — WeChat only supports plain text
-      let content = message.text;
+      let content = text;
       if (message.parseMode === 'HTML') {
         content = content.replace(/<[^>]+>/g, '');
       }
-      // Simple markdown strip
       content = content
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/__(.*?)__/g, '$1')
@@ -181,13 +197,56 @@ export class WeixinAdapter extends BaseChannelAdapter {
         .replace(/`([^`]+)`/g, '$1')
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
-      // sendTextMessage returns local clientId; HTTP errors throw
       const { clientId } = await sendTextMessage(creds, peerUserId, content, contextToken);
 
       return { ok: true, messageId: clientId };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
+  }
+
+  /** Upload and send a single media attachment. */
+  private async sendAttachment(
+    creds: WeixinCredentials,
+    peerUserId: string,
+    contextToken: string,
+    attachment: import('../types').OutboundAttachment,
+  ): Promise<void> {
+    const data = typeof attachment.data === 'string'
+      ? await import('fs').then(fs => fs.promises.readFile(attachment.data as string))
+      : attachment.data;
+
+    const mime = attachment.mimeType;
+    const { uploadType, itemType } = this.resolveMediaTypes(mime);
+
+    const uploaded = await uploadMediaToCdn(creds, data, attachment.name, uploadType, peerUserId);
+    const cdnMedia = {
+      encrypt_query_param: uploaded.encryptQueryParam,
+      aes_key: uploaded.aesKeyBase64,
+      encrypt_type: 1,
+    };
+
+    const item: MessageItem = { type: itemType };
+    if (itemType === MessageItemType.IMAGE) {
+      item.image_item = { media: cdnMedia };
+    } else if (itemType === MessageItemType.VIDEO) {
+      item.video_item = { media: cdnMedia };
+    } else {
+      item.file_item = { media: cdnMedia, file_name: attachment.name, file_size: data.length };
+    }
+
+    await sendMessage(creds, peerUserId, [item], contextToken);
+  }
+
+  /** Map MIME type to WeChat upload type and message item type. */
+  private resolveMediaTypes(mime: string): { uploadType: number; itemType: number } {
+    if (mime.startsWith('image/')) {
+      return { uploadType: UploadMediaType.IMAGE, itemType: MessageItemType.IMAGE };
+    }
+    if (mime.startsWith('video/')) {
+      return { uploadType: UploadMediaType.VIDEO, itemType: MessageItemType.VIDEO };
+    }
+    return { uploadType: UploadMediaType.FILE, itemType: MessageItemType.FILE };
   }
 
   // ── Typing ────────────────────────────────────────────────

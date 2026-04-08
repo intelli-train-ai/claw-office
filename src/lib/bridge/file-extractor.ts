@@ -19,6 +19,9 @@ const MAX_FILE_SIZE = 30 * 1024 * 1024;
 const SENDABLE_EXTENSIONS = new Set([
   // Documents
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.csv', '.txt',
+  '.md', '.html', '.htm', '.json', '.xml', '.yaml', '.yml',
+  // Code
+  '.js', '.ts', '.py', '.sh', '.css',
   // Images
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg',
   // Videos
@@ -41,6 +44,13 @@ function mimeFromExt(ext: string): string {
     '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     '.csv': 'text/csv',
     '.txt': 'text/plain',
+    '.md': 'text/markdown',
+    '.html': 'text/html',
+    '.htm': 'text/html',
+    '.json': 'application/json',
+    '.xml': 'application/xml',
+    '.yaml': 'text/yaml',
+    '.yml': 'text/yaml',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',

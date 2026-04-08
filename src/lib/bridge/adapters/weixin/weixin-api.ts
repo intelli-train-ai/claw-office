@@ -166,21 +166,24 @@ export async function sendTextMessage(
 
 /**
  * Get CDN upload URL.
+ * Field names follow the OpenClaw reference implementation.
  */
 export async function getUploadUrl(
   creds: WeixinCredentials,
-  fileKey: string,
-  fileType: number,
-  fileSize: number,
-  fileMd5: string,
-  cipherFileSize: number,
+  params: {
+    filekey: string;
+    media_type: number;
+    to_user_id: string;
+    rawsize: number;
+    rawfilemd5: string;
+    filesize: number;
+    aeskey: string;
+    no_need_thumb?: boolean;
+  },
 ): Promise<GetUploadUrlResponse> {
   return weixinRequest<GetUploadUrlResponse>(creds, 'getuploadurl', {
-    file_key: fileKey,
-    file_type: fileType,
-    file_size: fileSize,
-    file_md5: fileMd5,
-    cipher_file_size: cipherFileSize,
+    ...params,
+    base_info: { channel_version: CHANNEL_VERSION },
   });
 }
 

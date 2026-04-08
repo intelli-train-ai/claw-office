@@ -137,7 +137,10 @@ export interface GetUploadUrlRequest {
 export interface GetUploadUrlResponse {
   errcode?: number;
   errmsg?: string;
+  ret?: number;
   upload_param?: string;
+  /** Newer API versions return the full CDN upload URL directly */
+  upload_full_url?: string;
 }
 
 export interface GetConfigResponse {

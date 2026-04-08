@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     '**.ts.net',             // all Tailscale hostnames
     '192.168.3.21',          // LAN IP
-    '100.92.96.30',          // Tailscale IP
+    '100.112.164.102',       // Tailscale IP
   ],
   env: {
     NEXT_PUBLIC_APP_VERSION: pkg.version,

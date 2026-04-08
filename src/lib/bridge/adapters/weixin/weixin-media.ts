@@ -159,35 +159,58 @@ export async function uploadMediaToCdn(
   data: Buffer,
   filename: string,
   mediaType: number,
+  toUserId: string,
 ): Promise<{ encryptQueryParam: string; aesKeyBase64: string; cipherSize: number }> {
   const plainMd5 = crypto.createHash('md5').update(data).digest('hex');
   const aesKey = generateMediaKey();
   const fileKey = crypto.randomBytes(16).toString('hex');
   const cipherSize = aesEcbPaddedSize(data.length);
 
-  // Get pre-signed upload URL
-  const urlResp = await getUploadUrl(creds, fileKey, mediaType, data.length, plainMd5, cipherSize);
-  if (!urlResp.upload_param) {
-    throw new Error('Failed to get upload URL from WeChat');
+  // Get pre-signed upload URL (field names per OpenClaw reference)
+  const urlResp = await getUploadUrl(creds, {
+    filekey: fileKey,
+    media_type: mediaType,
+    to_user_id: toUserId,
+    rawsize: data.length,
+    rawfilemd5: plainMd5,
+    filesize: cipherSize,
+    aeskey: aesKey.toString('hex'),
+    no_need_thumb: true,
+  });
+
+  // API may return upload_full_url (newer) or upload_param (older)
+  const uploadUrl = urlResp.upload_full_url;
+  const uploadParam = urlResp.upload_param;
+  if (!uploadUrl && !uploadParam) {
+    throw new Error(`Failed to get upload URL from WeChat: ${JSON.stringify(urlResp)}`);
   }
 
   // Encrypt
   const encrypted = encryptMedia(data, aesKey);
 
   // Upload to CDN
-  const cdnUrl = `${creds.cdnBaseUrl}?${urlResp.upload_param}`;
+  const cdnUrl = uploadUrl
+    ?? `${creds.cdnBaseUrl}/upload?encrypted_query_param=${encodeURIComponent(uploadParam!)}&filekey=${encodeURIComponent(fileKey)}`;
   const uploadRes = await fetch(cdnUrl, {
-    method: 'PUT',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
     body: new Uint8Array(encrypted),
     signal: AbortSignal.timeout(60_000),
   });
 
   if (!uploadRes.ok) {
-    throw new Error(`CDN upload failed: ${uploadRes.status}`);
+    const errMsg = uploadRes.headers.get('x-error-message') ?? `status ${uploadRes.status}`;
+    throw new Error(`CDN upload failed: ${errMsg}`);
+  }
+
+  // Download param comes from response header
+  const downloadParam = uploadRes.headers.get('x-encrypted-param');
+  if (!downloadParam) {
+    throw new Error('CDN upload response missing x-encrypted-param header');
   }
 
   return {
-    encryptQueryParam: urlResp.upload_param,
+    encryptQueryParam: downloadParam,
     aesKeyBase64: aesKey.toString('base64'),
     cipherSize: encrypted.length,
   };

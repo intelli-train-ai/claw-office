@@ -169,7 +169,10 @@ async function deliverResponse(
     return { ok: true };
   }
   if (adapter.channelType === 'weixin') {
-    // WeChat plain text only, 4096 chars per chunk, max 5 chunks.
+    // WeChat plain text, 4096 chars per chunk, max 5 chunks.
+    // Also detect file paths in response and attach them for upload.
+    const attachments = extractFilePathsFromText(responseText);
+    console.log('[bridge-manager] weixin response length:', responseText.length, 'attachments found:', attachments.length, attachments.map(a => a.name));
     const WEIXIN_MAX_CHUNKS = 5;
     const limit = limits.weixin || 4096;
     const chunks = chunkText(responseText, limit);
@@ -184,6 +187,8 @@ async function deliverResponse(
         text: effectiveChunks[i],
         parseMode: 'plain',
         replyToMessageId,
+        // Attach files to the first chunk only
+        attachments: i === 0 && attachments.length > 0 ? attachments : undefined,
       }, { sessionId });
       if (!result.ok) return result;
     }
