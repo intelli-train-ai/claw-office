@@ -432,11 +432,11 @@ jobs:
           ## 下载地址
 
           ### macOS
-          - [Apple Silicon (M1/M2/M3/M4)](https://github.com/op7418/CodePilot/releases/download/v${VERSION}/CodePilot-${VERSION}-arm64.dmg)
-          - [Intel](https://github.com/op7418/CodePilot/releases/download/v${VERSION}/CodePilot-${VERSION}-x64.dmg)
+          - [Apple Silicon (M1/M2/M3/M4)](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/CodePilot-${VERSION}-arm64.dmg)
+          - [Intel](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/CodePilot-${VERSION}-x64.dmg)
 
           ### Windows
-          - [Windows 安装包](https://github.com/op7418/CodePilot/releases/download/v${VERSION}/CodePilot.Setup.${VERSION}.exe)
+          - [Windows 安装包](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/CodePilot.Setup.${VERSION}.exe)
 
           ## 安装说明
 

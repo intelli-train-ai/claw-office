@@ -3,7 +3,7 @@ productName: CodePilot
 publish:
   provider: github
   owner: intelli-train-ai
-  repo: CodePilot
+  repo: claw-office
 directories:
   output: release
 files:
