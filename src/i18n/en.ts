@@ -1457,6 +1457,11 @@ const en = {
   'buddy.namePlaceholder': 'Give your buddy a name...',
   'buddy.nameHint': 'This will be your buddy\'s name',
   'buddy.reset': 'Reset buddy',
+  'assistant.resetAll': 'Reset Assistant',
+  'assistant.resetAllDesc': 'This will reset all workspace files (soul.md, user.md, memory.md, claude.md) to defaults, clear daily memories, and reset buddy. This action cannot be undone.',
+  'assistant.resetAllConfirmTitle': 'Reset Assistant?',
+  'assistant.resetAllSuccess': 'Assistant has been reset',
+  'assistant.resetting': 'Resetting...',
 
   // ── Auth ─────────────────────────────────────────────────────
   'auth.title': 'Authentication Required',

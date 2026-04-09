@@ -1454,6 +1454,11 @@ const zh: Record<TranslationKey, string> = {
   'buddy.namePlaceholder': '给你的伙伴起个名字...',
   'buddy.nameHint': '这将是你的伙伴的名字',
   'buddy.reset': '重置伙伴',
+  'assistant.resetAll': '重置助理',
+  'assistant.resetAllDesc': '这将把所有工作区文件（soul.md、user.md、memory.md、claude.md）恢复为默认内容，清除每日记忆，并重置伙伴。此操作不可撤销。',
+  'assistant.resetAllConfirmTitle': '确定重置助理？',
+  'assistant.resetAllSuccess': '助理已重置',
+  'assistant.resetting': '重置中...',
 
   // ── Auth ─────────────────────────────────────────────────────
   'auth.title': '需要认证',

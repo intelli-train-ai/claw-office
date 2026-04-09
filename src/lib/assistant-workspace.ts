@@ -408,6 +408,49 @@ export function initializeWorkspace(dir: string): string[] {
   return created;
 }
 
+/**
+ * Reset workspace to factory defaults:
+ * - Overwrite core files (soul/user/memory/claude.md) with templates
+ * - Clear daily memory files
+ * - Reset HEARTBEAT.md to template
+ * - Reset state (onboarding, buddy, heartbeat)
+ */
+export function resetWorkspace(dir: string): void {
+  // 1. Overwrite core files with templates
+  const keys = Object.keys(FILE_MAP) as Array<keyof AssistantWorkspaceFiles>;
+  for (const key of keys) {
+    // Remove any existing variant first
+    for (const variant of FILE_MAP[key]) {
+      const variantPath = path.join(dir, variant);
+      if (fs.existsSync(variantPath)) {
+        fs.unlinkSync(variantPath);
+      }
+    }
+    // Write canonical template
+    const canonicalPath = path.join(dir, FILE_MAP[key][0]);
+    fs.writeFileSync(canonicalPath, FILE_TEMPLATES[key], 'utf-8');
+  }
+
+  // 2. Clear daily memory directory
+  const dailyDir = path.join(dir, MEMORY_DAILY_DIR);
+  if (fs.existsSync(dailyDir)) {
+    for (const entry of fs.readdirSync(dailyDir)) {
+      const entryPath = path.join(dailyDir, entry);
+      try {
+        const stat = fs.statSync(entryPath);
+        if (stat.isFile()) fs.unlinkSync(entryPath);
+      } catch { /* best effort */ }
+    }
+  }
+
+  // 3. Reset HEARTBEAT.md
+  const heartbeatPath = path.join(dir, 'HEARTBEAT.md');
+  fs.writeFileSync(heartbeatPath, HEARTBEAT_TEMPLATE, 'utf-8');
+
+  // 4. Reset state to defaults
+  saveState(dir, { ...DEFAULT_STATE });
+}
+
 // ==========================================
 // File Loading
 // ==========================================

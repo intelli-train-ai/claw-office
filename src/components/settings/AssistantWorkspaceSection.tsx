@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { getLocalDateString } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SpinnerGap, CheckCircle, X, Trash } from "@/components/ui/icon";
+import { SpinnerGap, CheckCircle, X, Trash, ArrowsCounterClockwise } from "@/components/ui/icon";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { WorkspaceInspectResult, ScheduledTask } from "@/types";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { FilesTabPanel, TaxonomyTabPanel, IndexTabPanel, OrganizeTabPanel } from "./WorkspaceTabPanels";
 import { WorkspaceConfirmDialogs, type ConfirmDialogType } from "./WorkspaceConfirmDialogs";
 import { OnboardingCard, CheckInCard } from "./WorkspaceStatusCards";
@@ -53,6 +54,7 @@ export function AssistantWorkspaceSection() {
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [resettingAll, setResettingAll] = useState(false);
 
   const fetchWorkspace = useCallback(async () => {
     try {
@@ -367,6 +369,25 @@ export function AssistantWorkspaceSection() {
     }
   }, []);
 
+  const handleResetAll = useCallback(async () => {
+    setResettingAll(true);
+    try {
+      const res = await authFetch('/api/settings/workspace', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resetAll: true }),
+      });
+      if (res.ok) {
+        await fetchWorkspace();
+        await fetchSummary();
+      }
+    } catch (e) {
+      console.error('Failed to reset workspace:', e);
+    } finally {
+      setResettingAll(false);
+    }
+  }, [fetchWorkspace, fetchSummary]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -510,6 +531,45 @@ export function AssistantWorkspaceSection() {
           <p className="text-[11px] text-muted-foreground mt-2">
             {t('assistant.editSoulHint')}
           </p>
+        </div>
+      )}
+
+      {/* Reset Assistant */}
+      {workspace?.path && workspace.valid !== false && summary?.configured && (
+        <div className="rounded-lg border border-border/50 p-4">
+          <h2 className="text-sm font-medium mb-1">{t('assistant.resetAll')}</h2>
+          <p className="text-xs text-muted-foreground mb-3">{t('assistant.resetAllDesc')}</p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-status-error-foreground hover:text-status-error-foreground hover:bg-status-error-muted">
+                <ArrowsCounterClockwise size={14} />
+                {t('assistant.resetAll')}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('assistant.resetAllConfirmTitle')}</AlertDialogTitle>
+                <AlertDialogDescription>{t('assistant.resetAllDesc')}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleResetAll}
+                  disabled={resettingAll}
+                  className="bg-status-error-foreground hover:bg-status-error-foreground/90"
+                >
+                  {resettingAll ? (
+                    <>
+                      <SpinnerGap size={14} className="animate-spin mr-1" />
+                      {t('assistant.resetting')}
+                    </>
+                  ) : (
+                    t('assistant.resetAll')
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 

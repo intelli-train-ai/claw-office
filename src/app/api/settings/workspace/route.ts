@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getSetting, setSetting } from '@/lib/db';
-import { validateWorkspace, initializeWorkspace, loadState, saveState, shouldRunHeartbeat } from '@/lib/assistant-workspace';
+import { validateWorkspace, initializeWorkspace, loadState, saveState, shouldRunHeartbeat, resetWorkspace } from '@/lib/assistant-workspace';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -238,6 +238,12 @@ export async function PATCH(request: NextRequest) {
       state.lastHeartbeatDate = null;
       state.hookTriggeredSessionId = undefined;
       state.hookTriggeredAt = undefined;
+    }
+
+    // Full reset: overwrite all workspace files with templates, clear daily memory, reset state
+    if (body.resetAll === true) {
+      resetWorkspace(workspacePath);
+      return NextResponse.json({ success: true, state: loadState(workspacePath) });
     }
 
     saveState(workspacePath, state);
