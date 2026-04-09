@@ -47,8 +47,13 @@ export interface TextItem {
 
 export interface ImageItem {
   media?: CDNMedia;
-  aeskey?: string; // hex
-  mid_size?: number;
+  aeskey?: string; // hex (inbound)
+  mid_size?: number; // ciphertext size (outbound)
+  url?: string;
+  thumb_media?: CDNMedia;
+  thumb_size?: number;
+  thumb_height?: number;
+  thumb_width?: number;
 }
 
 export interface VoiceItem {
@@ -59,12 +64,15 @@ export interface VoiceItem {
 export interface FileItem {
   media?: CDNMedia;
   file_name?: string;
-  len?: string;
+  md5?: string;
+  len?: string; // plaintext size as string
 }
 
 export interface VideoItem {
   media?: CDNMedia;
+  video_size?: number; // ciphertext size (outbound)
   video_length_s?: number;
+  video_md5?: string;
 }
 
 export interface MessageItem {

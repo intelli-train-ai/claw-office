@@ -160,7 +160,7 @@ export async function uploadMediaToCdn(
   filename: string,
   mediaType: number,
   toUserId: string,
-): Promise<{ encryptQueryParam: string; aesKeyBase64: string; cipherSize: number }> {
+): Promise<{ encryptQueryParam: string; aesKeyBase64: string; aesKeyHex: string; cipherSize: number }> {
   const plainMd5 = crypto.createHash('md5').update(data).digest('hex');
   const aesKey = generateMediaKey();
   const fileKey = crypto.randomBytes(16).toString('hex');
@@ -178,19 +178,23 @@ export async function uploadMediaToCdn(
     no_need_thumb: true,
   });
 
-  // API may return upload_full_url (newer) or upload_param (older)
-  const uploadUrl = urlResp.upload_full_url;
+  // Prefer upload_param (matches OpenClaw reference) to construct CDN URL.
+  // Fall back to upload_full_url only if upload_param is unavailable (newer API versions).
   const uploadParam = urlResp.upload_param;
-  if (!uploadUrl && !uploadParam) {
+  const uploadFullUrl = urlResp.upload_full_url;
+  if (!uploadParam && !uploadFullUrl) {
     throw new Error(`Failed to get upload URL from WeChat: ${JSON.stringify(urlResp)}`);
   }
+
+  console.log(`[weixin-media] getUploadUrl response: upload_param=${!!uploadParam} upload_full_url=${!!uploadFullUrl} filekey=${fileKey} rawsize=${data.length} cipherSize=${cipherSize}`);
 
   // Encrypt
   const encrypted = encryptMedia(data, aesKey);
 
   // Upload to CDN
-  const cdnUrl = uploadUrl
-    ?? `${creds.cdnBaseUrl}/upload?encrypted_query_param=${encodeURIComponent(uploadParam!)}&filekey=${encodeURIComponent(fileKey)}`;
+  const cdnUrl = uploadParam
+    ? `${creds.cdnBaseUrl}/upload?encrypted_query_param=${encodeURIComponent(uploadParam)}&filekey=${encodeURIComponent(fileKey)}`
+    : uploadFullUrl!;
   const uploadRes = await fetch(cdnUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/octet-stream' },
@@ -205,13 +209,19 @@ export async function uploadMediaToCdn(
 
   // Download param comes from response header
   const downloadParam = uploadRes.headers.get('x-encrypted-param');
+  console.log(`[weixin-media] CDN upload done: status=${uploadRes.status} has_download_param=${!!downloadParam} encrypted_size=${encrypted.length}`);
   if (!downloadParam) {
+    // Log all response headers for debugging
+    const hdrs: Record<string, string> = {};
+    uploadRes.headers.forEach((v, k) => { hdrs[k] = v; });
+    console.error(`[weixin-media] CDN response headers:`, JSON.stringify(hdrs));
     throw new Error('CDN upload response missing x-encrypted-param header');
   }
 
   return {
     encryptQueryParam: downloadParam,
     aesKeyBase64: aesKey.toString('base64'),
+    aesKeyHex: aesKey.toString('hex'),
     cipherSize: encrypted.length,
   };
 }

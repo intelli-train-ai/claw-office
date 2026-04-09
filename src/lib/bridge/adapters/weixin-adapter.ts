@@ -228,13 +228,14 @@ export class WeixinAdapter extends BaseChannelAdapter {
 
     const item: MessageItem = { type: itemType };
     if (itemType === MessageItemType.IMAGE) {
-      item.image_item = { media: cdnMedia };
+      item.image_item = { media: cdnMedia, mid_size: uploaded.cipherSize };
     } else if (itemType === MessageItemType.VIDEO) {
-      item.video_item = { media: cdnMedia };
+      item.video_item = { media: cdnMedia, video_size: uploaded.cipherSize };
     } else {
       item.file_item = { media: cdnMedia, file_name: attachment.name, len: String(data.length) };
     }
 
+    console.log(`[weixin-adapter] sendAttachment item:`, JSON.stringify(item));
     await sendMessage(creds, peerUserId, [item], contextToken);
   }
 
