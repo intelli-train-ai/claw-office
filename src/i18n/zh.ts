@@ -1394,6 +1394,7 @@ const zh: Record<TranslationKey, string> = {
   'wizard.next': '下一步',
   'wizard.complete': '完成',
   'wizard.completing': '设置中...',
+  'wizard.startChatting': '开始聊天',
   'wizard.error': '设置失败',
   'wizard.defaultAssistantName': '你的助理',
   'wizard.defaultFallbackName': '助理',

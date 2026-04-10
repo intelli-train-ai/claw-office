@@ -1397,6 +1397,7 @@ const en = {
   'wizard.next': 'Next',
   'wizard.complete': 'Complete',
   'wizard.completing': 'Setting up...',
+  'wizard.startChatting': 'Start Chatting',
   'wizard.error': 'Setup failed',
   'wizard.defaultAssistantName': 'Your Assistant',
   'wizard.defaultFallbackName': 'Assistant',
