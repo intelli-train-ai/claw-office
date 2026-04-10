@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { DEFAULT_BRIDGE_SYSTEM_PROMPT } from "@/lib/bridge-prompt";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -14,7 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SpinnerGap, CheckCircle, Warning, TelegramLogo, ChatTeardrop, GameController, ChatsCircle } from "@/components/ui/icon";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { SpinnerGap, CheckCircle, Warning, WarningCircle, TelegramLogo, ChatTeardrop, GameController, ChatsCircle, Code, NotePencil, Lock, LockOpen, CaretDown } from "@/components/ui/icon";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useBridgeStatus } from "@/hooks/useBridgeStatus";
 import { showToast } from "@/hooks/useToast";
@@ -94,6 +102,8 @@ interface BridgeSettings {
   bridge_default_model: string;
   bridge_default_provider_id: string;
   bridge_system_prompt: string;
+  bridge_default_mode: string;
+  bridge_default_permission: string;
 }
 
 const DEFAULT_SETTINGS: BridgeSettings = {
@@ -108,6 +118,8 @@ const DEFAULT_SETTINGS: BridgeSettings = {
   bridge_default_model: "",
   bridge_default_provider_id: "",
   bridge_system_prompt: "",
+  bridge_default_mode: "",
+  bridge_default_permission: "",
 };
 
 export function BridgeSection() {
@@ -116,6 +128,8 @@ export function BridgeSection() {
   const [workDir, setWorkDir] = useState("");
   const [model, setModel] = useState("");
   const [bridgePrompt, setBridgePrompt] = useState("");
+  const [defaultMode, setDefaultMode] = useState<'code' | 'plan'>('code');
+  const [defaultPermission, setDefaultPermission] = useState<'default' | 'full_access'>('default');
   const [providerGroups, setProviderGroups] = useState<ProviderModelGroup[]>([]);
   const { bridgeStatus, starting, stopping, startBridge, stopBridge } = useBridgeStatus();
   const { t } = useTranslation();
@@ -129,6 +143,8 @@ export function BridgeSection() {
         setSettings(s);
         setWorkDir(s.bridge_default_work_dir);
         setBridgePrompt(s.bridge_system_prompt || stripBridgePromptTags(DEFAULT_BRIDGE_SYSTEM_PROMPT));
+        setDefaultMode(s.bridge_default_mode === 'plan' ? 'plan' : 'code');
+        setDefaultPermission(s.bridge_default_permission === 'full_access' ? 'full_access' : 'default');
         // Build composite value for Select: "provider_id::model"
         if (s.bridge_default_provider_id && s.bridge_default_model) {
           setModel(`${s.bridge_default_provider_id}::${s.bridge_default_model}`);
@@ -214,6 +230,8 @@ export function BridgeSection() {
       bridge_default_model: modelValue,
       bridge_default_provider_id: providerId,
       bridge_system_prompt: bridgePrompt,
+      bridge_default_mode: defaultMode,
+      bridge_default_permission: defaultPermission,
     });
   };
 
@@ -577,6 +595,73 @@ export function BridgeSection() {
                 {t("bridge.systemPromptHint")}
               </p>
             </div>
+
+            {/* Mode & Permission — inline toggle controls */}
+            <div className="flex items-end gap-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  {t("bridge.defaultMode")}
+                </label>
+                <Tabs value={defaultMode} onValueChange={(v) => setDefaultMode(v as 'code' | 'plan')}>
+                  <TabsList className="!h-7 p-0.5 text-xs rounded-md">
+                    <TabsTrigger value="code" className="!h-5 rounded-sm px-1.5 py-0 text-xs gap-1">
+                      <Code size={12} />
+                      {t('bridge.defaultModeCode')}
+                    </TabsTrigger>
+                    <TabsTrigger value="plan" className="!h-5 rounded-sm px-1.5 py-0 text-xs gap-1">
+                      <NotePencil size={12} />
+                      {t('bridge.defaultModePlan')}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  {t("bridge.defaultPermission")}
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        'rounded-md px-2.5 h-7 text-xs font-medium border transition-all gap-1',
+                        defaultPermission === 'full_access'
+                          ? 'bg-status-error-muted text-status-error-foreground border-status-error-foreground/30'
+                          : 'text-muted-foreground border-border/60 hover:text-foreground hover:border-foreground/30 hover:bg-accent/50'
+                      )}
+                    >
+                      {defaultPermission === 'full_access' ? (
+                        <LockOpen size={14} className="text-status-error-foreground" />
+                      ) : (
+                        <Lock size={14} />
+                      )}
+                      <span>
+                        {defaultPermission === 'full_access' ? t('bridge.defaultPermissionFullAccess') : t('bridge.defaultPermissionDefault')}
+                      </span>
+                      <CaretDown size={10} className="opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-[140px]">
+                    <DropdownMenuItem onClick={() => setDefaultPermission('default')}>
+                      <Lock size={14} />
+                      <span>{t('bridge.defaultPermissionDefault')}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDefaultPermission('full_access')}>
+                      <LockOpen size={14} className="text-status-error-foreground" />
+                      <span>{t('bridge.defaultPermissionFullAccess')}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            {defaultPermission === 'full_access' && (
+              <p className="text-xs text-status-warning-foreground flex items-center gap-1 -mt-1">
+                <WarningCircle size={12} className="shrink-0" />
+                {t('bridge.defaultPermissionWarning')}
+              </p>
+            )}
           </div>
 
           <Button

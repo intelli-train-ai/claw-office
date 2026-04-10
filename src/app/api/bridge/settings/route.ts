@@ -45,6 +45,8 @@ const BRIDGE_SETTING_KEYS = [
   'bridge_weixin_enabled',
   'bridge_weixin_media_enabled',
   'bridge_system_prompt',
+  'bridge_default_mode',
+  'bridge_default_permission',
 ] as const;
 
 export async function GET(request: NextRequest) {

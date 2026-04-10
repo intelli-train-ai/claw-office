@@ -98,6 +98,8 @@ export function createBinding(
   const defaultCwd = resolved.path;
   const defaultModel = getSetting('bridge_default_model') || '';
   const defaultProviderId = getSetting('bridge_default_provider_id') || '';
+  const defaultMode = (getSetting('bridge_default_mode') as 'code' | 'plan') || 'code';
+  const defaultPermission = (getSetting('bridge_default_permission') as 'default' | 'full_access') || 'default';
 
   // Auto-attach assistant workspace as additional directory for bridge sessions
   const assistantPath = getSetting('assistant_workspace_path');
@@ -109,9 +111,9 @@ export function createBinding(
     defaultModel,
     undefined,
     defaultCwd,
-    'code',
+    defaultMode,
     undefined, // providerId
-    undefined, // permissionProfile
+    defaultPermission,
     additionalDirs,
   );
 
@@ -126,7 +128,7 @@ export function createBinding(
     sdkSessionId: '',
     workingDirectory: defaultCwd,
     model: defaultModel,
-    mode: 'code',
+    mode: defaultMode,
   });
 }
 
