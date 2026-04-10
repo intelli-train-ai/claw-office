@@ -4,25 +4,24 @@
 # Build:  docker build -t codepilot-web .
 # Build with specific Claude Code version:
 #         docker build --build-arg CLAUDE_CODE_VERSION=1.0.0 -t codepilot-web .
-# Run:    docker run -p 3811:3811 -v codepilot-data:/data -v ~/projects:/workspace codepilot-web
-# Custom port: docker run -p 8080:8080 -e PORT=8080 -v codepilot-data:/data -v ~/projects:/workspace codepilot-web
+# Run:    docker run -p 3811:3811 -v codepilot-data:/data -v ~/projects:/workspaces codepilot-web
+# Custom port: docker run -p 8080:8080 -e PORT=8080 -v codepilot-data:/data -v ~/projects:/workspaces codepilot-web
 # ============================================================
 
-# ---------- Stage 1: clone + install dependencies ----------
+# ---------- Stage 1: install dependencies ----------
 FROM node:22-slim AS deps
 
 WORKDIR /app
 
-# Git for cloning, native build tools for better-sqlite3 / zlib-sync
+# Native build tools for better-sqlite3 / zlib-sync
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git python3 make g++ ca-certificates && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
     rm -rf /var/lib/apt/lists/*
 
-ARG CODEPILOT_BRANCH=main
-RUN git clone --depth 1 --branch ${CODEPILOT_BRANCH} \
-    https://github.com/intelli-train-ai/CodePilot.git /app
-
+COPY package.json package-lock.json ./
 RUN npm ci
+
+COPY . .
 
 # ---------- Stage 2: build Next.js standalone ----------
 FROM node:22-slim AS builder
@@ -57,8 +56,8 @@ ENV CLAUDE_GUI_DATA_DIR=/data
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --home /home/nextjs nextjs && \
-    mkdir -p /data /workspace /home/nextjs/.claude && \
-    chown -R nextjs:nodejs /data /workspace /home/nextjs
+    mkdir -p /data /workspaces /home/nextjs/.claude && \
+    chown -R nextjs:nodejs /data /workspaces /home/nextjs
 
 # Copy standalone server output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -66,8 +65,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy public assets
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-
-USER nextjs
 
 EXPOSE ${PORT:-3811}
 
@@ -77,4 +74,5 @@ ENV PORT=3811
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD node -e "fetch('http://localhost:'+(process.env.PORT||3811)+'/api/health').then(r=>{if(!r.ok)throw r.status}).catch(()=>process.exit(1))"
 
-CMD ["node", "server.js"]
+# Fix ownership of mounted volumes at startup, then drop to nextjs
+CMD chown nextjs:nodejs /data /workspaces 2>/dev/null; exec su -s /bin/sh nextjs -c "node server.js"

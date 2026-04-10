@@ -110,7 +110,11 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
         setCreateError(t('folderPicker.folderExists'));
         return;
       }
-      if (!res.ok) return;
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setCreateError(body?.error || t('folderPicker.createFailed'));
+        return;
+      }
       const data = await res.json();
       setCreatingFolder(false);
       setNewFolderName('');

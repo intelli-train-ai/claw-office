@@ -8,12 +8,13 @@ services:
       - "${PORT:-3811}:${PORT:-3811}"
     volumes:
       - codepilot-data:/data
-      - ${WORKSPACE_PATH:-./workspace}:/workspace
+      - ${WORKSPACE_PATH:-./workspaces}:/workspaces
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-3811}
       - CLAUDE_GUI_DATA_DIR=/data
-      - CODEPILOT_WORKSPACE=/workspace
+      - CODEPILOT_WORKSPACE=/workspaces
+      - CODEPILOT_ACCESS_TOKEN=${CODEPILOT_ACCESS_TOKEN:-}
       # Uncomment and set your API keys as needed:
       # - ANTHROPIC_API_KEY=sk-ant-...
       # - OPENAI_API_KEY=sk-...
