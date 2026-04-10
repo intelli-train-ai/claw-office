@@ -513,21 +513,6 @@ export function AssistantWorkspaceSection() {
               )}
             </div>
           </div>
-          {!summary?.buddy && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-3 gap-2"
-              onClick={async () => {
-                try {
-                  await fetch('/api/workspace/hatch-buddy', { method: 'POST' });
-                  fetchSummary();
-                } catch { /* ignore */ }
-              }}
-            >
-              🥚 {t('buddy.hatch')}
-            </Button>
-          )}
           <p className="text-[11px] text-muted-foreground mt-2">
             {t('assistant.editSoulHint')}
           </p>
