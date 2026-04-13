@@ -337,6 +337,7 @@ const en = {
   'folderPicker.newFolder': 'New Folder',
   'folderPicker.newFolderPlaceholder': 'Folder name',
   'folderPicker.folderExists': 'Folder already exists',
+  'folderPicker.createFailed': 'Failed to create folder',
 
   // ── Import session dialog ───────────────────────────────────
   'import.title': 'Import Session from Claude CLI',

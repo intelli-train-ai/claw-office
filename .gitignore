@@ -78,3 +78,4 @@ apps/site/node_modules/
 img_tmp/
 .gstack-audit/
 workspaces/
+tmp.txt

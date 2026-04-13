@@ -334,6 +334,7 @@ const zh: Record<TranslationKey, string> = {
   'folderPicker.newFolder': '新建文件夹',
   'folderPicker.newFolderPlaceholder': '文件夹名称',
   'folderPicker.folderExists': '文件夹已存在',
+  'folderPicker.createFailed': '创建文件夹失败',
 
   // ── Import session dialog ───────────────────────────────────
   'import.title': '从 Claude CLI 导入会话',
