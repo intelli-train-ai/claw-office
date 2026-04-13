@@ -27,6 +27,7 @@ import { findClaudeBinary, findGitBash, getExpandedPath, invalidateClaudePathCac
 import { notifyPermissionRequest, notifyGeneric } from './telegram-bot';
 import { classifyError, formatClassifiedError } from './error-classifier';
 import { resolveWorkingDirectory } from './working-directory';
+import { logWarn, logError } from './file-logger';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
@@ -873,6 +874,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         queryOptions.stderr = (data: string) => {
           // Diagnostic: log raw stderr data length to server console
           console.log(`[stderr] received ${data.length} bytes, first 200 chars:`, data.slice(0, 200).replace(/[\x00-\x1F\x7F]/g, '?'));
+          logWarn('claude-cli', 'stderr output', { length: data.length, content: data.slice(0, 2000) });
           // Strip ANSI escape codes, OSC sequences, and control characters
           // but preserve tabs (\x09) and carriage returns (\x0D)
           const cleaned = data
@@ -1366,6 +1368,12 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           stderr: stderrContent,
           code: error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined,
         });
+        logError('claude-client', 'Stream error', {
+          message: rawMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+          stderr: stderrContent,
+          code: error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined,
+        });
 
         // Look up preset meta for recovery action URLs
         const presetForMeta = resolved.provider?.base_url
@@ -1387,6 +1395,12 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
             docsUrl: presetForMeta.meta.docsUrl,
             pricingUrl: presetForMeta.meta.pricingUrl,
           } : undefined,
+        });
+        logError('claude-client', `Classified error: ${classified.category}`, {
+          userMessage: classified.userMessage,
+          provider: resolved.provider?.name,
+          model,
+          sessionId,
         });
 
         // ── Reactive compact: auto-compress and retry on CONTEXT_TOO_LONG ──

@@ -22,6 +22,7 @@ import { app, BrowserWindow, Notification, nativeImage, dialog, session, utility
 import path from 'path';
 import { execFileSync, spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
+import { initFileLogger, logInfo, logError, logWarn } from '../src/lib/file-logger';
 import net from 'net';
 import os from 'os';
 import { TerminalManager } from './terminal-manager';
@@ -591,6 +592,7 @@ function startServer(port: number): Electron.UtilityProcess {
     PORT: String(port),
     HOSTNAME: '127.0.0.1',
     CLAUDE_GUI_DATA_DIR: path.join(home, '.codepilot'),
+    CLAUDE_GUI_LOG_DIR: path.join(app.getPath('userData'), 'logs'),
     HOME: home,
     USERPROFILE: home,
     PATH: constructedPath,
@@ -608,17 +610,20 @@ function startServer(port: number): Electron.UtilityProcess {
   child.stdout?.on('data', (data: Buffer) => {
     const msg = data.toString().trim();
     console.log(`[server] ${msg}`);
+    logInfo('server', msg);
     serverErrors.push(msg);
   });
 
   child.stderr?.on('data', (data: Buffer) => {
     const msg = data.toString().trim();
     console.error(`[server:err] ${msg}`);
+    logError('server', msg);
     serverErrors.push(msg);
   });
 
   child.on('exit', (code) => {
     console.log(`Server process exited with code ${code}`);
+    logWarn('server', `Server process exited with code ${code}`);
     serverExited = true;
     serverExitCode = code;
     serverProcess = null;
@@ -730,6 +735,11 @@ function createWindow(url?: string) {
 }
 
 app.whenReady().then(async () => {
+  // Initialize persistent file logger
+  const logDir = path.join(app.getPath('userData'), 'logs');
+  initFileLogger({ logDir, prefix: 'main' });
+  logInfo('main', `CodePilot v${app.getVersion()} starting on ${process.platform}`);
+
   // Load user's full shell environment (API keys, PATH, etc.)
   userShellEnv = loadUserShellEnv();
 
@@ -1442,6 +1452,7 @@ app.whenReady().then(async () => {
 
   } catch (err) {
     console.error('Failed to start:', err);
+    logError('main', 'Failed to start', { error: err instanceof Error ? err.message : String(err) });
     dialog.showErrorBox(
       'CodePilot - Failed to Start',
       `The internal server could not start.\n\n${err instanceof Error ? err.message : String(err)}\n\nPlease try restarting the application.`
