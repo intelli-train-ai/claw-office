@@ -123,10 +123,9 @@ export async function GET(request: NextRequest) {
 
   const resolvedRoot = path.resolve(root);
   const resolved = path.resolve(resolvedRoot, filePath);
-  const homeDir = os.homedir();
 
-  // Security: root must be within home, file must be within root
-  if (!isPathSafe(homeDir, resolvedRoot) || !isPathSafe(resolvedRoot, resolved)) {
+  // Security: file must be within root (no homedir restriction on root itself — Docker mounts may be outside homedir)
+  if (!isPathSafe(resolvedRoot, resolved)) {
     return new Response(JSON.stringify({ error: 'Path is outside the allowed scope' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
