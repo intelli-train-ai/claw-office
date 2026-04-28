@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────
-# CodePilot 一键部署脚本
+# SafeClaw 一键部署脚本
 # 自动检查环境、安装依赖、构建并启动应用
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -38,7 +38,7 @@ AUTO_FIX=${AUTO_FIX:-1}   # 设为 0 可跳过自动安装
 # ── 帮助信息 ──────────────────────────────────────────────────
 show_help() {
   cat <<'EOF'
-CodePilot 一键部署脚本
+SafeClaw 一键部署脚本
 
 用法:
   ./scripts/setup.sh [选项]
@@ -310,7 +310,7 @@ success "环境检查全部通过"
 
 if [[ "$MODE" == "check" ]]; then
   echo ""
-  success "环境就绪，可以启动 CodePilot！"
+  success "环境就绪，可以启动 SafeClaw！"
   echo -e "  浏览器模式: ${CYAN}./scripts/setup.sh --web${NC}"
   echo -e "  桌面模式:   ${CYAN}./scripts/setup.sh --desktop${NC}"
   exit 0
@@ -451,7 +451,7 @@ fi
 # ══════════════════════════════════════════════════════════════
 # 阶段 5: 启动应用
 # ══════════════════════════════════════════════════════════════
-step "5/5 启动 CodePilot"
+step "5/5 启动 SafeClaw"
 
 # 检查端口占用
 if command -v lsof &>/dev/null && lsof -i ":$PORT" &>/dev/null; then
@@ -468,7 +468,7 @@ fi
 
 echo ""
 echo -e "${BOLD}═══════════════════════════════════════════${NC}"
-echo -e "${BOLD}  CodePilot v$(node -p "require('./package.json').version")${NC}"
+echo -e "${BOLD}  SafeClaw v$(node -p "require('./package.json').version")${NC}"
 echo -e "${BOLD}═══════════════════════════════════════════${NC}"
 echo ""
 
