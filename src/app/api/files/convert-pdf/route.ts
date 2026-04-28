@@ -77,7 +77,18 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'PDF conversion failed';
+    const e = err as NodeJS.ErrnoException;
+    const message = e?.message || 'PDF conversion failed';
+    // ENOENT here means the `libreoffice` binary itself wasn't found on PATH —
+    // give a more actionable error than a generic 500 so deploy environments
+    // missing LibreOffice can be diagnosed quickly.
+    if (e?.code === 'ENOENT' || /\blibreoffice\b.*not found/i.test(message) ||
+        /spawn libreoffice ENOENT/i.test(message)) {
+      return Response.json(
+        { error: 'LibreOffice is not installed in this environment. Rebuild the image with libreoffice + fonts-noto-cjk.' },
+        { status: 501 },
+      );
+    }
     return Response.json({ error: message }, { status: 500 });
   } finally {
     fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});

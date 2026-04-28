@@ -84,6 +84,46 @@ async function convertDocx(filePath: string): Promise<string> {
   return result.value;
 }
 
+/**
+ * Read a cell's display text without going through ExcelJS's `cell.text` getter.
+ * The getter calls `.toString()` on inner result values and crashes on shapes
+ * like { result: null } (formulas with null), hyperlinks with missing fields,
+ * or malformed rich text.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeCellText(cell: any): string {
+  const v = cell?.value;
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === 'object') {
+    // Formula result
+    if ('result' in v) {
+      const r = (v as { result?: unknown }).result;
+      if (r == null) return '';
+      if (r instanceof Date) return r.toISOString().slice(0, 10);
+      try { return String(r); } catch { return ''; }
+    }
+    // Rich text
+    if ('richText' in v && Array.isArray((v as { richText?: { text?: string }[] }).richText)) {
+      return (v as { richText: { text?: string }[] }).richText
+        .map((r) => r?.text ?? '')
+        .join('');
+    }
+    // Hyperlink / shared formula / error / etc. — fall back to a `text` field
+    if ('text' in v) {
+      const t = (v as { text?: unknown }).text;
+      return t == null ? '' : (() => { try { return String(t); } catch { return ''; } })();
+    }
+    if ('error' in v) {
+      const e = (v as { error?: unknown }).error;
+      return e == null ? '' : (() => { try { return String(e); } catch { return ''; } })();
+    }
+  }
+  try { return String(v); } catch { return ''; }
+}
+
 async function convertXlsx(filePath: string): Promise<string> {
   const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
@@ -92,14 +132,25 @@ async function convertXlsx(filePath: string): Promise<string> {
   const sheets: string[] = [];
   workbook.eachSheet((worksheet) => {
     let html = `<table id="sheet-${escapeHtml(worksheet.name)}" style="border-collapse:collapse;width:100%;">`;
-    worksheet.eachRow((row) => {
-      html += '<tr>';
-      row.eachCell({ includeEmpty: true }, (cell) => {
-        const value = cell.text ?? '';
-        html += `<td style="border:1px solid #e5e7eb;padding:4px 8px;">${escapeHtml(String(value))}</td>`;
+    try {
+      worksheet.eachRow((row) => {
+        html += '<tr>';
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          let value = '';
+          try {
+            value = safeCellText(cell);
+          } catch {
+            value = '';
+          }
+          html += `<td style="border:1px solid #e5e7eb;padding:4px 8px;">${escapeHtml(value)}</td>`;
+        });
+        html += '</tr>';
       });
-      html += '</tr>';
-    });
+    } catch (err) {
+      // One bad cell shouldn't sink the whole sheet — surface a hint and continue.
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      html += `<tr><td style="padding:8px;color:#b91c1c;">部分单元格无法解析：${escapeHtml(msg)}</td></tr>`;
+    }
     html += '</table>';
     sheets.push(
       `<div class="sheet-tab">${escapeHtml(worksheet.name)}</div>${html}`

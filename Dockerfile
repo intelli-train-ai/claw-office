@@ -56,11 +56,21 @@ FROM node:22-slim AS runner
 
 WORKDIR /app
 
-# Runtime deps: better-sqlite3, SSL certs, git (required by Claude Code CLI)
+# Runtime deps:
+# - libsqlite3-0: better-sqlite3 native module
+# - ca-certificates: outbound HTTPS
+# - git: Claude Code CLI requirement
+# - libreoffice-{impress,calc,writer}: headless office → PDF conversion
+#   for PPTX/DOCX/XLSX preview (api/files/convert-pdf)
+# - fonts-noto-cjk + fonts-noto-cjk-extra: CJK glyphs in the rendered PDF;
+#   without these, Chinese / Japanese / Korean text becomes tofu boxes
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends libsqlite3-0 ca-certificates git
+    apt-get install -y --no-install-recommends \
+      libsqlite3-0 ca-certificates git \
+      libreoffice-impress libreoffice-calc libreoffice-writer \
+      fonts-noto-cjk fonts-noto-cjk-extra
 
 # Install Claude Code CLI. Pin to a concrete version so this layer caches
 # across builds — 'latest' would invalidate the cache on every build.
