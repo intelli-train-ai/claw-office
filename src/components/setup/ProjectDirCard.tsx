@@ -42,7 +42,7 @@ export function ProjectDirCard({ status, onStatusChange, defaultProject }: Proje
     setSelectedPath(path);
     onStatusChange('completed', path);
     // Persist
-    localStorage.setItem('codepilot:last-working-directory', path);
+    localStorage.setItem('safeclaw:last-working-directory', path);
     // Notify other components (e.g. /chat page) that a project directory was selected
     window.dispatchEvent(new CustomEvent('project-directory-changed', { detail: { path } }));
     try {

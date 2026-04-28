@@ -145,7 +145,7 @@ export const en: MarketingContent = {
       },
     ],
     githubCta: 'Star on GitHub',
-    githubUrl: 'https://github.com/intelli-train-ai/CodePilot',
+    githubUrl: 'https://github.com/intelli-train-ai/claw-office',
   },
   faq: {
     title: 'Frequently asked questions.',
@@ -239,7 +239,7 @@ export const en: MarketingContent = {
   footer: {
     copyright: '\u00a9 2026 SafeClaw',
     links: [
-      { text: 'GitHub', url: 'https://github.com/intelli-train-ai/CodePilot' },
+      { text: 'GitHub', url: 'https://github.com/intelli-train-ai/claw-office' },
       { text: 'Docs', url: '/docs' },
       { text: 'Download', url: '/download' },
     ],

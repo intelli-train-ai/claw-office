@@ -111,8 +111,8 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
     });
   }, []);
   const [mode, setMode] = useState<string>(initialMode || 'code');
-  const [currentModel, setCurrentModel] = useState(() => modelName || (typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') : null) || 'sonnet');
-  const [currentProviderId, setCurrentProviderId] = useState(() => providerId || (typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') : null) || '');
+  const [currentModel, setCurrentModel] = useState(() => modelName || (typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-model') : null) || 'sonnet');
+  const [currentProviderId, setCurrentProviderId] = useState(() => providerId || (typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-provider-id') : null) || '');
   const [selectedEffort, setSelectedEffort] = useState<string | undefined>(undefined);
   const [thinkingMode, setThinkingMode] = useState<string>('adaptive');
   const [context1m, setContext1m] = useState(false);
@@ -344,7 +344,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
                 setAssistantName(summary.name || '');
                 // Store buddy emoji globally for MessageItem avatar rendering
                 // Store buddy info globally for MessageItem avatar rendering
-                (globalThis as Record<string, unknown>).__codepilot_buddy_info__ = summary.buddy
+                (globalThis as Record<string, unknown>).__safeclaw_buddy_info__ = summary.buddy
                   ? { emoji: summary.buddy.emoji, species: summary.buddy.species, rarity: summary.buddy.rarity }
                   : undefined;
               }
@@ -372,8 +372,8 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
 
   const handleOpenNewAssistant = useCallback(async () => {
     try {
-      const model = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') || '' : '';
-      const provider_id = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') || '' : '';
+      const model = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-model') || '' : '';
+      const provider_id = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-provider-id') || '' : '';
       const res = await authFetch('/api/workspace/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -512,7 +512,7 @@ export function ChatView({ sessionId, initialMessages = [], initialHasMore = fal
 
   // Listen for widget pin requests from PinnableWidget buttons.
   // The AI model receives the widget code + instructions and calls the
-  // codepilot_dashboard_pin MCP tool to complete the pin operation.
+  // safeclaw_dashboard_pin MCP tool to complete the pin operation.
   useEffect(() => {
     const handler = (e: Event) => {
       const { widgetCode, title } = (e as CustomEvent).detail || {};

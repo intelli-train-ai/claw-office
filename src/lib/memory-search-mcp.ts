@@ -1,10 +1,10 @@
 /**
- * codepilot-memory MCP — in-process MCP server for memory search/retrieval.
+ * safeclaw-memory MCP — in-process MCP server for memory search/retrieval.
  *
  * Provides 3 tools:
- * - codepilot_memory_search: Search with temporal decay + optional tag/type filters
- * - codepilot_memory_get: Read a specific file (path-safe, truncated)
- * - codepilot_memory_recent: Get recent daily memories without search (for context)
+ * - safeclaw_memory_search: Search with temporal decay + optional tag/type filters
+ * - safeclaw_memory_get: Read a specific file (path-safe, truncated)
+ * - safeclaw_memory_recent: Get recent daily memories without search (for context)
  *
  * Obsidian-aware: parses YAML frontmatter for tags, supports [[wikilinks]].
  * Always-on in assistant mode (not keyword-gated).
@@ -25,11 +25,11 @@ const MAX_MEMORY_BYTES = 25000;
 
 export const MEMORY_SEARCH_SYSTEM_PROMPT = `## 记忆检索
 
-**每次对话的第一轮，必须先调用 codepilot_memory_recent 回顾最近记忆。**
+**每次对话的第一轮，必须先调用 safeclaw_memory_recent 回顾最近记忆。**
 
 在回答任何关于过去工作、决策、日期、人物、偏好或待办的问题前：
-1. 用 codepilot_memory_search 搜索相关记忆（支持按 tags 过滤）
-2. 如果搜到相关结果，用 codepilot_memory_get 获取详细内容
+1. 用 safeclaw_memory_search 搜索相关记忆（支持按 tags 过滤）
+2. 如果搜到相关结果，用 safeclaw_memory_get 获取详细内容
 3. 如果搜索后仍不确定，告知用户你已检查但未找到相关记录
 
 工作区使用 Obsidian 风格组织：
@@ -41,11 +41,11 @@ export const MEMORY_SEARCH_SYSTEM_PROMPT = `## 记忆检索
 
 export function createMemorySearchMcpServer(workspacePath: string) {
   return createSdkMcpServer({
-    name: 'codepilot-memory',
+    name: 'safeclaw-memory',
     version: '1.0.0',
     tools: [
       tool(
-        'codepilot_memory_search',
+        'safeclaw_memory_search',
         'Search assistant workspace memory files with keyword matching and temporal decay. Supports filtering by tags (Obsidian-style #tags from YAML frontmatter) and file type.',
         {
           query: z.string().describe('Search keywords'),
@@ -113,7 +113,7 @@ export function createMemorySearchMcpServer(workspacePath: string) {
       ),
 
       tool(
-        'codepilot_memory_get',
+        'safeclaw_memory_get',
         'Read a specific file from the assistant workspace. Use after memory_search finds relevant files. Paths must be relative to the workspace root. Also extracts Obsidian [[wikilinks]] as related files.',
         {
           file_path: z.string().describe('File path relative to workspace root (e.g. "memory.md", "memory/daily/2026-03-30.md")'),
@@ -179,7 +179,7 @@ export function createMemorySearchMcpServer(workspacePath: string) {
       ),
 
       tool(
-        'codepilot_memory_recent',
+        'safeclaw_memory_recent',
         'Get recent daily memories (last 3 days) and long-term memory summary. Call this at the START of each conversation to review recent context before engaging.',
         {},
         async () => {

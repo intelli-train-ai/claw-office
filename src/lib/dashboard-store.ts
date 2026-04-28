@@ -1,13 +1,13 @@
 /**
  * Dashboard Store — file-based CRUD for per-project dashboard config.
- * Storage: {projectDir}/.codepilot/dashboard/dashboard.json
+ * Storage: {projectDir}/.safeclaw/dashboard/dashboard.json
  */
 
 import fs from 'fs';
 import path from 'path';
 import type { DashboardConfig, DashboardWidget, DashboardSettings } from '@/types/dashboard';
 
-const DASHBOARD_DIR = '.codepilot/dashboard';
+const DASHBOARD_DIR = '.safeclaw/dashboard';
 const DASHBOARD_FILE = 'dashboard.json';
 
 function emptyConfig(): DashboardConfig {

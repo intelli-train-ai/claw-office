@@ -476,10 +476,10 @@ function runAdapterLoop(adapter: BaseChannelAdapter): void {
           const binding = router.resolve(msg.address);
           // Fire-and-forget into session lock — loop continues to accept
           // messages for other sessions immediately.
-          processWithSessionLock(binding.codepilotSessionId, () =>
+          processWithSessionLock(binding.safeclawSessionId, () =>
             handleMessage(adapter, msg),
           ).catch(err => {
-            console.error(`[bridge-manager] Session ${binding.codepilotSessionId.slice(0, 8)} error:`, err);
+            console.error(`[bridge-manager] Session ${binding.safeclawSessionId.slice(0, 8)} error:`, err);
           });
         }
       } catch (err) {
@@ -597,7 +597,7 @@ async function handleMessage(
   // Create an AbortController so /stop can cancel this task externally
   const taskAbort = new AbortController();
   const state = getState();
-  state.activeTasks.set(binding.codepilotSessionId, taskAbort);
+  state.activeTasks.set(binding.safeclawSessionId, taskAbort);
 
   // ── Streaming preview setup ──────────────────────────────────
   let previewState: StreamingPreviewState | null = null;
@@ -760,7 +760,7 @@ async function handleMessage(
         perm.permissionRequestId,
         perm.toolName,
         perm.toolInput,
-        binding.codepilotSessionId,
+        binding.safeclawSessionId,
         perm.suggestions,
         msg.messageId,
       );
@@ -780,7 +780,7 @@ async function handleMessage(
         await cardController.finalize(cardMessageId, result.responseText, finalStatus);
         cardFinalized = true;
       } else {
-        await deliverResponse(adapter, msg.address, result.responseText, binding.codepilotSessionId, msg.messageId);
+        await deliverResponse(adapter, msg.address, result.responseText, binding.safeclawSessionId, msg.messageId);
       }
     } else if (result.hasError) {
       if (cardController && cardMessageId) {
@@ -829,7 +829,7 @@ async function handleMessage(
       }
     }
 
-    state.activeTasks.delete(binding.codepilotSessionId);
+    state.activeTasks.delete(binding.safeclawSessionId);
     // Notify adapter that message processing ended
     adapter.onMessageEnd?.(msg.address.chatId);
     // Commit the offset only after full processing (success or failure)
@@ -876,7 +876,7 @@ async function handleCommand(
   switch (command) {
     case '/start':
       response = [
-        '<b>CodePilot Bridge</b>',
+        '<b>SafeClaw Bridge</b>',
         '',
         'Send any message to interact with Claude.',
         'Type /help for available commands.',
@@ -900,7 +900,7 @@ async function handleCommand(
         }
       }
       const binding = router.createBinding(msg.address, workDir);
-      response = `New session created.\nSession: <code>${binding.codepilotSessionId.slice(0, 8)}...</code>\nCWD: <code>${escapeHtml(binding.workingDirectory || '~')}</code>`;
+      response = `New session created.\nSession: <code>${binding.safeclawSessionId.slice(0, 8)}...</code>\nCWD: <code>${escapeHtml(binding.workingDirectory || '~')}</code>`;
       break;
     }
 
@@ -995,7 +995,7 @@ async function handleCommand(
       response = [
         '<b>Bridge Status</b>',
         '',
-        `Session: <code>${binding.codepilotSessionId.slice(0, 8)}...</code>`,
+        `Session: <code>${binding.safeclawSessionId.slice(0, 8)}...</code>`,
         `CWD: <code>${escapeHtml(binding.workingDirectory || '~')}</code>`,
         `Mode: <b>${binding.mode}</b>`,
         `Model: <code>${binding.model || 'default'}</code>`,
@@ -1011,7 +1011,7 @@ async function handleCommand(
         const lines = ['<b>Sessions:</b>', ''];
         for (const b of bindings.slice(0, 10)) {
           const active = b.active ? 'active' : 'inactive';
-          lines.push(`<code>${b.codepilotSessionId.slice(0, 8)}...</code> [${active}] ${escapeHtml(b.workingDirectory || '~')}`);
+          lines.push(`<code>${b.safeclawSessionId.slice(0, 8)}...</code> [${active}] ${escapeHtml(b.workingDirectory || '~')}`);
         }
         response = lines.join('\n');
       }
@@ -1021,10 +1021,10 @@ async function handleCommand(
     case '/stop': {
       const binding = router.resolve(msg.address);
       const st = getState();
-      const taskAbort = st.activeTasks.get(binding.codepilotSessionId);
+      const taskAbort = st.activeTasks.get(binding.safeclawSessionId);
       if (taskAbort) {
         taskAbort.abort();
-        st.activeTasks.delete(binding.codepilotSessionId);
+        st.activeTasks.delete(binding.safeclawSessionId);
         response = 'Stopping current task...';
       } else {
         response = 'No task is currently running.';
@@ -1168,7 +1168,7 @@ async function handleCommand(
           const plugin = adapter.getPlugin();
           const config = (plugin as FeishuChannelPlugin).getConfig?.();
           if (!config) {
-            response = '❌ Feishu plugin not configured.\n\nPlease set App ID and App Secret in CodePilot settings, or use /feishu auth.';
+            response = '❌ Feishu plugin not configured.\n\nPlease set App ID and App Secret in SafeClaw settings, or use /feishu auth.';
             break;
           }
           const validationError = plugin.validateConfig();
@@ -1198,10 +1198,10 @@ async function handleCommand(
           const plugin = adapter.getPlugin();
           const config = (plugin as FeishuChannelPlugin).getConfig?.();
           if (!config) {
-            response = '❌ App credentials not configured.\n\nPlease configure App ID and App Secret in CodePilot Settings → Bridge → Feishu.';
+            response = '❌ App credentials not configured.\n\nPlease configure App ID and App Secret in SafeClaw Settings → Bridge → Feishu.';
             break;
           }
-          // Note: CodePilot currently uses app-level bot tokens (no user OAuth)
+          // Note: SafeClaw currently uses app-level bot tokens (no user OAuth)
           // This is a simplified version compared to OpenClaw's full OAuth Device Flow
           response = [
             '🔐 Feishu Auth Status',
@@ -1210,7 +1210,7 @@ async function handleCommand(
             `DM Policy: ${config.dmPolicy}`,
             `Allow From: ${(config.allowFrom || []).join(', ') || '(all)'}`,
             '',
-            'ℹ️ CodePilot uses app-level bot tokens.',
+            'ℹ️ SafeClaw uses app-level bot tokens.',
             'User-level OAuth (user_access_token) is not yet supported.',
             'Some features requiring user identity (cross-chat search, sending as user) are unavailable.',
           ].join('\n');
@@ -1256,7 +1256,7 @@ async function handleCommand(
 
           // Known limitations
           lines.push('');
-          lines.push('Known Limitations (CodePilot vs OpenClaw):');
+          lines.push('Known Limitations (SafeClaw vs OpenClaw):');
           lines.push('   • No user_access_token / OAuth Device Flow');
           lines.push('   • No cross-chat search (search.message.create requires UAT)');
           lines.push('   • No "send as user" capability');
@@ -1284,7 +1284,7 @@ async function handleCommand(
 
     case '/help':
       response = [
-        '<b>CodePilot Bridge Commands</b>',
+        '<b>SafeClaw Bridge Commands</b>',
         '',
         '<b>Session:</b>',
         '/new [path] - Create new session (optional: specify CWD)',

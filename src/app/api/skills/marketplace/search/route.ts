@@ -12,7 +12,7 @@ const SKILLS_REPO = "intelli-train-ai/skills";
 const SKILLS_REPO_URL = `https://github.com/${SKILLS_REPO}.git`;
 
 // Local cache directory
-const CACHE_DIR = path.join(os.tmpdir(), "codepilot-skills-cache");
+const CACHE_DIR = path.join(os.tmpdir(), "safeclaw-skills-cache");
 
 // In-memory cache for the skill list
 let skillsCache: { skills: MarketplaceSkill[]; ts: number } | null = null;

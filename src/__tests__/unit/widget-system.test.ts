@@ -370,8 +370,8 @@ describe('WIDGET_SYSTEM_PROMPT', () => {
     assert.ok(WIDGET_SYSTEM_PROMPT.includes('widget_code'));
   });
 
-  it('references the codepilot_load_widget_guidelines tool', () => {
-    assert.ok(WIDGET_SYSTEM_PROMPT.includes('codepilot_load_widget_guidelines'));
+  it('references the safeclaw_load_widget_guidelines tool', () => {
+    assert.ok(WIDGET_SYSTEM_PROMPT.includes('safeclaw_load_widget_guidelines'));
   });
 
   it('is smaller than the original full prompt but includes core rules', () => {
@@ -398,7 +398,7 @@ describe('createWidgetMcpServer', () => {
   it('returns a valid SDK MCP server config', () => {
     const server = createWidgetMcpServer();
     assert.strictEqual(server.type, 'sdk');
-    assert.strictEqual(server.name, 'codepilot-widget-guidelines');
+    assert.strictEqual(server.name, 'safeclaw-widget-guidelines');
     assert.ok(server.instance, 'should have an McpServer instance');
   });
 });

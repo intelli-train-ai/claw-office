@@ -214,7 +214,7 @@ function extractTokenUsage(msg: SDKResultMessage): TokenUsage | null {
 /**
  * Get file paths for non-image attachments. If the file already has a
  * persisted filePath (written by the uploads route), reuse it. Otherwise
- * fall back to writing the file to .codepilot-uploads/.
+ * fall back to writing the file to .safeclaw-uploads/.
  */
 function getUploadedFilePaths(files: FileAttachment[], workDir: string): string[] {
   const paths: string[] = [];
@@ -225,7 +225,7 @@ function getUploadedFilePaths(files: FileAttachment[], workDir: string): string[
     } else {
       // Fallback: write file to disk (should not happen in normal flow)
       if (!uploadDir) {
-        uploadDir = path.join(workDir, '.codepilot-uploads');
+        uploadDir = path.join(workDir, '.safeclaw-uploads');
         if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -465,7 +465,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
 
         // Build env for the Claude Code subprocess.
         // Start with process.env (includes user shell env from Electron's loadUserShellEnv).
-        // Then overlay any API config the user set in CodePilot settings (optional).
+        // Then overlay any API config the user set in SafeClaw settings (optional).
         const sdkEnv: Record<string, string> = { ...process.env as Record<string, string> };
 
         // Ensure HOME/USERPROFILE are set so Claude Code can find ~/.claude/commands/
@@ -475,7 +475,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         sdkEnv.PATH = getExpandedPath();
 
         // Remove CLAUDECODE env var to prevent "nested session" detection.
-        // When CodePilot is launched from within a Claude Code CLI session
+        // When SafeClaw is launched from within a Claude Code CLI session
         // (e.g. during development), the child process inherits this variable
         // and the SDK refuses to start.
         delete sdkEnv.CLAUDECODE;
@@ -560,7 +560,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           };
         }
 
-        // MCP servers: only pass explicitly provided config (e.g. from CodePilot UI).
+        // MCP servers: only pass explicitly provided config (e.g. from SafeClaw UI).
         // User-level MCP config from ~/.claude.json and ~/.claude/settings.json
         // is now automatically loaded by the SDK via settingSources: ['user', 'project', 'local'].
         if (mcpServers && Object.keys(mcpServers).length > 0) {
@@ -581,7 +581,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
             const { createMemorySearchMcpServer, MEMORY_SEARCH_SYSTEM_PROMPT } = await import('@/lib/memory-search-mcp');
             queryOptions.mcpServers = {
               ...(queryOptions.mcpServers || {}),
-              'codepilot-memory': createMemorySearchMcpServer(assistantWorkspacePath),
+              'safeclaw-memory': createMemorySearchMcpServer(assistantWorkspacePath),
             };
             if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
               queryOptions.systemPrompt.append = (queryOptions.systemPrompt.append || '') + '\n\n' + MEMORY_SEARCH_SYSTEM_PROMPT;
@@ -595,7 +595,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
             await import('@/lib/notification-mcp');
           queryOptions.mcpServers = {
             ...(queryOptions.mcpServers || {}),
-            'codepilot-notify': createNotificationMcpServer(),
+            'safeclaw-notify': createNotificationMcpServer(),
           };
           if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
             queryOptions.systemPrompt.append = (queryOptions.systemPrompt.append || '') + '\n\n' + NOTIFICATION_MCP_SYSTEM_PROMPT;
@@ -625,7 +625,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
             const widgetServer = createWidgetMcpServer();
             queryOptions.mcpServers = {
               ...(queryOptions.mcpServers || {}),
-              'codepilot-widget': widgetServer,
+              'safeclaw-widget': widgetServer,
             };
           }
         }
@@ -636,7 +636,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         // and does NOT need these MCP tools.
         const needsMediaMcp = (() => {
           if (imageAgentMode) return false; // Design Agent uses its own flow
-          const mediaKeywords = /生成图片|画一|图像|图片|素材|保存.*素材|import.*library|save.*library|codepilot_import_media|codepilot_generate_image/i;
+          const mediaKeywords = /生成图片|画一|图像|图片|素材|保存.*素材|import.*library|save.*library|safeclaw_import_media|safeclaw_generate_image/i;
           if (mediaKeywords.test(prompt)) return true;
           if (conversationHistory?.some(m =>
             mediaKeywords.test(m.content)
@@ -649,8 +649,8 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           const { createImageGenMcpServer } = await import('@/lib/image-gen-mcp');
           queryOptions.mcpServers = {
             ...(queryOptions.mcpServers || {}),
-            'codepilot-media': createMediaImportMcpServer(sessionId, resolvedWorkingDirectory.path),
-            'codepilot-image-gen': createImageGenMcpServer(sessionId, resolvedWorkingDirectory.path),
+            'safeclaw-media': createMediaImportMcpServer(sessionId, resolvedWorkingDirectory.path),
+            'safeclaw-image-gen': createImageGenMcpServer(sessionId, resolvedWorkingDirectory.path),
           };
           // Inject media capability hint into system prompt
           if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
@@ -662,7 +662,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         // Wide regex to cover natural phrasing like "帮我装 jq", "install uv",
         // "brew install", "pip install", "npm install -g", etc.
         const needsCliToolsMcp = (() => {
-          const cliKeywords = /CLI\s*工具|cli.tool|安装.*工具|卸载.*工具|添加.*工具|更新.*工具|升级.*工具|入库.*工具|工具.*入库|加入.*工具库|添加到.*库|工具库|tool\s*library|codepilot_cli_tools|帮我装|帮我安装|帮我更新|帮我升级|\binstall\s+[@\w./-]+|\buninstall\s+[@\w./-]+|\bupdate\s+[@\w./-]+|\bupgrade\s+[@\w./-]+|brew\s+install|brew\s+upgrade|pip\s+install|pipx\s+install|npm\s+install\s+-g|npm\s+update\s+-g|cargo\s+install|apt\s+install|apt-get\s+install/i;
+          const cliKeywords = /CLI\s*工具|cli.tool|安装.*工具|卸载.*工具|添加.*工具|更新.*工具|升级.*工具|入库.*工具|工具.*入库|加入.*工具库|添加到.*库|工具库|tool\s*library|safeclaw_cli_tools|帮我装|帮我安装|帮我更新|帮我升级|\binstall\s+[@\w./-]+|\buninstall\s+[@\w./-]+|\bupdate\s+[@\w./-]+|\bupgrade\s+[@\w./-]+|brew\s+install|brew\s+upgrade|pip\s+install|pipx\s+install|npm\s+install\s+-g|npm\s+update\s+-g|cargo\s+install|apt\s+install|apt-get\s+install/i;
           if (cliKeywords.test(prompt)) return true;
           if (conversationHistory?.some(m => cliKeywords.test(m.content))) return true;
           return false;
@@ -672,7 +672,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           const { createCliToolsMcpServer, CLI_TOOLS_MCP_SYSTEM_PROMPT } = await import('@/lib/cli-tools-mcp');
           queryOptions.mcpServers = {
             ...(queryOptions.mcpServers || {}),
-            'codepilot-cli-tools': createCliToolsMcpServer(),
+            'safeclaw-cli-tools': createCliToolsMcpServer(),
           };
           if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
             queryOptions.systemPrompt.append = (queryOptions.systemPrompt.append || '') + '\n\n' + CLI_TOOLS_MCP_SYSTEM_PROMPT;
@@ -681,7 +681,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
 
         // Dashboard MCP: widget management capabilities (keyword-gated).
         const needsDashboardMcp = (() => {
-          const dashboardKeywords = /dashboard|仪表盘|看板|pin.*widget|pinned.*widget|refresh.*widget|固定.*组件|刷新.*组件|codepilot_dashboard/i;
+          const dashboardKeywords = /dashboard|仪表盘|看板|pin.*widget|pinned.*widget|refresh.*widget|固定.*组件|刷新.*组件|safeclaw_dashboard/i;
           if (dashboardKeywords.test(prompt)) return true;
           if (conversationHistory?.some(m => dashboardKeywords.test(m.content))) return true;
           return false;
@@ -691,7 +691,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
           const { createDashboardMcpServer, DASHBOARD_MCP_SYSTEM_PROMPT } = await import('@/lib/dashboard-mcp');
           queryOptions.mcpServers = {
             ...(queryOptions.mcpServers || {}),
-            'codepilot-dashboard': createDashboardMcpServer(sessionId, resolvedWorkingDirectory.path),
+            'safeclaw-dashboard': createDashboardMcpServer(sessionId, resolvedWorkingDirectory.path),
           };
           if (queryOptions.systemPrompt && typeof queryOptions.systemPrompt === 'object' && 'append' in queryOptions.systemPrompt) {
             queryOptions.systemPrompt.append = (queryOptions.systemPrompt.append || '') + '\n\n' + DASHBOARD_MCP_SYSTEM_PROMPT;
@@ -738,7 +738,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
         }
 
         // Plugins: loaded by the SDK itself via enabledPlugins in ~/.claude/settings.json.
-        // CodePilot does NOT explicitly inject plugins — the SDK reads settingSources
+        // SafeClaw does NOT explicitly inject plugins — the SDK reads settingSources
         // ['user', 'project', 'local'] and resolves enabledPlugins on its own,
         // ensuring parity with Claude CLI.
 
@@ -780,25 +780,25 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
 
         // Permission handler: sends SSE event and waits for user response
         queryOptions.canUseTool = async (toolName, input, opts) => {
-          // Auto-approve CodePilot's own in-process MCP tools — they are internal
+          // Auto-approve SafeClaw's own in-process MCP tools — they are internal
           // and the user has already opted in by enabling the relevant mode.
-          // Auto-approve CodePilot's own in-process MCP tools — they are internal
+          // Auto-approve SafeClaw's own in-process MCP tools — they are internal
           // and the user has already opted in by enabling the relevant mode.
           // Note: SDK prefixes MCP tool names with mcp__<server>__, so we check
           // both bare and prefixed names.
           const autoApprovedTools = [
-            'codepilot_generate_image',
-            'codepilot_import_media',
-            'codepilot_load_widget_guidelines',
-            'codepilot_cli_tools_list',
-            'codepilot_cli_tools_add',
-            'codepilot_cli_tools_remove',
-            'codepilot_cli_tools_check_updates',
-            'codepilot_dashboard_pin',
-            'codepilot_dashboard_list',
-            'codepilot_dashboard_refresh',
-            'codepilot_dashboard_update',
-            'codepilot_dashboard_remove',
+            'safeclaw_generate_image',
+            'safeclaw_import_media',
+            'safeclaw_load_widget_guidelines',
+            'safeclaw_cli_tools_list',
+            'safeclaw_cli_tools_add',
+            'safeclaw_cli_tools_remove',
+            'safeclaw_cli_tools_check_updates',
+            'safeclaw_dashboard_pin',
+            'safeclaw_dashboard_list',
+            'safeclaw_dashboard_refresh',
+            'safeclaw_dashboard_update',
+            'safeclaw_dashboard_remove',
           ];
           if (autoApprovedTools.some(t => toolName === t || toolName.endsWith(`__${t}`))) {
             return { behavior: 'allow' as const, updatedInput: input };
@@ -1141,7 +1141,7 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
                         }
                       }
                     }
-                    // Detect MEDIA_RESULT_MARKER in text result (from codepilot-image-gen MCP)
+                    // Detect MEDIA_RESULT_MARKER in text result (from safeclaw-image-gen MCP)
                     const MEDIA_MARKER = '__MEDIA_RESULT__';
                     const markerIdx = resultContent.indexOf(MEDIA_MARKER);
                     if (markerIdx >= 0) {

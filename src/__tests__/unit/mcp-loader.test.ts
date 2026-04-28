@@ -4,8 +4,8 @@
  * Run with: npx tsx --test src/__tests__/unit/mcp-loader.test.ts
  *
  * Tests verify:
- * 1. loadCodePilotMcpServers returns undefined when no servers have ${...} placeholders
- * 2. loadCodePilotMcpServers returns only servers with resolved placeholders
+ * 1. loadSafeClawMcpServers returns undefined when no servers have ${...} placeholders
+ * 2. loadSafeClawMcpServers returns only servers with resolved placeholders
  * 3. loadAllMcpServers returns all merged servers
  * 4. Cache invalidation works
  * 5. Disabled servers are filtered out
@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 
 // Import the module — will use real filesystem
 // Tests are designed to work with the user's actual config
-import { loadCodePilotMcpServers, loadAllMcpServers, invalidateMcpCache } from '../../lib/mcp-loader';
+import { loadSafeClawMcpServers, loadAllMcpServers, invalidateMcpCache } from '../../lib/mcp-loader';
 
 afterEach(() => {
   invalidateMcpCache();
@@ -24,10 +24,10 @@ afterEach(() => {
 
 describe('mcp-loader', () => {
 
-  it('loadCodePilotMcpServers: returns undefined when no servers have placeholders', () => {
+  it('loadSafeClawMcpServers: returns undefined when no servers have placeholders', () => {
     // Most real configs don't have ${...} placeholders
     // This test verifies the common case returns undefined (= let SDK handle everything)
-    const result = loadCodePilotMcpServers();
+    const result = loadSafeClawMcpServers();
     // Either undefined (no placeholders) or a map (has placeholders)
     // Both are valid; we just verify it doesn't throw
     if (result === undefined) {

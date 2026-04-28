@@ -1,5 +1,5 @@
 /**
- * Channel Router — resolves IM addresses to CodePilot sessions.
+ * Channel Router — resolves IM addresses to SafeClaw sessions.
  *
  * When a message arrives from an IM channel, the router finds or creates
  * the corresponding ChannelBinding (and underlying chat_session).
@@ -32,7 +32,7 @@ function shouldResetResumeForSource(source: string): boolean {
 export function resolve(address: ChannelAddress): ChannelBinding {
   const existing = getChannelBinding(address.channelType, address.chatId);
   if (existing) {
-    const session = getSession(existing.codepilotSessionId);
+    const session = getSession(existing.safeclawSessionId);
     if (session) {
       const resolved = resolveWorkingDirectory([
         { path: session.sdk_cwd, source: 'session_sdk_cwd' },
@@ -47,7 +47,7 @@ export function resolve(address: ChannelAddress): ChannelBinding {
         console.warn('[channel-router] Healed invalid bridge working directory', {
           channelType: existing.channelType,
           chatId: existing.chatId,
-          sessionId: existing.codepilotSessionId,
+          sessionId: existing.safeclawSessionId,
           selected: resolved.path,
           source: resolved.source,
           invalidCandidates: resolved.invalidCandidates,
@@ -85,7 +85,7 @@ export function resolve(address: ChannelAddress): ChannelBinding {
 }
 
 /**
- * Create a new binding with a fresh CodePilot session.
+ * Create a new binding with a fresh SafeClaw session.
  */
 export function createBinding(
   address: ChannelAddress,
@@ -124,7 +124,7 @@ export function createBinding(
   return upsertChannelBinding({
     channelType: address.channelType,
     chatId: address.chatId,
-    codepilotSessionId: session.id,
+    safeclawSessionId: session.id,
     sdkSessionId: '',
     workingDirectory: defaultCwd,
     model: defaultModel,
@@ -133,13 +133,13 @@ export function createBinding(
 }
 
 /**
- * Bind an IM chat to an existing CodePilot session.
+ * Bind an IM chat to an existing SafeClaw session.
  */
 export function bindToSession(
   address: ChannelAddress,
-  codepilotSessionId: string,
+  safeclawSessionId: string,
 ): ChannelBinding | null {
-  const session = getSession(codepilotSessionId);
+  const session = getSession(safeclawSessionId);
   if (!session) return null;
 
   const resolved = resolveWorkingDirectory([
@@ -155,7 +155,7 @@ export function bindToSession(
   return upsertChannelBinding({
     channelType: address.channelType,
     chatId: address.chatId,
-    codepilotSessionId,
+    safeclawSessionId,
     sdkSessionId: '',
     workingDirectory: resolved.path,
     model: session.model,

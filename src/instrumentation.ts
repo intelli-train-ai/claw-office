@@ -26,14 +26,14 @@ export async function register() {
       const fs = await import('fs');
       const path = await import('path');
       const os = await import('os');
-      const markerPath = path.join(os.homedir(), '.codepilot', 'sentry-disabled');
+      const markerPath = path.join(os.homedir(), '.safeclaw', 'sentry-disabled');
       const optedOut = fs.existsSync(markerPath) && fs.readFileSync(markerPath, 'utf-8').trim() === 'true';
       if (!optedOut) {
         const Sentry = await import('@sentry/node');
         Sentry.init({
           dsn,
           environment: process.env.NODE_ENV,
-          release: `codepilot@${process.env.NEXT_PUBLIC_APP_VERSION}`,
+          release: `safeclaw@${process.env.NEXT_PUBLIC_APP_VERSION}`,
           tracesSampleRate: 0,
           ignoreErrors: [
             'AbortError',

@@ -2,8 +2,8 @@
  * MCP Server Loader — shared module for loading MCP server configurations.
  *
  * The SDK auto-loads MCP servers from settingSources (['user', 'project', 'local']).
- * We only manually pass servers that need CodePilot-specific processing:
- * ${...} env placeholder resolution from the CodePilot DB.
+ * We only manually pass servers that need SafeClaw-specific processing:
+ * ${...} env placeholder resolution from the SafeClaw DB.
  *
  * This eliminates redundant config passing and reduces initialization overhead.
  */
@@ -18,7 +18,7 @@ import { getSetting } from '@/lib/db';
 
 interface CachedMcpConfig {
   allServers: Record<string, MCPServerConfig>;
-  codepilotServers: Record<string, MCPServerConfig>; // Only servers with resolved ${...} placeholders
+  safeclawServers: Record<string, MCPServerConfig>; // Only servers with resolved ${...} placeholders
   timestamp: number;
 }
 
@@ -62,7 +62,7 @@ function loadAndMerge(): CachedMcpConfig {
   }
 
   // Resolve ${...} placeholders and track which servers needed resolution
-  const codepilotServers: Record<string, MCPServerConfig> = {};
+  const safeclawServers: Record<string, MCPServerConfig> = {};
 
   for (const [name, server] of Object.entries(merged)) {
     if (server.env) {
@@ -75,9 +75,9 @@ function loadAndMerge(): CachedMcpConfig {
           server.env[key] = resolved || '';
         }
       }
-      // Only include in codepilotServers if it had placeholders
+      // Only include in safeclawServers if it had placeholders
       if (hasPlaceholder && server.enabled !== false) {
-        codepilotServers[name] = server;
+        safeclawServers[name] = server;
       }
     }
   }
@@ -91,7 +91,7 @@ function loadAndMerge(): CachedMcpConfig {
 
   _cache = {
     allServers: merged,
-    codepilotServers,
+    safeclawServers,
     timestamp: Date.now(),
   };
 
@@ -101,18 +101,18 @@ function loadAndMerge(): CachedMcpConfig {
 // ── Public API ───────────────────────────────────────────────────────
 
 /**
- * Load MCP servers that need CodePilot-specific processing.
+ * Load MCP servers that need SafeClaw-specific processing.
  *
  * Returns only servers with ${...} env placeholders that were resolved
- * against the CodePilot DB. Returns undefined when no such servers exist
+ * against the SafeClaw DB. Returns undefined when no such servers exist
  * (the common case), letting the SDK load everything natively.
  *
  * Used by: route.ts, conversation-engine.ts — passed to streamClaude().
  */
-export function loadCodePilotMcpServers(): Record<string, MCPServerConfig> | undefined {
+export function loadSafeClawMcpServers(): Record<string, MCPServerConfig> | undefined {
   try {
-    const { codepilotServers } = loadAndMerge();
-    return Object.keys(codepilotServers).length > 0 ? codepilotServers : undefined;
+    const { safeclawServers } = loadAndMerge();
+    return Object.keys(safeclawServers).length > 0 ? safeclawServers : undefined;
   } catch {
     return undefined;
   }
@@ -122,7 +122,7 @@ export function loadCodePilotMcpServers(): Record<string, MCPServerConfig> | und
  * Load ALL MCP servers (for UI display in MCP Manager).
  *
  * Returns the full merged config from all sources with overrides applied.
- * NOT intended for passing to the SDK — use loadCodePilotMcpServers() instead.
+ * NOT intended for passing to the SDK — use loadSafeClawMcpServers() instead.
  *
  * Used by: MCP Manager UI, diagnostics.
  */

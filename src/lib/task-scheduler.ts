@@ -13,13 +13,13 @@ import type { ScheduledTask } from '@/types';
 import crypto from 'crypto';
 
 const POLL_INTERVAL = 10_000; // 10s
-const GLOBAL_KEY = '__codepilot_scheduler__';
+const GLOBAL_KEY = '__safeclaw_scheduler__';
 const BACKOFF_DELAYS = [30000, 60000, 300000, 900000]; // 30s, 1m, 5m, 15m
 const MAX_CONSECUTIVE_ERRORS = 10;
 const RECURRING_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ── Session-only tasks (in-memory, not persisted) ────────────────
-const SESSION_TASKS_KEY = '__codepilot_session_tasks__';
+const SESSION_TASKS_KEY = '__safeclaw_session_tasks__';
 
 export function getSessionTasks(): Map<string, ScheduledTask> {
   if (!(globalThis as Record<string, unknown>)[SESSION_TASKS_KEY]) {

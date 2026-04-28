@@ -4,7 +4,7 @@ import { addMessage, getMessages, getSession, getSessionSummary, updateSessionTi
 import { resolveProvider as resolveProviderUnified } from '@/lib/provider-resolver';
 import { notifySessionStart, notifySessionComplete, notifySessionError } from '@/lib/telegram-bot';
 import { extractCompletion } from '@/lib/onboarding-completion';
-import { loadCodePilotMcpServers } from '@/lib/mcp-loader';
+import { loadSafeClawMcpServers } from '@/lib/mcp-loader';
 import { assembleContext } from '@/lib/context-assembler';
 import type { SendMessageRequest, SSEEvent, TokenUsage, MessageContentBlock, FileAttachment, ClaudeStreamOptions, MediaBlock } from '@/types';
 import { saveMediaToLibrary } from '@/lib/media-saver';
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     if (!autoTrigger) {
       if (files && files.length > 0) {
         const workDir = session.working_directory;
-        const uploadDir = path.join(workDir, '.codepilot-uploads');
+        const uploadDir = path.join(workDir, '.safeclaw-uploads');
         if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -249,9 +249,9 @@ export async function POST(request: NextRequest) {
     const assistantProjectInstructions = assembled.assistantProjectInstructions;
     const isAssistantProject = assembled.isAssistantProject;
 
-    // Load only MCP servers needing CodePilot-specific processing (${...} env placeholders).
+    // Load only MCP servers needing SafeClaw-specific processing (${...} env placeholders).
     // All other MCP servers are auto-loaded by the SDK via settingSources.
-    const mcpServers = loadCodePilotMcpServers();
+    const mcpServers = loadSafeClawMcpServers();
 
     // ── Context compression check ───────────────────────────────────
     // Estimate next-turn context size and compress if over threshold.

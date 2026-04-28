@@ -10,7 +10,7 @@ interface TokenGateProps {
   onAuthenticated: (token: string) => void;
 }
 
-const AUTH_TOKEN_KEY = 'codepilot:auth_token';
+const AUTH_TOKEN_KEY = 'safeclaw:auth_token';
 
 /** Read stored auth token from localStorage. */
 export function getStoredAuthToken(): string | null {

@@ -4,7 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const TEST_ROOT = path.join(os.tmpdir(), `codepilot-working-dir-${Date.now()}`);
+const TEST_ROOT = path.join(os.tmpdir(), `safeclaw-working-dir-${Date.now()}`);
 const VALID_DIR = path.join(TEST_ROOT, 'valid-project');
 const HOME_DIR = path.join(TEST_ROOT, 'fake-home');
 

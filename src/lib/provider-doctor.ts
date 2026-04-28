@@ -599,7 +599,7 @@ async function runNetworkProbe(): Promise<ProbeResult> {
       const resp = await fetch(url, {
         method: 'HEAD',
         signal: controller.signal,
-        headers: { 'User-Agent': 'CodePilot-ProviderDoctor/1.0' },
+        headers: { 'User-Agent': 'SafeClaw-ProviderDoctor/1.0' },
       });
       clearTimeout(timer);
 

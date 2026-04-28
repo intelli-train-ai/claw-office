@@ -620,7 +620,7 @@ export const MessageItem = memo(function MessageItem({ message, sessionId, isAss
   });
 
   const showAssistantAvatar = !isUser && isAssistantProject;
-  const buddyInfo = isAssistantProject ? (globalThis as Record<string, unknown>).__codepilot_buddy_info__ as { emoji?: string; species?: string; rarity?: string } | undefined : undefined;
+  const buddyInfo = isAssistantProject ? (globalThis as Record<string, unknown>).__safeclaw_buddy_info__ as { emoji?: string; species?: string; rarity?: string } | undefined : undefined;
 
   return (
     <div className={showAssistantAvatar ? 'flex gap-2.5 items-start' : ''}>
@@ -737,7 +737,7 @@ export const MessageItem = memo(function MessageItem({ message, sessionId, isAss
 });
 
 /** Widget wrapper with "Pin to Dashboard" button.
- * Pin triggers a chat message → AI uses codepilot_dashboard_pin MCP tool.
+ * Pin triggers a chat message → AI uses safeclaw_dashboard_pin MCP tool.
  * Button is a pure trigger — no local pin/unpin state tracking.
  * Brief cooldown prevents double-click. */
 function PinnableWidget({ widgetCode, title }: {

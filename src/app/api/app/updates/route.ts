@@ -3,7 +3,7 @@ import { getRuntimeArchitectureInfo } from "@/lib/platform";
 import { selectRecommendedReleaseAsset, type ReleaseAsset } from "@/lib/update-release";
 import { requireAuth } from '@/lib/auth';
 
-const GITHUB_REPO = "intelli-train-ai/CodePilot";
+const GITHUB_REPO = "intelli-train-ai/claw-office";
 
 function compareSemver(a: string, b: string): number {
   const pa = a.replace(/^v/, "").split(".").map(Number);

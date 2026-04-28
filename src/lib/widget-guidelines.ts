@@ -2,11 +2,11 @@
  * Widget design guidelines and system prompt for generative UI.
  *
  * Based on Anthropic's actual generative UI guidelines extracted from claude.ai,
- * adapted for CodePilot's code-fence trigger mechanism and CSS variable bridge.
+ * adapted for SafeClaw's code-fence trigger mechanism and CSS variable bridge.
  *
  * The WIDGET_SYSTEM_PROMPT is a minimal capability declaration (~150 tokens),
  * always injected into the system prompt. Full module guidelines are loaded
- * on demand via the `codepilot_load_widget_guidelines` in-process MCP tool.
+ * on demand via the `safeclaw_load_widget_guidelines` in-process MCP tool.
  */
 
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
@@ -23,7 +23,7 @@ You can create interactive visualizations using the \`show-widget\` code fence.
 \`\`\`
 
 ## Design specs
-Call \`codepilot_load_widget_guidelines\` before your first widget to load detailed design specs.
+Call \`safeclaw_load_widget_guidelines\` before your first widget to load detailed design specs.
 Available modules: interactive, chart, mockup, art, diagram.
 
 ## Required rules (always apply)
@@ -243,18 +243,18 @@ export function getGuidelines(moduleNames: string[]): string {
 // ── In-process MCP server for on-demand guideline loading ───────────────────
 
 /**
- * Creates an in-process MCP server that exposes `codepilot_load_widget_guidelines`.
+ * Creates an in-process MCP server that exposes `safeclaw_load_widget_guidelines`.
  * The model calls this tool before generating its first widget to load detailed
  * design specs for the requested module(s), saving ~75% system prompt tokens
  * on conversations that don't involve widgets.
  */
 export function createWidgetMcpServer() {
   return createSdkMcpServer({
-    name: 'codepilot-widget-guidelines',
+    name: 'safeclaw-widget-guidelines',
     version: '1.0.0',
     tools: [
       tool(
-        'codepilot_load_widget_guidelines',
+        'safeclaw_load_widget_guidelines',
         'Load detailed design guidelines for generating visual widgets. Call this before generating your first widget. Available modules: interactive (HTML controls), chart (Chart.js), mockup (UI mockups), art (SVG illustrations), diagram (flowcharts/timelines/hierarchies).',
         { modules: z.array(z.enum(['interactive', 'chart', 'mockup', 'art', 'diagram'])) },
         async ({ modules }) => ({

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { ThemeFamilyContext } from '@/lib/theme/context';
 import type { ThemeFamilyMeta } from '@/lib/theme/types';
 
-const STORAGE_KEY = 'codepilot_theme_family';
+const STORAGE_KEY = 'safeclaw_theme_family';
 
 function getInitialFamily(): string {
   // Read from DOM attribute (set by anti-FOUC script before hydration)

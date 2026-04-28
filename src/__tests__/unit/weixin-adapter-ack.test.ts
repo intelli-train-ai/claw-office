@@ -4,7 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codepilot-weixin-ack-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'safeclaw-weixin-ack-test-'));
 process.env.CLAUDE_GUI_DATA_DIR = tmpDir;
 
 let WeixinAdapter: typeof import('../../lib/bridge/adapters/weixin-adapter').WeixinAdapter;

@@ -22,7 +22,7 @@ export function HeroSection({
         <div className="mx-auto max-w-[800px] px-6 pt-8 text-center md:pt-10 lg:pt-12">
           <Image
             src="/logo.png"
-            alt="CodePilot"
+            alt="SafeClaw"
             width={80}
             height={80}
             className="mx-auto h-24 w-24 md:h-28 md:w-28"
@@ -35,7 +35,7 @@ export function HeroSection({
           </h1>
 
           <div className="mt-7 flex items-center justify-center">
-            <a href="https://github.com/op7418/CodePilot/releases/latest" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/op7418/SafeClaw/releases/latest" target="_blank" rel="noopener noreferrer">
               <RainbowButton className="h-14 rounded-full px-14 text-lg">
                 {content.cta}
               </RainbowButton>

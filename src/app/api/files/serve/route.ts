@@ -33,7 +33,7 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 const RECORDER_SCRIPT = `
-<script data-codepilot-recorder>
+<script data-safeclaw-recorder>
 (function(){
   if(window.__cpRecorderInit) return;
   window.__cpRecorderInit = true;

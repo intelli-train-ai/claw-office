@@ -14,7 +14,7 @@ import os from 'os';
 // We test the parser functions by creating temporary JSONL files
 // that mimic Claude Code's session storage format.
 
-const TEST_DIR = path.join(os.tmpdir(), `codepilot-test-sessions-${Date.now()}`);
+const TEST_DIR = path.join(os.tmpdir(), `safeclaw-test-sessions-${Date.now()}`);
 const PROJECTS_DIR = path.join(TEST_DIR, '.claude', 'projects');
 
 // Helper to create a JSONL session file

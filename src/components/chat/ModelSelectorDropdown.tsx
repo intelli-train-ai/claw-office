@@ -84,8 +84,8 @@ export function ModelSelectorDropdown({
   const handleModelSelect = useCallback((providerId: string, modelValue: string) => {
     onModelChange?.(modelValue);
     onProviderModelChange?.(providerId, modelValue);
-    localStorage.setItem('codepilot:last-model', modelValue);
-    localStorage.setItem('codepilot:last-provider-id', providerId);
+    localStorage.setItem('safeclaw:last-model', modelValue);
+    localStorage.setItem('safeclaw:last-provider-id', providerId);
     setModelMenuOpen(false);
     setModelSearch('');
   }, [onModelChange, onProviderModelChange]);

@@ -3,7 +3,7 @@ import { getSetting, setSetting } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 /**
- * CodePilot app-level settings (stored in SQLite, separate from ~/.claude/settings.json).
+ * SafeClaw app-level settings (stored in SQLite, separate from ~/.claude/settings.json).
  * Used for API configuration (ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL, etc.)
  */
 

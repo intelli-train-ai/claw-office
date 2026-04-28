@@ -141,13 +141,13 @@ export function AssistantPromoCard({ onSetup, onDismiss }: AssistantPromoCardPro
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('codepilot:assistant-promo-dismissed') === '1';
+    return localStorage.getItem('safeclaw:assistant-promo-dismissed') === '1';
   });
 
   if (dismissed) return null;
 
   const handleDismiss = () => {
-    localStorage.setItem('codepilot:assistant-promo-dismissed', '1');
+    localStorage.setItem('safeclaw:assistant-promo-dismissed', '1');
     setDismissed(true);
     onDismiss();
   };

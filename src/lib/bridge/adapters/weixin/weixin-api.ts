@@ -22,7 +22,7 @@ import {
   MessageItemType,
 } from './weixin-types';
 
-const CHANNEL_VERSION = 'codepilot-weixin-bridge/1.0';
+const CHANNEL_VERSION = 'safeclaw-weixin-bridge/1.0';
 const LONG_POLL_TIMEOUT_MS = 35_000;
 const API_TIMEOUT_MS = 15_000;
 const CONFIG_TIMEOUT_MS = 10_000;
@@ -120,7 +120,7 @@ export async function getUpdates(
  * Generate a unique client_id for outbound messages.
  */
 function generateClientId(): string {
-  return `codepilot-wx-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+  return `safeclaw-wx-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 }
 
 /**

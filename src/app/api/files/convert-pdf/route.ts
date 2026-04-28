@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'File not found' }, { status: 404 });
   }
 
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codepilot-pdf-'));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'safeclaw-pdf-'));
   try {
     await execFileAsync('libreoffice', [
       '--headless', '--convert-to', 'pdf', '--outdir', tmpDir, resolved,

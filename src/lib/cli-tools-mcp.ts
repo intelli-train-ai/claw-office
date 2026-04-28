@@ -1,13 +1,13 @@
 /**
- * codepilot-cli-tools MCP — in-process MCP server for CLI tool management.
+ * safeclaw-cli-tools MCP — in-process MCP server for CLI tool management.
  *
  * Provides 6 tools:
- * - codepilot_cli_tools_list: List all CLI tools (text or JSON format)
- * - codepilot_cli_tools_install: Execute install command + register + detect
- * - codepilot_cli_tools_add: Register an already-installed tool by path
- * - codepilot_cli_tools_remove: Remove a custom tool
- * - codepilot_cli_tools_check_updates: Check for available updates
- * - codepilot_cli_tools_update: Update a tool to latest version
+ * - safeclaw_cli_tools_list: List all CLI tools (text or JSON format)
+ * - safeclaw_cli_tools_install: Execute install command + register + detect
+ * - safeclaw_cli_tools_add: Register an already-installed tool by path
+ * - safeclaw_cli_tools_remove: Remove a custom tool
+ * - safeclaw_cli_tools_check_updates: Check for available updates
+ * - safeclaw_cli_tools_update: Update a tool to latest version
  *
  * Keyword-gated: registered when conversation involves CLI tool management.
  */
@@ -100,13 +100,13 @@ async function getHelpOutput(binPath: string): Promise<string> {
 
 export const CLI_TOOLS_MCP_SYSTEM_PROMPT = `<cli-tools-capability>
 You have CLI tool management capabilities via MCP tools:
-- codepilot_cli_tools_list: Query installed tools (supports format="json" for structured output)
-- codepilot_cli_tools_install: Install new tools via shell command
-- codepilot_cli_tools_add: Register an already-installed tool and save its description
-- codepilot_cli_tools_remove: Remove a custom tool
-- codepilot_cli_tools_check_updates: Check which tools have available updates
-- codepilot_cli_tools_update: Update a tool to its latest version
-After installing or registering a tool, the --help output is automatically included in the result. Use it to generate an accurate bilingual description (zh/en) and assess agent compatibility (agentFriendly, supportsJson, supportsSchema, supportsDryRun, contextFriendly) from the help output. Then call codepilot_cli_tools_add with all fields to save them. If the tool requires authentication, guide the user through the setup steps.
+- safeclaw_cli_tools_list: Query installed tools (supports format="json" for structured output)
+- safeclaw_cli_tools_install: Install new tools via shell command
+- safeclaw_cli_tools_add: Register an already-installed tool and save its description
+- safeclaw_cli_tools_remove: Remove a custom tool
+- safeclaw_cli_tools_check_updates: Check which tools have available updates
+- safeclaw_cli_tools_update: Update a tool to its latest version
+After installing or registering a tool, the --help output is automatically included in the result. Use it to generate an accurate bilingual description (zh/en) and assess agent compatibility (agentFriendly, supportsJson, supportsSchema, supportsDryRun, contextFriendly) from the help output. Then call safeclaw_cli_tools_add with all fields to save them. If the tool requires authentication, guide the user through the setup steps.
 When listing tools with format="json", each tool includes: agentFriendly (designed for AI agents), supportsJson (structured JSON output), supportsSchema (runtime API schema introspection), supportsDryRun (preview before mutating), contextFriendly (field masks/pagination to save context window), and healthCheckCommand (verify auth/health). Prefer agent-friendly tools; use --dry-run before destructive actions; use field masks to limit response size; use healthCheckCommand after install.
 </cli-tools-capability>`;
 
@@ -114,12 +114,12 @@ When listing tools with format="json", each tool includes: agentFriendly (design
 
 export function createCliToolsMcpServer() {
   return createSdkMcpServer({
-    name: 'codepilot-cli-tools',
+    name: 'safeclaw-cli-tools',
     version: '1.0.0',
     tools: [
       // ── LIST ─────────────────────────────────────────────────────
       tool(
-        'codepilot_cli_tools_list',
+        'safeclaw_cli_tools_list',
         'List all CLI tools available on this system. Returns catalog tools (curated), extra system-detected tools, and custom user-added tools. Use format="json" for structured machine-readable output.',
         {
           format: z.enum(['text', 'json']).optional().describe('Output format: "text" (default, human-readable) or "json" (structured, machine-readable)'),
@@ -259,8 +259,8 @@ export function createCliToolsMcpServer() {
 
       // ── INSTALL ──────────────────────────────────────────────────
       tool(
-        'codepilot_cli_tools_install',
-        'Install a CLI tool by executing a shell command (e.g. "brew install ffmpeg", "pip install yt-dlp"). After the command succeeds, the tool is automatically detected and registered. This tool requires user permission before execution. After calling this tool, generate a bilingual description and call codepilot_cli_tools_add to save it.',
+        'safeclaw_cli_tools_install',
+        'Install a CLI tool by executing a shell command (e.g. "brew install ffmpeg", "pip install yt-dlp"). After the command succeeds, the tool is automatically detected and registered. This tool requires user permission before execution. After calling this tool, generate a bilingual description and call safeclaw_cli_tools_add to save it.',
         {
           command: z.string().describe('The install command to execute, e.g. "brew install ffmpeg"'),
           name: z.string().optional().describe('Display name for the tool. If omitted, extracted from the command.'),
@@ -324,7 +324,7 @@ export function createCliToolsMcpServer() {
               return {
                 content: [{
                   type: 'text' as const,
-                  text: `Command executed successfully but could not determine the binary name.\nOutput:\n${output.slice(0, 1000)}\n\nPlease use codepilot_cli_tools_add with the binary path to register it manually.`,
+                  text: `Command executed successfully but could not determine the binary name.\nOutput:\n${output.slice(0, 1000)}\n\nPlease use safeclaw_cli_tools_add with the binary path to register it manually.`,
                 }],
               };
             }
@@ -405,7 +405,7 @@ export function createCliToolsMcpServer() {
               }
 
               resultLines.push('');
-              resultLines.push('Now please generate a bilingual description (zh/en) based on the help output above and call codepilot_cli_tools_add to save it.');
+              resultLines.push('Now please generate a bilingual description (zh/en) based on the help output above and call safeclaw_cli_tools_add to save it.');
 
               return {
                 content: [{ type: 'text' as const, text: resultLines.join('\n') }],
@@ -414,7 +414,7 @@ export function createCliToolsMcpServer() {
               return {
                 content: [{
                   type: 'text' as const,
-                  text: `Command executed but could not locate "${binName}" in PATH after installation.\nOutput:\n${output.slice(0, 1000)}\n\nThe tool may have been installed with a different binary name. Use "which" to find it, then call codepilot_cli_tools_add to register manually.`,
+                  text: `Command executed but could not locate "${binName}" in PATH after installation.\nOutput:\n${output.slice(0, 1000)}\n\nThe tool may have been installed with a different binary name. Use "which" to find it, then call safeclaw_cli_tools_add to register manually.`,
                 }],
               };
             }
@@ -430,8 +430,8 @@ export function createCliToolsMcpServer() {
 
       // ── ADD ──────────────────────────────────────────────────────
       tool(
-        'codepilot_cli_tools_add',
-        'Register an already-installed CLI tool by its binary path, and optionally save its bilingual description and agent compatibility assessment. Use this after codepilot_cli_tools_install to save the generated description, or to register a tool the user has already installed. When providing descriptions, also assess the agent compatibility dimensions based on the --help output.',
+        'safeclaw_cli_tools_add',
+        'Register an already-installed CLI tool by its binary path, and optionally save its bilingual description and agent compatibility assessment. Use this after safeclaw_cli_tools_install to save the generated description, or to register a tool the user has already installed. When providing descriptions, also assess the agent compatibility dimensions based on the --help output.',
         {
           binPath: z.string().optional().describe('Absolute path to the binary, e.g. /usr/local/bin/ffmpeg. Required when registering a new tool.'),
           name: z.string().optional().describe('Display name for the tool'),
@@ -524,7 +524,7 @@ export function createCliToolsMcpServer() {
                 resultParts.push(helpOutput);
                 resultParts.push('--- End Help Output ---');
                 resultParts.push('');
-                resultParts.push('Please generate a bilingual description (zh/en) based on the help output above and call codepilot_cli_tools_add with toolId to save it.');
+                resultParts.push('Please generate a bilingual description (zh/en) based on the help output above and call safeclaw_cli_tools_add with toolId to save it.');
               }
             }
             return {
@@ -547,7 +547,7 @@ export function createCliToolsMcpServer() {
 
       // ── REMOVE ───────────────────────────────────────────────────
       tool(
-        'codepilot_cli_tools_remove',
+        'safeclaw_cli_tools_remove',
         'Remove a custom (user-added) CLI tool from the library. Only custom tools can be removed — catalog and system-detected tools cannot be removed.',
         {
           toolId: z.string().describe('The tool ID to remove, e.g. "custom-mytool"'),
@@ -586,7 +586,7 @@ export function createCliToolsMcpServer() {
 
       // ── CHECK UPDATES ────────────────────────────────────────────
       tool(
-        'codepilot_cli_tools_check_updates',
+        'safeclaw_cli_tools_check_updates',
         'Check which installed CLI tools have available updates. Checks brew outdated, npm outdated, and re-detects versions for custom tools.',
         {},
         async () => {
@@ -684,7 +684,7 @@ export function createCliToolsMcpServer() {
               lines.push(`- ${u.name}: ${u.current} → ${u.latest ?? 'newer version available'} (${u.method})`);
             }
             lines.push('');
-            lines.push('Use codepilot_cli_tools_update to update a specific tool.');
+            lines.push('Use safeclaw_cli_tools_update to update a specific tool.');
 
             return {
               content: [{ type: 'text' as const, text: lines.join('\n') }],
@@ -703,7 +703,7 @@ export function createCliToolsMcpServer() {
 
       // ── UPDATE ───────────────────────────────────────────────────
       tool(
-        'codepilot_cli_tools_update',
+        'safeclaw_cli_tools_update',
         'Update a CLI tool to its latest version. Requires user permission before execution. Determines the update command based on the tool\'s install method (brew upgrade, npm update -g, etc.).',
         {
           toolId: z.string().optional().describe('The tool ID to update (e.g. "ffmpeg", "custom-mytool")'),
@@ -768,7 +768,7 @@ export function createCliToolsMcpServer() {
               return {
                 content: [{
                   type: 'text' as const,
-                  text: `Tool "${toolId || toolName}" not found. Use codepilot_cli_tools_list to see available tools.`,
+                  text: `Tool "${toolId || toolName}" not found. Use safeclaw_cli_tools_list to see available tools.`,
                 }],
                 isError: true,
               };
@@ -843,7 +843,7 @@ export function createCliToolsMcpServer() {
 
             const verStr = newVersion ? ` (now v${newVersion})` : '';
             const warning = provenanceIsGuessed
-              ? `\n\nNote: The install method was guessed (${updateMethod}) because this tool was installed outside CodePilot. If the update failed, it may have been installed via a different package manager.`
+              ? `\n\nNote: The install method was guessed (${updateMethod}) because this tool was installed outside SafeClaw. If the update failed, it may have been installed via a different package manager.`
               : '';
             return {
               content: [{

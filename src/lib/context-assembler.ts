@@ -88,7 +88,7 @@ export async function assembleContext(config: ContextAssemblyConfig): Promise<As
 
         const files = loadWorkspaceFiles(workspacePath);
 
-        // Memory/retrieval is handled by codepilot_memory_search MCP tool.
+        // Memory/retrieval is handled by safeclaw_memory_search MCP tool.
         // assembleWorkspacePrompt only includes identity files (soul/user/claude).
         // We also inject a lightweight "memory availability hint" so AI knows
         // what's available without loading full content.
@@ -101,7 +101,7 @@ export async function assembleContext(config: ContextAssemblyConfig): Promise<As
           const recentDays = loadDailyMemories(workspacePath, 5);
           if (recentDays.length > 0) {
             const dateList = recentDays.map(d => d.date).join(', ');
-            memoryHint = `<memory-hint>Recent daily memories available: ${dateList}. Use codepilot_memory_recent to review them.</memory-hint>`;
+            memoryHint = `<memory-hint>Recent daily memories available: ${dateList}. Use safeclaw_memory_recent to review them.</memory-hint>`;
           }
         } catch {
           // skip if daily memories unavailable
@@ -369,13 +369,13 @@ function buildNoBuddyWelcome(): string {
 
 3. 简要介绍助理能力：记忆、定时提醒、笔记整理
 4. 等用户说"孵化"、"领养"、"hatch"等关键词
-5. 收到后调用 codepilot_hatch_buddy 工具（不带 buddyName）
+5. 收到后调用 safeclaw_hatch_buddy 工具（不带 buddyName）
 6. 拿到结果后，用 show-widget 展示孵化结果卡片。Widget 中使用 Fluent UI 3D 图片：
    - 图片 URL 在工具返回的 Image 字段中
    - 展示：3D 物种图片（大号）+ 名字 + 稀有度胶囊标签 + 性格概括 + 属性条
    - 稀有度背景色：普通灰/稀有绿/精良蓝/史诗紫/传说金
 7. 然后问用户："给你的新伙伴起个名字吧！"
-8. 用户说名字后，调用 codepilot_hatch_buddy(buddyName: 用户说的名字)
+8. 用户说名字后，调用 safeclaw_hatch_buddy(buddyName: 用户说的名字)
 9. 确认名字保存成功，欢迎用户开始使用
 
 重要：整个过程通过对话完成，不需要用户离开聊天界面。

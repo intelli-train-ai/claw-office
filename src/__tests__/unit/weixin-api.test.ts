@@ -29,7 +29,7 @@ describe('weixin-api empty success bodies', () => {
 
     const { clientId } = await sendTextMessage(creds, 'peer-user', 'hello', 'ctx-token');
 
-    assert.match(clientId, /^codepilot-wx-/);
+    assert.match(clientId, /^safeclaw-wx-/);
     const parsed = JSON.parse(requestBody);
     assert.equal(parsed.msg.to_user_id, 'peer-user');
     assert.equal(parsed.msg.context_token, 'ctx-token');

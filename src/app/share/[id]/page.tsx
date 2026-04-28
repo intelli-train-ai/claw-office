@@ -5,7 +5,7 @@ import { authFetch } from '@/lib/api-client';
 import { useParams } from 'next/navigation';
 import type { Message } from '@/types';
 import { MessageItem } from '@/components/chat/MessageItem';
-import { CodePilotLogo } from '@/components/chat/CodePilotLogo';
+import { SafeClawLogo } from '@/components/chat/SafeClawLogo';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -302,7 +302,7 @@ export default function ShareReplayPage() {
   if (error) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background text-foreground">
-        <CodePilotLogo className="h-16 w-16" />
+        <SafeClawLogo className="h-16 w-16" />
         <p className="text-lg font-medium">{error}</p>
       </div>
     );
@@ -313,7 +313,7 @@ export default function ShareReplayPage() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border px-6 py-3 shrink-0">
         <div className="flex items-center gap-3">
-          <CodePilotLogo className="h-8 w-8" />
+          <SafeClawLogo className="h-8 w-8" />
           <div>
             <h1 className="text-sm font-semibold">
               {sessionMeta?.title

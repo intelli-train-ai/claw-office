@@ -114,8 +114,8 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
 
   /** Read current model + provider_id from localStorage for new session creation */
   const getCurrentModelAndProvider = useCallback(() => {
-    const model = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') || '' : '';
-    const provider_id = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') || '' : '';
+    const model = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-model') || '' : '';
+    const provider_id = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-provider-id') || '' : '';
     return { model, provider_id };
   }, []);
 
@@ -148,7 +148,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
 
   const handleNewChat = useCallback(async () => {
     let lastDir = workingDirectory
-      || (typeof window !== 'undefined' ? localStorage.getItem("codepilot:last-working-directory") : null);
+      || (typeof window !== 'undefined' ? localStorage.getItem("safeclaw:last-working-directory") : null);
 
     // Fall back to setup default project if no recent directory
     if (!lastDir) {
@@ -158,7 +158,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
           const setupData = await setupRes.json();
           if (setupData.defaultProject) {
             lastDir = setupData.defaultProject;
-            localStorage.setItem('codepilot:last-working-directory', lastDir!);
+            localStorage.setItem('safeclaw:last-working-directory', lastDir!);
           }
         }
       } catch { /* ignore */ }
@@ -178,7 +178,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       );
       if (!checkRes.ok) {
         // Directory is gone — clear stale value, try setup default before prompting
-        localStorage.removeItem("codepilot:last-working-directory");
+        localStorage.removeItem("safeclaw:last-working-directory");
         let recovered = false;
         try {
           const setupRes = await authFetch('/api/setup');
@@ -188,7 +188,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
               const defaultCheck = await authFetch(`/api/files/browse?dir=${encodeURIComponent(setupData.defaultProject)}`);
               if (defaultCheck.ok) {
                 lastDir = setupData.defaultProject;
-                localStorage.setItem('codepilot:last-working-directory', lastDir!);
+                localStorage.setItem('safeclaw:last-working-directory', lastDir!);
                 recovered = true;
               }
             }
@@ -213,7 +213,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
       });
       if (!res.ok) {
         // Backend rejected it (e.g. INVALID_DIRECTORY) — prompt user
-        localStorage.removeItem("codepilot:last-working-directory");
+        localStorage.removeItem("safeclaw:last-working-directory");
         openFolderPicker();
         return;
       }

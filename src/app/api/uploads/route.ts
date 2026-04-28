@@ -21,8 +21,8 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 /**
- * Serve files from .codepilot-uploads/ directories.
- * Only allows reading from paths that contain '.codepilot-uploads/' to prevent directory traversal.
+ * Serve files from .safeclaw-uploads/ directories.
+ * Only allows reading from paths that contain '.safeclaw-uploads/' to prevent directory traversal.
  */
 export async function GET(request: NextRequest) {
   const authError = requireAuth(request);
@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Security: only allow files within known .codepilot-* directories
+  // Security: only allow files within known .safeclaw-* directories
   const resolved = path.resolve(filePath);
-  const allowedDirs = ['.codepilot-uploads', '.codepilot-media', '.codepilot-images'];
+  const allowedDirs = ['.safeclaw-uploads', '.safeclaw-media', '.safeclaw-images'];
   if (!allowedDirs.some(dir => resolved.includes(dir))) {
     return new Response(JSON.stringify({ error: 'Access denied' }), {
       status: 403,

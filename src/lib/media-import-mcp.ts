@@ -1,5 +1,5 @@
 /**
- * codepilot-media MCP — in-process MCP server for media library import.
+ * safeclaw-media MCP — in-process MCP server for media library import.
  *
  * Replaces the CLI curl approach (POST /api/media/import) with a native MCP
  * tool that Claude can call directly. Keyword-gated: only registered when
@@ -20,13 +20,13 @@ const MEDIA_RESULT_MARKER = '__MEDIA_RESULT__';
 
 export const MEDIA_MCP_SYSTEM_PROMPT = `<media-capability>
 You have access to media tools:
-- codepilot_generate_image: Generate images via Gemini. Images appear inline in the chat and are auto-saved to the media library. Always write prompts in English for best results.
-- codepilot_import_media: Import an existing local file (image/video/audio) into the media library and display it inline in the chat.
+- safeclaw_generate_image: Generate images via Gemini. Images appear inline in the chat and are auto-saved to the media library. Always write prompts in English for best results.
+- safeclaw_import_media: Import an existing local file (image/video/audio) into the media library and display it inline in the chat.
 
 IMPORTANT RULES:
-1. After ANY CLI tool (dreamina, comfyui, stable-diffusion, midjourney, etc.) generates a media file, you MUST call codepilot_import_media to display it in the chat. Do NOT use the Read tool — Read only shows images to you (the AI) but does NOT display them to the user.
+1. After ANY CLI tool (dreamina, comfyui, stable-diffusion, midjourney, etc.) generates a media file, you MUST call safeclaw_import_media to display it in the chat. Do NOT use the Read tool — Read only shows images to you (the AI) but does NOT display them to the user.
 2. Do NOT use curl or HTTP requests to interact with the media API.
-3. When calling codepilot_import_media, ALWAYS extract and fill in ALL available metadata from the CLI tool's output:
+3. When calling safeclaw_import_media, ALWAYS extract and fill in ALL available metadata from the CLI tool's output:
    - prompt: the generation prompt that was used
    - model: the model name (e.g. "seedance-2.0", "flux-1", "sdxl")
    - resolution: the output resolution (e.g. "2K", "4096x4096", "1920x1080")
@@ -39,12 +39,12 @@ IMPORTANT RULES:
 
 export function createMediaImportMcpServer(sessionId?: string, workingDirectory?: string) {
   return createSdkMcpServer({
-    name: 'codepilot-media',
+    name: 'safeclaw-media',
     version: '1.0.0',
     tools: [
       tool(
-        'codepilot_import_media',
-        'Import a local file (image, video, audio) into the CodePilot media library. Use this when the user asks to save a generated or downloaded media file to the library. The file must exist on disk. Always fill in prompt, model, resolution, and source when available.',
+        'safeclaw_import_media',
+        'Import a local file (image, video, audio) into the SafeClaw media library. Use this when the user asks to save a generated or downloaded media file to the library. The file must exist on disk. Always fill in prompt, model, resolution, and source when available.',
         {
           filePath: z.string().describe('Absolute or relative path to the media file on disk'),
           title: z.string().optional().describe('Display title for the media in the library'),

@@ -14,7 +14,7 @@ import {
 } from '@/components/ai-elements/conversation';
 import { MessageItem } from './MessageItem';
 import { StreamingMessage } from './StreamingMessage';
-import { CodePilotLogo } from './CodePilotLogo';
+import { SafeClawLogo } from './SafeClawLogo';
 import { SPECIES_IMAGE_URL, EGG_IMAGE_URL, RARITY_BG_GRADIENT, type Species, type Rarity } from '@/lib/buddy';
 import { authFetch } from '@/lib/api-client';
 
@@ -225,7 +225,7 @@ export function MessageList({
     if (isAssistantProject) {
       // Assistant workspace — show buddy or egg welcome
       const buddyInfo = typeof globalThis !== 'undefined'
-        ? (globalThis as Record<string, unknown>).__codepilot_buddy_info__ as { species?: string; rarity?: string } | undefined
+        ? (globalThis as Record<string, unknown>).__safeclaw_buddy_info__ as { species?: string; rarity?: string } | undefined
         : undefined;
       const hasBuddy = !!buddyInfo?.species;
       return (
@@ -265,7 +265,7 @@ export function MessageList({
         <ConversationEmptyState
           title={t('messageList.claudeChat')}
           description={t('messageList.emptyDescription')}
-          icon={<CodePilotLogo className="h-16 w-16" />}
+          icon={<SafeClawLogo className="h-16 w-16" />}
         />
       </div>
     );

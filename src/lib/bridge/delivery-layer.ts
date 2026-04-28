@@ -191,7 +191,7 @@ export async function deliver(
         insertOutboundRef({
           channelType: adapter.channelType,
           chatId: message.address.chatId,
-          codepilotSessionId: opts.sessionId,
+          safeclawSessionId: opts.sessionId,
           platformMessageId: result.messageId,
           purpose: message.inlineButtons ? 'permission' : 'response',
         });
@@ -321,7 +321,7 @@ export async function deliverRendered(
         insertOutboundRef({
           channelType: adapter.channelType,
           chatId: address.chatId,
-          codepilotSessionId: opts.sessionId,
+          safeclawSessionId: opts.sessionId,
           platformMessageId: result.messageId,
           purpose: 'response',
         });

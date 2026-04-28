@@ -151,11 +151,11 @@ export function ConnectionStatus() {
       !autoPromptedRef.current &&
       !dialogOpen
     ) {
-      const dismissed = localStorage.getItem("codepilot:install-wizard-dismissed");
+      const dismissed = localStorage.getItem("safeclaw:install-wizard-dismissed");
       if (!dismissed) {
         autoPromptedRef.current = true;
         window.dispatchEvent(new CustomEvent('open-setup-center', { detail: { initialCard: 'claude' } }));
-        localStorage.setItem("codepilot:install-wizard-dismissed", "1");  
+        localStorage.setItem("safeclaw:install-wizard-dismissed", "1");  
       }
     }
   }, [status, dialogOpen]);
@@ -164,7 +164,7 @@ export function ConnectionStatus() {
     setWizardOpen(open);
     if (!open) {
       // Remember that user dismissed the wizard so we don't auto-prompt again
-      localStorage.setItem("codepilot:install-wizard-dismissed", "1");
+      localStorage.setItem("safeclaw:install-wizard-dismissed", "1");
     }
   }, []);
 

@@ -2,7 +2,7 @@
  * Bridge system types — shared across all bridge modules.
  *
  * The bridge connects external IM channels (Telegram, Discord, Slack)
- * to CodePilot chat sessions, allowing users to interact with Claude
+ * to SafeClaw chat sessions, allowing users to interact with Claude
  * from their preferred messaging platform.
  */
 
@@ -97,13 +97,13 @@ export interface SendResult {
 
 // ── Bindings ───────────────────────────────────────────────────
 
-/** Links an IM chat to a CodePilot session */
+/** Links an IM chat to a SafeClaw session */
 export interface ChannelBinding {
   id: string;
   channelType: ChannelType;
   chatId: string;
-  /** CodePilot session ID this chat is bound to */
-  codepilotSessionId: string;
+  /** SafeClaw session ID this chat is bound to */
+  safeclawSessionId: string;
   /** SDK session ID for resume (cached from last conversation) */
   sdkSessionId: string;
   /** Working directory for this binding */

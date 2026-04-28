@@ -255,7 +255,7 @@ export function toClaudeCodeEnv(
     if (appBaseUrl) env.ANTHROPIC_BASE_URL = appBaseUrl;
   }
 
-  // Prevent ~/.claude/settings.json from overriding CodePilot's provider configuration.
+  // Prevent ~/.claude/settings.json from overriding SafeClaw's provider configuration.
   // When set, Claude Code CLI's withoutHostManagedProviderVars() strips all provider-routing
   // variables from the user's settings file (see upstream managedEnv.ts / managedEnvConstants.ts).
   // Placed AFTER all env cleanup to ensure it's never accidentally deleted.

@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   const { searchParams } = request.nextUrl;
-  const dir = searchParams.get('dir') || process.env.CODEPILOT_WORKSPACE || os.homedir();
+  const dir = searchParams.get('dir') || process.env.SAFECLAW_WORKSPACE || os.homedir();
 
   const resolvedDir = path.resolve(dir);
 

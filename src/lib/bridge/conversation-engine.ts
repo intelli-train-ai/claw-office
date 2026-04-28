@@ -26,7 +26,7 @@ import {
   getSetting,
 } from '../db';
 import { resolveProvider as resolveProviderUnified } from '../provider-resolver';
-import { loadCodePilotMcpServers } from '../mcp-loader';
+import { loadSafeClawMcpServers } from '../mcp-loader';
 import { assembleContext } from '../context-assembler';
 import crypto from 'crypto';
 
@@ -92,7 +92,7 @@ export async function processMessage(
   onPartialText?: OnPartialText,
   onToolEvent?: OnToolEvent,
 ): Promise<ConversationResult> {
-  const sessionId = binding.codepilotSessionId;
+  const sessionId = binding.safeclawSessionId;
 
   // Acquire session lock
   const lockId = crypto.randomBytes(8).toString('hex');
@@ -128,7 +128,7 @@ export async function processMessage(
       const workDir = binding.workingDirectory || session?.working_directory || '';
       if (workDir) {
         try {
-          const uploadDir = path.join(workDir, '.codepilot-uploads');
+          const uploadDir = path.join(workDir, '.safeclaw-uploads');
           if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
           }
@@ -191,9 +191,9 @@ export async function processMessage(
       }
     }
 
-    // Load only MCP servers needing CodePilot-specific processing (${...} env placeholders).
+    // Load only MCP servers needing SafeClaw-specific processing (${...} env placeholders).
     // All other MCP servers are auto-loaded by the SDK via settingSources.
-    const mcpServers = loadCodePilotMcpServers();
+    const mcpServers = loadSafeClawMcpServers();
 
     // Parse additional directories from session (e.g. assistant workspace as add-dir)
     const sessionAddDirs: string[] = (() => {

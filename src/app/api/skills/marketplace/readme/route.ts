@@ -5,7 +5,7 @@ import os from "os";
 import { requireAuth } from '@/lib/auth';
 
 // Local cache directory (same as search route)
-const CACHE_DIR = path.join(os.tmpdir(), "codepilot-skills-cache");
+const CACHE_DIR = path.join(os.tmpdir(), "safeclaw-skills-cache");
 
 /**
  * Find SKILL.md for a given skillId by scanning the local repo cache.

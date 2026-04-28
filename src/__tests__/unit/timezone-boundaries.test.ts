@@ -21,7 +21,7 @@ import os from 'os';
 import fs from 'fs';
 
 // Set a temp data dir before importing db module
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codepilot-tz-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'safeclaw-tz-test-'));
 process.env.CLAUDE_GUI_DATA_DIR = tmpDir;
 
 /* eslint-disable @typescript-eslint/no-require-imports */

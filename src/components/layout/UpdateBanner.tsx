@@ -6,7 +6,7 @@ import { useUpdate } from "@/hooks/useUpdate";
 import { useTranslation } from "@/hooks/useTranslation";
 
 function getRosettaDismissKey(assetName: string, version: string): string {
-  return `codepilot:rosetta-warning-dismissed:${assetName || version || 'unknown'}`;
+  return `safeclaw:rosetta-warning-dismissed:${assetName || version || 'unknown'}`;
 }
 
 /**

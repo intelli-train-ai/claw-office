@@ -20,7 +20,7 @@ export function FinalCTA({
         </h2>
 
         <div className="mt-8 flex items-center gap-4">
-          <a href="https://github.com/op7418/CodePilot/releases/latest" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/op7418/SafeClaw/releases/latest" target="_blank" rel="noopener noreferrer">
             <RainbowButton className="h-12 rounded-full px-10 text-base">
               {content.primary}
             </RainbowButton>

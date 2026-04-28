@@ -1,4 +1,4 @@
-appId: com.codepilot.app
+appId: com.safeclaw.app
 productName: SafeClaw
 publish:
   provider: github
@@ -83,7 +83,7 @@ linux:
       Name: SafeClaw
       Comment: A native desktop GUI for Claude Code
       Categories: Development;IDE;
-      StartupWMClass: codepilot
+      StartupWMClass: safeclaw
   # arch is NOT specified here — controlled by CI via --x64 / --arm64 CLI flags.
   # Listing both arches here causes electron-builder to build both on every job,
   # which fails when cross-compiling native modules (zlib-sync -m64 on arm64).

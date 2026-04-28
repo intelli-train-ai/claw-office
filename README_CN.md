@@ -3,8 +3,8 @@
 
 **Claude Code 的统一桌面客户端** -- 多 Provider 支持、MCP 扩展、自定义技能、跨平台 Bridge，以及理解你项目的助手工作区。
 
-[![GitHub release](https://img.shields.io/github/v/release/intelli-train-ai/CodePilot)](https://github.com/intelli-train-ai/CodePilot/releases)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](https://github.com/intelli-train-ai/CodePilot/releases)
+[![GitHub release](https://img.shields.io/github/v/release/intelli-train-ai/claw-office)](https://github.com/intelli-train-ai/claw-office/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](https://github.com/intelli-train-ai/claw-office/releases)
 [![License](https://img.shields.io/badge/license-BSL--1.1-orange)](LICENSE)
 
 [English](./README.md) | [日本語](./README_JA.md)
@@ -37,7 +37,7 @@
 
 1. 安装 Claude Code CLI：`npm install -g @anthropic-ai/claude-code`
 2. 认证：`claude login`
-3. 从 [Releases](https://github.com/intelli-train-ai/CodePilot/releases) 页面下载对应平台的安装包
+3. 从 [Releases](https://github.com/intelli-train-ai/claw-office/releases) 页面下载对应平台的安装包
 4. 启动 SafeClaw
 
 ### 路径 B：源码构建（开发者）
@@ -49,7 +49,7 @@
 | npm | 9+（Node 18 自带） |
 
 ```bash
-git clone https://github.com/intelli-train-ai/CodePilot.git
+git clone https://github.com/intelli-train-ai/claw-office.git
 cd SafeClaw
 npm install
 npm run dev              # 浏览器模式，访问 http://localhost:3000
@@ -116,7 +116,7 @@ npm run electron:dev     # 完整桌面应用
 | Windows | .exe (NSIS) | x64 + arm64 |
 | Linux | .AppImage / .deb / .rpm | x64 + arm64 |
 
-从 [Releases](https://github.com/intelli-train-ai/CodePilot/releases) 页面下载。
+从 [Releases](https://github.com/intelli-train-ai/claw-office/releases) 页面下载。
 
 macOS 构建已使用 Developer ID 证书签名，但未进行公证（notarize），因此 Gatekeeper 在首次启动时仍可能弹出提示。Windows 和 Linux 构建未签名。
 
@@ -145,20 +145,20 @@ xattr -cr /Applications/SafeClaw.app
 
 ## 文档
 
-📖 **完整文档：** [中文](https://www.codepilot.sh/zh/docs) | [English](https://www.codepilot.sh/docs)
+📖 **完整文档：** [中文](https://www.safeclaw.sh/zh/docs) | [English](https://www.safeclaw.sh/docs)
 
 **入门指南：**
 - [快速开始](#快速开始) -- 下载或源码构建
 - [首次使用](#首次使用) -- 认证、Provider 配置、工作区设置
-- [安装指南](https://www.codepilot.sh/zh/docs/installation) -- 详细安装说明
+- [安装指南](https://www.safeclaw.sh/zh/docs/installation) -- 详细安装说明
 
 **用户指南：**
-- [服务商配置](https://www.codepilot.sh/zh/docs/providers) -- 配置 Anthropic、OpenRouter、Bedrock、Vertex 和自定义端点
-- [MCP 服务器](https://www.codepilot.sh/zh/docs/mcp) -- 添加和管理 Model Context Protocol 服务器
-- [Skills 技能](https://www.codepilot.sh/zh/docs/skills) -- 自定义技能、项目技能和 skills.sh 市场
-- [Bridge 桥接](https://www.codepilot.sh/zh/docs/bridge) -- 通过 Telegram、飞书、Discord、QQ 远程控制
-- [Assistant Workspace](https://www.codepilot.sh/zh/docs/assistant-workspace) -- 人设文件、Onboarding、记忆、每日签到
-- [常见问题](https://www.codepilot.sh/zh/docs/faq) -- 常见问题和解决方案
+- [服务商配置](https://www.safeclaw.sh/zh/docs/providers) -- 配置 Anthropic、OpenRouter、Bedrock、Vertex 和自定义端点
+- [MCP 服务器](https://www.safeclaw.sh/zh/docs/mcp) -- 添加和管理 Model Context Protocol 服务器
+- [Skills 技能](https://www.safeclaw.sh/zh/docs/skills) -- 自定义技能、项目技能和 skills.sh 市场
+- [Bridge 桥接](https://www.safeclaw.sh/zh/docs/bridge) -- 通过 Telegram、飞书、Discord、QQ 远程控制
+- [Assistant Workspace](https://www.safeclaw.sh/zh/docs/assistant-workspace) -- 人设文件、Onboarding、记忆、每日签到
+- [常见问题](https://www.safeclaw.sh/zh/docs/faq) -- 常见问题和解决方案
 
 **开发文档：**
 - [ARCHITECTURE.md](./ARCHITECTURE.md) -- 架构、技术栈、目录结构、数据流
@@ -211,8 +211,8 @@ npm install -g @anthropic-ai/claude-code
 
 扫描二维码加入微信用户群，交流使用心得、反馈问题和获取最新动态。
 
-- [GitHub Issues](https://github.com/intelli-train-ai/CodePilot/issues) -- Bug 反馈和功能建议
-- [GitHub Discussions](https://github.com/intelli-train-ai/CodePilot/discussions) -- 提问和讨论
+- [GitHub Issues](https://github.com/intelli-train-ai/claw-office/issues) -- Bug 反馈和功能建议
+- [GitHub Discussions](https://github.com/intelli-train-ai/claw-office/discussions) -- 提问和讨论
 
 ---
 
@@ -242,7 +242,7 @@ npm run electron:pack:linux    # Linux AppImage、deb、rpm
 
 **说明：**
 - Electron 在 `127.0.0.1` 上 fork Next.js standalone 服务器，使用随机可用端口
-- 聊天数据存储在 `~/.codepilot/codepilot.db`（开发模式：`./data/`）
+- 聊天数据存储在 `~/.safeclaw/safeclaw.db`（开发模式：`./data/`）
 - SQLite 使用 WAL 模式，并发读取性能优秀
 </details>
 

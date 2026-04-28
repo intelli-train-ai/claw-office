@@ -1,5 +1,5 @@
 services:
-  codepilot:
+  safeclaw:
     build:
       context: .
       args:
@@ -7,18 +7,18 @@ services:
     ports:
       - "${PORT:-3811}:${PORT:-3811}"
     volumes:
-      - codepilot-data:/data
+      - safeclaw-data:/data
       - ${WORKSPACE_PATH:-./workspaces}:/workspaces
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-3811}
       - CLAUDE_GUI_DATA_DIR=/data
-      - CODEPILOT_WORKSPACE=/workspaces
-      - CODEPILOT_ACCESS_TOKEN=${CODEPILOT_ACCESS_TOKEN:-}
+      - SAFECLAW_WORKSPACE=/workspaces
+      - SAFECLAW_ACCESS_TOKEN=${SAFECLAW_ACCESS_TOKEN:-}
       # Uncomment and set your API keys as needed:
       # - ANTHROPIC_API_KEY=sk-ant-...
       # - OPENAI_API_KEY=sk-...
     restart: unless-stopped
 
 volumes:
-  codepilot-data:
+  safeclaw-data:

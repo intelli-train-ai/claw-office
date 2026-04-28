@@ -43,7 +43,7 @@ describe('heartbeat-done marker stripping', () => {
   it('strips marker from JSON-serialized contentBlocks', () => {
     const blocks = [
       { type: 'text', text: 'Checked your tasks. <!-- heartbeat-done -->' },
-      { type: 'tool_use', id: '1', name: 'codepilot_memory_recent', input: {} },
+      { type: 'tool_use', id: '1', name: 'safeclaw_memory_recent', input: {} },
       { type: 'text', text: 'Everything looks good. <!-- heartbeat-done -->' },
     ];
     const cleaned = blocks.map(b =>

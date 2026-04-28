@@ -1,5 +1,5 @@
 /**
- * codepilot-dashboard MCP — in-process MCP server for dashboard widget management.
+ * safeclaw-dashboard MCP — in-process MCP server for dashboard widget management.
  *
  * Provides tools for the AI model to directly manage the project dashboard:
  * pin widgets, list/refresh/update/remove widgets — all with full conversation context.
@@ -23,11 +23,11 @@ import type { DashboardWidget, DashboardDataSource } from '@/types/dashboard';
 
 export const DASHBOARD_MCP_SYSTEM_PROMPT = `<dashboard-capability>
 You can manage the project dashboard using these tools:
-- codepilot_dashboard_pin: Pin a widget to the dashboard. Provide widgetCode, title, dataContract, and data source info.
-- codepilot_dashboard_list: List all pinned widgets with metadata.
-- codepilot_dashboard_refresh: Read source data for a widget. Returns data for you to regenerate the widget.
-- codepilot_dashboard_update: Save updated widget code, title, or data contract.
-- codepilot_dashboard_remove: Remove a widget from the dashboard.
+- safeclaw_dashboard_pin: Pin a widget to the dashboard. Provide widgetCode, title, dataContract, and data source info.
+- safeclaw_dashboard_list: List all pinned widgets with metadata.
+- safeclaw_dashboard_refresh: Read source data for a widget. Returns data for you to regenerate the widget.
+- safeclaw_dashboard_update: Save updated widget code, title, or data contract.
+- safeclaw_dashboard_remove: Remove a widget from the dashboard.
 
 Data source types:
 - file: local project files (glob patterns). Used for code stats, config, data files.
@@ -47,12 +47,12 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
   const workDir = workingDirectory || '';
 
   return createSdkMcpServer({
-    name: 'codepilot-dashboard',
+    name: 'safeclaw-dashboard',
     version: '1.0.0',
     tools: [
       // ── Pin widget ─────────────────────────────────────────────────
       tool(
-        'codepilot_dashboard_pin',
+        'safeclaw_dashboard_pin',
         'Pin a widget to the project dashboard for persistent access. The model provides all metadata from conversation context.',
         {
           widgetCode: z.string().describe('The raw HTML/SVG/JS widget code to pin'),
@@ -102,7 +102,7 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
 
       // ── List widgets ───────────────────────────────────────────────
       tool(
-        'codepilot_dashboard_list',
+        'safeclaw_dashboard_list',
         'List all widgets currently pinned to the project dashboard.',
         {},
         async () => {
@@ -134,8 +134,8 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
 
       // ── Refresh (read source data) ─────────────────────────────────
       tool(
-        'codepilot_dashboard_refresh',
-        'Read source data for a dashboard widget. For file sources, reads files and returns content. For MCP sources, tells you which tool to call. For CLI sources, returns the command for you to run via bash. After getting data, generate updated HTML and call codepilot_dashboard_update.',
+        'safeclaw_dashboard_refresh',
+        'Read source data for a dashboard widget. For file sources, reads files and returns content. For MCP sources, tells you which tool to call. For CLI sources, returns the command for you to run via bash. After getting data, generate updated HTML and call safeclaw_dashboard_update.',
         {
           widgetId: z.string().describe('The widget ID to refresh'),
         },
@@ -161,7 +161,7 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
               ds.args ? `Arguments: ${JSON.stringify(ds.args)}` : '',
               '',
               `To refresh this widget, call the MCP tool "${ds.toolName}" from server "${ds.serverName}"${ds.args ? ' with the arguments above' : ''}.`,
-              `Then generate updated widget HTML and call codepilot_dashboard_update.`,
+              `Then generate updated widget HTML and call safeclaw_dashboard_update.`,
               '',
               `Original widget HTML (${widget.widgetCode.length} chars):`,
               '```',
@@ -183,7 +183,7 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
               '```',
               ds.command,
               '```',
-              `Then use the output to generate updated widget HTML and call codepilot_dashboard_update.`,
+              `Then use the output to generate updated widget HTML and call safeclaw_dashboard_update.`,
               '',
               `Original widget HTML (${widget.widgetCode.length} chars):`,
               '```',
@@ -225,7 +225,7 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
             '```',
             '',
             dataChanged
-              ? 'Please generate updated widget HTML preserving the exact visual design, only updating data-driven content. Then call codepilot_dashboard_update with the new HTML.'
+              ? 'Please generate updated widget HTML preserving the exact visual design, only updating data-driven content. Then call safeclaw_dashboard_update with the new HTML.'
               : 'Data has not changed. No update needed unless the user specifically requests it.',
           ].join('\n');
 
@@ -235,7 +235,7 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
 
       // ── Update widget ──────────────────────────────────────────────
       tool(
-        'codepilot_dashboard_update',
+        'safeclaw_dashboard_update',
         'Update a dashboard widget\'s code, title, or data contract. Use after refreshing to save new widget HTML.',
         {
           widgetId: z.string().describe('The widget ID to update'),
@@ -270,7 +270,7 @@ export function createDashboardMcpServer(sessionId?: string, workingDirectory?: 
 
       // ── Remove widget ──────────────────────────────────────────────
       tool(
-        'codepilot_dashboard_remove',
+        'safeclaw_dashboard_remove',
         'Remove a widget from the project dashboard.',
         {
           widgetId: z.string().describe('The widget ID to remove'),

@@ -391,7 +391,7 @@ export function CliToolsManager() {
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2">
         <ArrowSquareOut size={12} />
         <a
-          href={locale === 'zh' ? 'https://www.codepilot.sh/zh/docs' : 'https://www.codepilot.sh/docs'}
+          href={locale === 'zh' ? 'https://www.safeclaw.sh/zh/docs' : 'https://www.safeclaw.sh/docs'}
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-foreground hover:underline transition-colors"

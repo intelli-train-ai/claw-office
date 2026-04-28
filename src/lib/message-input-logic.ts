@@ -148,7 +148,7 @@ export function dispatchBadge(badge: CommandBadge, userContent: string): BadgeDi
         : badge.command;
       return { prompt: slashPrompt, displayLabel };
     }
-    case 'codepilot_command': {
+    case 'safeclaw_command': {
       const expandedPrompt = COMMAND_PROMPTS[badge.command] || '';
       const finalPrompt = userContent
         ? `${expandedPrompt}\n\nUser context: ${userContent}`

@@ -5,8 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.codepilot');
-const MEDIA_DIR = path.join(dataDir, '.codepilot-media');
+const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.safeclaw');
+const MEDIA_DIR = path.join(dataDir, '.safeclaw-media');
 
 const MIME_TO_EXT: Record<string, string> = {
   'image/png': '.png',
@@ -89,7 +89,7 @@ function insertDbRecord(opts: {
 
 /**
  * Save a base64-encoded media block (from MCP tool result) to the library.
- * Writes file to ~/.codepilot/.codepilot-media/ and creates a DB record.
+ * Writes file to ~/.safeclaw/.safeclaw-media/ and creates a DB record.
  */
 export function saveMediaToLibrary(block: MediaBlock, opts: SaveMediaOptions = {}): SaveMediaResult {
   ensureMediaDir();
@@ -118,7 +118,7 @@ export function saveMediaToLibrary(block: MediaBlock, opts: SaveMediaOptions = {
 
 /**
  * Import an existing local file to the library (for CLI tool output).
- * Copies file to ~/.codepilot/.codepilot-media/ and creates a DB record.
+ * Copies file to ~/.safeclaw/.safeclaw-media/ and creates a DB record.
  */
 export function importFileToLibrary(
   filePath: string,

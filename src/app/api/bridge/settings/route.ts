@@ -96,8 +96,8 @@ export async function PUT(request: NextRequest) {
         for (const binding of bindings) {
           if (binding.workingDirectory !== newDir) {
             updateChannelBinding(binding.id, { workingDirectory: newDir, sdkSessionId: '' });
-            updateSessionWorkingDirectory(binding.codepilotSessionId, newDir);
-            updateSdkSessionId(binding.codepilotSessionId, '');
+            updateSessionWorkingDirectory(binding.safeclawSessionId, newDir);
+            updateSdkSessionId(binding.safeclawSessionId, '');
           }
         }
       }

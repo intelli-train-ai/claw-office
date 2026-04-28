@@ -19,7 +19,7 @@ import fs from 'fs';
 import { getLocalDateString } from '@/lib/utils';
 
 // Set a temp data dir before importing db module
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codepilot-workspace-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'safeclaw-workspace-test-'));
 process.env.CLAUDE_GUI_DATA_DIR = tmpDir;
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -296,7 +296,7 @@ describe('Assistant Workspace', () => {
 
       assert.ok(prompt.includes('<assistant-workspace>'));
       assert.ok(prompt.includes('I am helpful'), 'soul.md should be in prompt');
-      // Daily memories are no longer in system prompt — accessed via codepilot_memory_search MCP
+      // Daily memories are no longer in system prompt — accessed via safeclaw_memory_search MCP
       assert.ok(!prompt.includes('Did coding'), 'daily memories should NOT be in prompt');
     });
 

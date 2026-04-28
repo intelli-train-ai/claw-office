@@ -11,7 +11,7 @@ export interface LogEntry {
 }
 
 const BUFFER_SIZE = 200;
-const GLOBAL_KEY = '__codepilot_runtime_log__' as const;
+const GLOBAL_KEY = '__safeclaw_runtime_log__' as const;
 
 interface RuntimeLogState {
   buffer: LogEntry[];

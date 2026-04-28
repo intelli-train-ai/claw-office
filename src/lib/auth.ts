@@ -11,7 +11,7 @@ function sha256(input: string): string {
  * Returns null if no token is configured (auth disabled).
  */
 export function getExpectedTokenHash(): string | null {
-  const envToken = process.env.CODEPILOT_ACCESS_TOKEN;
+  const envToken = process.env.SAFECLAW_ACCESS_TOKEN;
   if (envToken) {
     return sha256(envToken);
   }
@@ -26,7 +26,7 @@ export function isAuthEnabled(): boolean {
 
 /** Whether the token source is an environment variable (read-only in UI). */
 export function isTokenFromEnv(): boolean {
-  return !!process.env.CODEPILOT_ACCESS_TOKEN;
+  return !!process.env.SAFECLAW_ACCESS_TOKEN;
 }
 
 /**

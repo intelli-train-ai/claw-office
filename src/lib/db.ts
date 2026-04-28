@@ -7,8 +7,8 @@ import type { ChatSession, Message, SettingsMap, TaskItem, TaskStatus, ApiProvid
 import type { ChannelType, ChannelBinding } from './bridge/types';
 import { getLocalDateString, localDayStartAsUTC } from './utils';
 
-const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.codepilot');
-const DB_PATH = path.join(dataDir, 'codepilot.db');
+const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.safeclaw');
+const DB_PATH = path.join(dataDir, 'safeclaw.db');
 
 let db: Database.Database | null = null;
 
@@ -60,14 +60,14 @@ export function getDb(): Database.Database {
       const home = os.homedir();
       const oldPaths = [
         // Old Electron userData paths (app.getPath('userData'))
-        path.join(home, 'Library', 'Application Support', 'CodePilot', 'codepilot.db'),
-        path.join(home, 'Library', 'Application Support', 'codepilot', 'codepilot.db'),
-        path.join(home, 'Library', 'Application Support', 'Claude GUI', 'codepilot.db'),
+        path.join(home, 'Library', 'Application Support', 'SafeClaw', 'safeclaw.db'),
+        path.join(home, 'Library', 'Application Support', 'safeclaw', 'safeclaw.db'),
+        path.join(home, 'Library', 'Application Support', 'Claude GUI', 'safeclaw.db'),
         // Old dev-mode fallback
-        path.join(process.cwd(), 'data', 'codepilot.db'),
+        path.join(process.cwd(), 'data', 'safeclaw.db'),
         // Legacy name
-        path.join(home, 'Library', 'Application Support', 'CodePilot', 'claude-gui.db'),
-        path.join(home, 'Library', 'Application Support', 'codepilot', 'claude-gui.db'),
+        path.join(home, 'Library', 'Application Support', 'SafeClaw', 'claude-gui.db'),
+        path.join(home, 'Library', 'Application Support', 'safeclaw', 'claude-gui.db'),
       ];
       for (const oldPath of oldPaths) {
         if (fs.existsSync(oldPath)) {
@@ -245,7 +245,7 @@ function initDb(db: Database.Database): void {
       id TEXT PRIMARY KEY,
       channel_type TEXT NOT NULL,
       chat_id TEXT NOT NULL,
-      codepilot_session_id TEXT NOT NULL,
+      safeclaw_session_id TEXT NOT NULL,
       sdk_session_id TEXT NOT NULL DEFAULT '',
       working_directory TEXT NOT NULL DEFAULT '',
       model TEXT NOT NULL DEFAULT '',
@@ -253,10 +253,10 @@ function initDb(db: Database.Database): void {
       active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (codepilot_session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE,
+      FOREIGN KEY (safeclaw_session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE,
       UNIQUE(channel_type, chat_id)
     );
-    CREATE INDEX IF NOT EXISTS idx_channel_bindings_session ON channel_bindings(codepilot_session_id);
+    CREATE INDEX IF NOT EXISTS idx_channel_bindings_session ON channel_bindings(safeclaw_session_id);
     CREATE INDEX IF NOT EXISTS idx_channel_bindings_lookup ON channel_bindings(channel_type, chat_id);
 
     -- Bridge: polling offset watermarks per adapter
@@ -279,12 +279,12 @@ function initDb(db: Database.Database): void {
       id TEXT PRIMARY KEY,
       channel_type TEXT NOT NULL,
       chat_id TEXT NOT NULL,
-      codepilot_session_id TEXT NOT NULL,
+      safeclaw_session_id TEXT NOT NULL,
       platform_message_id TEXT NOT NULL,
       purpose TEXT NOT NULL DEFAULT 'response',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE INDEX IF NOT EXISTS idx_outbound_refs_session ON channel_outbound_refs(codepilot_session_id);
+    CREATE INDEX IF NOT EXISTS idx_outbound_refs_session ON channel_outbound_refs(safeclaw_session_id);
 
     -- Bridge: audit log
     CREATE TABLE IF NOT EXISTS channel_audit_logs (
@@ -682,7 +682,7 @@ function migrateDb(db: Database.Database): void {
       id TEXT PRIMARY KEY,
       channel_type TEXT NOT NULL,
       chat_id TEXT NOT NULL,
-      codepilot_session_id TEXT NOT NULL,
+      safeclaw_session_id TEXT NOT NULL,
       sdk_session_id TEXT NOT NULL DEFAULT '',
       working_directory TEXT NOT NULL DEFAULT '',
       model TEXT NOT NULL DEFAULT '',
@@ -690,10 +690,10 @@ function migrateDb(db: Database.Database): void {
       active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (codepilot_session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE,
+      FOREIGN KEY (safeclaw_session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE,
       UNIQUE(channel_type, chat_id)
     );
-    CREATE INDEX IF NOT EXISTS idx_channel_bindings_session ON channel_bindings(codepilot_session_id);
+    CREATE INDEX IF NOT EXISTS idx_channel_bindings_session ON channel_bindings(safeclaw_session_id);
     CREATE INDEX IF NOT EXISTS idx_channel_bindings_lookup ON channel_bindings(channel_type, chat_id);
 
     CREATE TABLE IF NOT EXISTS channel_offsets (
@@ -713,12 +713,12 @@ function migrateDb(db: Database.Database): void {
       id TEXT PRIMARY KEY,
       channel_type TEXT NOT NULL,
       chat_id TEXT NOT NULL,
-      codepilot_session_id TEXT NOT NULL,
+      safeclaw_session_id TEXT NOT NULL,
       platform_message_id TEXT NOT NULL,
       purpose TEXT NOT NULL DEFAULT 'response',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE INDEX IF NOT EXISTS idx_outbound_refs_session ON channel_outbound_refs(codepilot_session_id);
+    CREATE INDEX IF NOT EXISTS idx_outbound_refs_session ON channel_outbound_refs(safeclaw_session_id);
 
     CREATE TABLE IF NOT EXISTS channel_audit_logs (
       id TEXT PRIMARY KEY,
@@ -2044,7 +2044,7 @@ export function getChannelBinding(channelType: ChannelType, chatId: string): Cha
   const row = db.prepare(
     'SELECT * FROM channel_bindings WHERE channel_type = ? AND chat_id = ?'
   ).get(channelType, chatId) as {
-    id: string; channel_type: string; chat_id: string; codepilot_session_id: string;
+    id: string; channel_type: string; chat_id: string; safeclaw_session_id: string;
     sdk_session_id: string; working_directory: string; model: string; mode: string;
     active: number; created_at: string; updated_at: string;
   } | undefined;
@@ -2053,7 +2053,7 @@ export function getChannelBinding(channelType: ChannelType, chatId: string): Cha
     id: row.id,
     channelType: row.channel_type as ChannelType,
     chatId: row.chat_id,
-    codepilotSessionId: row.codepilot_session_id,
+    safeclawSessionId: row.safeclaw_session_id,
     sdkSessionId: row.sdk_session_id,
     workingDirectory: row.working_directory,
     model: row.model,
@@ -2067,7 +2067,7 @@ export function getChannelBinding(channelType: ChannelType, chatId: string): Cha
 export function upsertChannelBinding(params: {
   channelType: ChannelType;
   chatId: string;
-  codepilotSessionId: string;
+  safeclawSessionId: string;
   sdkSessionId?: string;
   workingDirectory?: string;
   model?: string;
@@ -2079,10 +2079,10 @@ export function upsertChannelBinding(params: {
 
   if (existing) {
     db.prepare(
-      `UPDATE channel_bindings SET codepilot_session_id = ?, sdk_session_id = ?, working_directory = ?, model = ?, mode = ?, updated_at = ?
+      `UPDATE channel_bindings SET safeclaw_session_id = ?, sdk_session_id = ?, working_directory = ?, model = ?, mode = ?, updated_at = ?
        WHERE channel_type = ? AND chat_id = ?`
     ).run(
-      params.codepilotSessionId,
+      params.safeclawSessionId,
       params.sdkSessionId ?? existing.sdkSessionId,
       params.workingDirectory ?? existing.workingDirectory,
       params.model ?? existing.model,
@@ -2094,13 +2094,13 @@ export function upsertChannelBinding(params: {
   } else {
     const id = crypto.randomBytes(16).toString('hex');
     db.prepare(
-      `INSERT INTO channel_bindings (id, channel_type, chat_id, codepilot_session_id, sdk_session_id, working_directory, model, mode, active, created_at, updated_at)
+      `INSERT INTO channel_bindings (id, channel_type, chat_id, safeclaw_session_id, sdk_session_id, working_directory, model, mode, active, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
     ).run(
       id,
       params.channelType,
       params.chatId,
-      params.codepilotSessionId,
+      params.safeclawSessionId,
       params.sdkSessionId || '',
       params.workingDirectory || '',
       params.model || '',
@@ -2116,7 +2116,7 @@ export function upsertChannelBinding(params: {
 export function listChannelBindings(channelType?: ChannelType): ChannelBinding[] {
   const db = getDb();
   let rows: Array<{
-    id: string; channel_type: string; chat_id: string; codepilot_session_id: string;
+    id: string; channel_type: string; chat_id: string; safeclaw_session_id: string;
     sdk_session_id: string; working_directory: string; model: string; mode: string;
     active: number; created_at: string; updated_at: string;
   }>;
@@ -2131,7 +2131,7 @@ export function listChannelBindings(channelType?: ChannelType): ChannelBinding[]
     id: row.id,
     channelType: row.channel_type as ChannelType,
     chatId: row.chat_id,
-    codepilotSessionId: row.codepilot_session_id,
+    safeclawSessionId: row.safeclaw_session_id,
     sdkSessionId: row.sdk_session_id,
     workingDirectory: row.working_directory,
     model: row.model,
@@ -2214,7 +2214,7 @@ export function cleanupExpiredDedup(): number {
 export function insertOutboundRef(params: {
   channelType: ChannelType;
   chatId: string;
-  codepilotSessionId: string;
+  safeclawSessionId: string;
   platformMessageId: string;
   purpose?: string;
 }): void {
@@ -2222,12 +2222,12 @@ export function insertOutboundRef(params: {
   const id = crypto.randomBytes(16).toString('hex');
   const now = new Date().toISOString().replace('T', ' ').split('.')[0];
   db.prepare(
-    `INSERT INTO channel_outbound_refs (id, channel_type, chat_id, codepilot_session_id, platform_message_id, purpose, created_at)
+    `INSERT INTO channel_outbound_refs (id, channel_type, chat_id, safeclaw_session_id, platform_message_id, purpose, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, params.channelType, params.chatId, params.codepilotSessionId, params.platformMessageId, params.purpose || 'response', now);
+  ).run(id, params.channelType, params.chatId, params.safeclawSessionId, params.platformMessageId, params.purpose || 'response', now);
 }
 
-export function getOutboundRefs(codepilotSessionId: string): Array<{
+export function getOutboundRefs(safeclawSessionId: string): Array<{
   id: string;
   channelType: ChannelType;
   chatId: string;
@@ -2237,9 +2237,9 @@ export function getOutboundRefs(codepilotSessionId: string): Array<{
 }> {
   const db = getDb();
   const rows = db.prepare(
-    'SELECT * FROM channel_outbound_refs WHERE codepilot_session_id = ? ORDER BY created_at DESC'
-  ).all(codepilotSessionId) as Array<{
-    id: string; channel_type: string; chat_id: string; codepilot_session_id: string;
+    'SELECT * FROM channel_outbound_refs WHERE safeclaw_session_id = ? ORDER BY created_at DESC'
+  ).all(safeclawSessionId) as Array<{
+    id: string; channel_type: string; chat_id: string; safeclaw_session_id: string;
     platform_message_id: string; purpose: string; created_at: string;
   }>;
   return rows.map(r => ({

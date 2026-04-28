@@ -47,7 +47,7 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
           if (cancelled) return;
           if (data.session.working_directory) {
             setWorkingDirectory(data.session.working_directory);
-            localStorage.setItem("codepilot:last-working-directory", data.session.working_directory);
+            localStorage.setItem("safeclaw:last-working-directory", data.session.working_directory);
             window.dispatchEvent(new Event('refresh-file-tree'));
           }
           setSessionId(id);
@@ -121,7 +121,7 @@ export default function ChatSessionPage({ params }: ChatSessionPageProps) {
     if (defaultPanelAppliedRef.current) return;
     defaultPanelAppliedRef.current = true;
 
-    const storageKey = `codepilot:panel-init:${id}`;
+    const storageKey = `safeclaw:panel-init:${id}`;
     if (typeof window !== 'undefined' && sessionStorage.getItem(storageKey)) return;
 
     if (typeof window !== 'undefined') {

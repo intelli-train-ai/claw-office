@@ -2,8 +2,8 @@ import { parseDBDate } from "@/lib/utils";
 import type { ChatSession } from "@/types";
 import type { TranslationKey } from "@/i18n";
 
-const COLLAPSED_PROJECTS_KEY = "codepilot:collapsed-projects";
-export const COLLAPSED_INITIALIZED_KEY = "codepilot:collapsed-initialized";
+const COLLAPSED_PROJECTS_KEY = "safeclaw:collapsed-projects";
+export const COLLAPSED_INITIALIZED_KEY = "safeclaw:collapsed-initialized";
 
 export function loadCollapsedProjects(): Set<string> {
   if (typeof window === 'undefined') return new Set();

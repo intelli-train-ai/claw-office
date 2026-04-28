@@ -61,7 +61,7 @@ export interface FilePreview {
 // Skill / Command Types
 // ==========================================
 
-export type SkillKind = 'agent_skill' | 'slash_command' | 'sdk_command' | 'codepilot_command';
+export type SkillKind = 'agent_skill' | 'slash_command' | 'sdk_command' | 'safeclaw_command';
 
 // ==========================================
 // Popover / Command Input Types
@@ -147,7 +147,7 @@ export interface MediaBlock {
   type: 'image' | 'audio' | 'video';
   data?: string;        // base64 (transit only, cleared after save to disk)
   mimeType: string;     // e.g. 'image/png', 'video/mp4'
-  localPath?: string;   // local file path (after save to .codepilot-media/)
+  localPath?: string;   // local file path (after save to .safeclaw-media/)
   mediaId?: string;     // media_generations.id (after DB save)
 }
 

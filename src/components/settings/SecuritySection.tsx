@@ -82,7 +82,7 @@ export function SecuritySection() {
 
   const handleLogout = useCallback(() => {
     clearStoredAuthToken();
-    window.dispatchEvent(new CustomEvent("codepilot:auth-required"));
+    window.dispatchEvent(new CustomEvent("safeclaw:auth-required"));
   }, []);
 
   const isFromEnv = tokenSource === "env";

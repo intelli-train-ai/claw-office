@@ -31,11 +31,11 @@
 ## 下载地址
 
 ### macOS
-- [Apple Silicon (M1/M2/M3/M4)](https://github.com/intelli-train-ai/claw-office/releases/download/v0.47.0/CodePilot-0.47.0-arm64.dmg)
-- [Intel](https://github.com/intelli-train-ai/claw-office/releases/download/v0.47.0/CodePilot-0.47.0-x64.dmg)
+- [Apple Silicon (M1/M2/M3/M4)](https://github.com/intelli-train-ai/claw-office/releases/download/v0.47.0/SafeClaw-0.47.0-arm64.dmg)
+- [Intel](https://github.com/intelli-train-ai/claw-office/releases/download/v0.47.0/SafeClaw-0.47.0-x64.dmg)
 
 ### Windows
-- [Windows 安装包](https://github.com/intelli-train-ai/claw-office/releases/download/v0.47.0/CodePilot.Setup.0.47.0.exe)
+- [Windows 安装包](https://github.com/intelli-train-ai/claw-office/releases/download/v0.47.0/SafeClaw.Setup.0.47.0.exe)
 
 ## 安装说明
 

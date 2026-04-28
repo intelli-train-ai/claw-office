@@ -155,9 +155,9 @@ jobs:
 
       - name: Verify code signature
         run: |
-          APPS=$(find release -name "CodePilot.app" -maxdepth 3)
+          APPS=$(find release -name "SafeClaw.app" -maxdepth 3)
           if [ -z "$APPS" ]; then
-            echo "::error::No CodePilot.app found after build"
+            echo "::error::No SafeClaw.app found after build"
             exit 1
           fi
 
@@ -427,16 +427,16 @@ jobs:
           else
             echo "RELEASE_NOTES.md not found, generating default notes"
             cat > release-notes.md << NOTES_EOF
-          ## CodePilot v${VERSION}
+          ## SafeClaw v${VERSION}
 
           ## 下载地址
 
           ### macOS
-          - [Apple Silicon (M1/M2/M3/M4)](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/CodePilot-${VERSION}-arm64.dmg)
-          - [Intel](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/CodePilot-${VERSION}-x64.dmg)
+          - [Apple Silicon (M1/M2/M3/M4)](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/SafeClaw-${VERSION}-arm64.dmg)
+          - [Intel](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/SafeClaw-${VERSION}-x64.dmg)
 
           ### Windows
-          - [Windows 安装包](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/CodePilot.Setup.${VERSION}.exe)
+          - [Windows 安装包](https://github.com/intelli-train-ai/claw-office/releases/download/v${VERSION}/SafeClaw.Setup.${VERSION}.exe)
 
           ## 安装说明
 
@@ -469,7 +469,7 @@ jobs:
           FILES+=("artifacts/SHA256SUMS.txt")
 
           gh release create "${GITHUB_REF_NAME}" \
-            --title "CodePilot v${VERSION}" \
+            --title "SafeClaw v${VERSION}" \
             --notes-file release-notes.md \
             --latest \
             "${FILES[@]}"

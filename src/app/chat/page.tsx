@@ -64,16 +64,16 @@ export default function NewChatPage() {
   const [currentModel, setCurrentModel] = useState(() => {
     if (typeof window === 'undefined') return '';
     // One-time migration: clear stale model/provider from pre-0.38 installs
-    if (!localStorage.getItem('codepilot:migration-038')) {
-      localStorage.removeItem('codepilot:last-model');
-      localStorage.removeItem('codepilot:last-provider-id');
-      localStorage.setItem('codepilot:migration-038', '1');
+    if (!localStorage.getItem('safeclaw:migration-038')) {
+      localStorage.removeItem('safeclaw:last-model');
+      localStorage.removeItem('safeclaw:last-provider-id');
+      localStorage.setItem('safeclaw:migration-038', '1');
     }
     return '';
   });
   const [currentProviderId, setCurrentProviderId] = useState(() => {
     if (typeof window === 'undefined') return '';
-    if (!localStorage.getItem('codepilot:migration-038')) {
+    if (!localStorage.getItem('safeclaw:migration-038')) {
       return '';
     }
     return '';
@@ -119,8 +119,8 @@ export default function NewChatPage() {
     Promise.all([modelsP, globalP]).then(([modelsData, globalData]) => {
       if (cancelled || !modelsData?.groups || modelsData.groups.length === 0) {
         // No provider data — fall back to localStorage best-effort
-        const savedModel = localStorage.getItem('codepilot:last-model') || 'sonnet';
-        const savedProvider = localStorage.getItem('codepilot:last-provider-id') || '';
+        const savedModel = localStorage.getItem('safeclaw:last-model') || 'sonnet';
+        const savedProvider = localStorage.getItem('safeclaw:last-provider-id') || '';
         setCurrentModel(savedModel);
         setCurrentProviderId(savedProvider);
         setModelReady(true);
@@ -155,8 +155,8 @@ export default function NewChatPage() {
       }
 
       // No global default — use localStorage, validate against provider's list
-      const savedProvider = localStorage.getItem('codepilot:last-provider-id') || '';
-      const savedModel = localStorage.getItem('codepilot:last-model') || '';
+      const savedProvider = localStorage.getItem('safeclaw:last-provider-id') || '';
+      const savedModel = localStorage.getItem('safeclaw:last-model') || '';
       const validProvider = groups.find(g => g.provider_id === savedProvider);
       const resolvedGroup = validProvider || groups[0];
       const resolvedPid = resolvedGroup?.provider_id || '';
@@ -180,8 +180,8 @@ export default function NewChatPage() {
       setModelReady(true);
     }).catch(() => {
       // Fetch failed — fall back to localStorage best-effort
-      const savedModel = localStorage.getItem('codepilot:last-model') || 'sonnet';
-      const savedProvider = localStorage.getItem('codepilot:last-provider-id') || '';
+      const savedModel = localStorage.getItem('safeclaw:last-model') || 'sonnet';
+      const savedProvider = localStorage.getItem('safeclaw:last-provider-id') || '';
       setCurrentModel(savedModel);
       setCurrentProviderId(savedProvider);
       setModelReady(true);
@@ -212,19 +212,19 @@ export default function NewChatPage() {
         if (cancelled || !data?.defaultProject) return;
         if (await validateDir(data.defaultProject) && !cancelled) {
           setWorkingDir(data.defaultProject);
-          localStorage.setItem('codepilot:last-working-directory', data.defaultProject);
+          localStorage.setItem('safeclaw:last-working-directory', data.defaultProject);
         }
       } catch { /* ignore */ }
     };
 
     const init = async () => {
-      const saved = localStorage.getItem('codepilot:last-working-directory');
+      const saved = localStorage.getItem('safeclaw:last-working-directory');
       if (saved) {
         if (await validateDir(saved) && !cancelled) {
           setWorkingDir(saved);
         } else if (!cancelled) {
           // Stale — clear and try setup default
-          localStorage.removeItem('codepilot:last-working-directory');
+          localStorage.removeItem('safeclaw:last-working-directory');
           await tryFallbackToDefault();
         }
       } else {
@@ -285,7 +285,7 @@ export default function NewChatPage() {
         })
         .catch(() => {});
       // Sync provider/model, applying global default model for new conversations.
-      const savedProviderId = localStorage.getItem('codepilot:last-provider-id');
+      const savedProviderId = localStorage.getItem('safeclaw:last-provider-id');
 
       // Fetch models + global default in parallel
       const modelsP = authFetch('/api/providers/models').then(r => r.ok ? r.json() : null);
@@ -307,7 +307,7 @@ export default function NewChatPage() {
             setCurrentProviderId(savedProviderId);
           } else {
             setCurrentProviderId('');
-            localStorage.removeItem('codepilot:last-provider-id');
+            localStorage.removeItem('safeclaw:last-provider-id');
           }
         }
 
@@ -342,7 +342,7 @@ export default function NewChatPage() {
         const resolvedGroup = groups.find(g => g.provider_id === resolvedPid) || groups[0];
         setCurrentProviderId(resolvedPid);
         if (resolvedGroup?.models?.length > 0) {
-          const savedModel = localStorage.getItem('codepilot:last-model');
+          const savedModel = localStorage.getItem('safeclaw:last-model');
           const validModel = savedModel && resolvedGroup.models.some(
             (m: { value: string }) => m.value === savedModel
           );
@@ -351,14 +351,14 @@ export default function NewChatPage() {
           } else {
             const fallback = resolvedGroup.models[0].value;
             setCurrentModel(fallback);
-            localStorage.setItem('codepilot:last-model', fallback);
+            localStorage.setItem('safeclaw:last-model', fallback);
           }
         }
         setModelReady(true);
       }).catch(() => {
         // On fetch failure, still apply localStorage values as-is (best effort)
         if (savedProviderId !== null) setCurrentProviderId(savedProviderId);
-        const savedModel = localStorage.getItem('codepilot:last-model');
+        const savedModel = localStorage.getItem('safeclaw:last-model');
         if (savedModel) setCurrentModel(savedModel);
         setModelReady(true);
       });
@@ -374,7 +374,7 @@ export default function NewChatPage() {
       const path = await openNativePicker({ title: t('folderPicker.title') });
       if (path) {
         setWorkingDir(path);
-        localStorage.setItem('codepilot:last-working-directory', path);
+        localStorage.setItem('safeclaw:last-working-directory', path);
       }
     } else {
       setFolderPickerOpen(true);
@@ -383,13 +383,13 @@ export default function NewChatPage() {
 
   const handleFolderPickerSelect = useCallback((path: string) => {
     setWorkingDir(path);
-    localStorage.setItem('codepilot:last-working-directory', path);
+    localStorage.setItem('safeclaw:last-working-directory', path);
     setFolderPickerOpen(false);
   }, []);
 
   const handleSelectProject = useCallback((path: string) => {
     setWorkingDir(path);
-    localStorage.setItem('codepilot:last-working-directory', path);
+    localStorage.setItem('safeclaw:last-working-directory', path);
   }, []);
 
   const stopStreaming = useCallback(() => {
@@ -653,7 +653,7 @@ export default function NewChatPage() {
                         'CLI_NOT_FOUND', 'UNSUPPORTED_FEATURE',
                       ]);
                       if (diagCategories.has(parsed.category)) {
-                        errorDisplay += '\n\n💡 [Run Provider Diagnostics](/settings#providers) to troubleshoot, or check the [Provider Setup Guide](https://www.codepilot.sh/docs/providers).';
+                        errorDisplay += '\n\n💡 [Run Provider Diagnostics](/settings#providers) to troubleshoot, or check the [Provider Setup Guide](https://www.safeclaw.sh/docs/providers).';
                       }
                     } else {
                       errorDisplay = event.data;
@@ -818,8 +818,8 @@ export default function NewChatPage() {
         onProviderModelChange={(pid, model) => {
           setCurrentProviderId(pid);
           setCurrentModel(model);
-          localStorage.setItem('codepilot:last-provider-id', pid);
-          localStorage.setItem('codepilot:last-model', model);
+          localStorage.setItem('safeclaw:last-provider-id', pid);
+          localStorage.setItem('safeclaw:last-model', model);
         }}
         workingDirectory={workingDir}
         effort={selectedEffort}

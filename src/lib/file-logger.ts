@@ -5,7 +5,7 @@
  *
  * Log files are stored in:
  *   - Production: app.getPath('userData')/logs/ (passed via CLAUDE_GUI_LOG_DIR)
- *   - Dev: ~/.codepilot/logs/
+ *   - Dev: ~/.safeclaw/logs/
  *
  * Uses separate files per prefix to avoid cross-process write conflicts.
  * Rotation: max 5 files × 10MB each per prefix.
@@ -25,7 +25,7 @@ interface FileLoggerState {
   initialized: boolean;
 }
 
-const GLOBAL_KEY = '__codepilot_file_logger__' as const;
+const GLOBAL_KEY = '__safeclaw_file_logger__' as const;
 
 const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const DEFAULT_MAX_FILES = 5;
@@ -47,7 +47,7 @@ function scrubSensitive(msg: string): string {
 
 function resolveLogDir(): string {
   return process.env.CLAUDE_GUI_LOG_DIR
-    || path.join(process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.codepilot'), 'logs');
+    || path.join(process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.safeclaw'), 'logs');
 }
 
 function getState(): FileLoggerState {

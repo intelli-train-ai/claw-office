@@ -100,8 +100,8 @@ export async function resolveSessionModel(
     }
   } catch { /* best effort */ }
 
-  const lsModel = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') : null;
-  const lsProvider = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') : null;
+  const lsModel = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-model') : null;
+  const lsProvider = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-provider-id') : null;
 
   return resolveSessionModelPure(sessionModel, sessionProviderId, {
     globalModel,

@@ -1,11 +1,11 @@
 /**
- * codepilot-notify MCP — in-process MCP server for notifications and scheduled tasks.
+ * safeclaw-notify MCP — in-process MCP server for notifications and scheduled tasks.
  *
  * Provides 4 tools:
- * - codepilot_notify: Send an immediate notification
- * - codepilot_schedule_task: Create a scheduled task
- * - codepilot_list_tasks: List scheduled tasks
- * - codepilot_cancel_task: Cancel a scheduled task
+ * - safeclaw_notify: Send an immediate notification
+ * - safeclaw_schedule_task: Create a scheduled task
+ * - safeclaw_list_tasks: List scheduled tasks
+ * - safeclaw_cancel_task: Cancel a scheduled task
  *
  * Globally registered: available in all contexts (no keyword gating).
  */
@@ -23,28 +23,28 @@ export const NOTIFICATION_MCP_SYSTEM_PROMPT = `## 通知与定时任务
 
 你可以发送通知和创建定时任务：
 
-- codepilot_notify: 立即发送通知给用户（支持系统通知和应用内提示）
-- codepilot_schedule_task: 创建定时任务（支持 cron 表达式、固定间隔、一次性定时）
-- codepilot_list_tasks: 查看已有的定时任务
-- codepilot_cancel_task: 取消定时任务
-- codepilot_hatch_buddy: 孵化或命名用户的助理伙伴
+- safeclaw_notify: 立即发送通知给用户（支持系统通知和应用内提示）
+- safeclaw_schedule_task: 创建定时任务（支持 cron 表达式、固定间隔、一次性定时）
+- safeclaw_list_tasks: 查看已有的定时任务
+- safeclaw_cancel_task: 取消定时任务
+- safeclaw_hatch_buddy: 孵化或命名用户的助理伙伴
 
 使用场景：
-- 用户说"提醒我..."或"X 分钟后..." → 用 codepilot_schedule_task（schedule_type: "once"）
-- 用户说"每天/每小时..." → 用 codepilot_schedule_task（schedule_type: "cron" 或 "interval"）
-- 任务完成需要告知用户 → 用 codepilot_notify
-- 用户问"有哪些定时任务" → 用 codepilot_list_tasks
-- 用户说"孵化"、"领养"、"hatch" → 用 codepilot_hatch_buddy
-- 用户给伙伴起名字 → 用 codepilot_hatch_buddy(buddyName: 名字)`;
+- 用户说"提醒我..."或"X 分钟后..." → 用 safeclaw_schedule_task（schedule_type: "once"）
+- 用户说"每天/每小时..." → 用 safeclaw_schedule_task（schedule_type: "cron" 或 "interval"）
+- 任务完成需要告知用户 → 用 safeclaw_notify
+- 用户问"有哪些定时任务" → 用 safeclaw_list_tasks
+- 用户说"孵化"、"领养"、"hatch" → 用 safeclaw_hatch_buddy
+- 用户给伙伴起名字 → 用 safeclaw_hatch_buddy(buddyName: 名字)`;
 
 export function createNotificationMcpServer() {
   return createSdkMcpServer({
-    name: 'codepilot-notify',
+    name: 'safeclaw-notify',
     version: '1.0.0',
     tools: [
       // Tool 1: Immediate notification
       tool(
-        'codepilot_notify',
+        'safeclaw_notify',
         'Send an immediate notification to the user. Supports system notification, in-app toast, and Telegram (for urgent). Use when a task completes, something needs attention, or user asked to be notified.',
         {
           title: z.string().describe('Notification title'),
@@ -65,7 +65,7 @@ export function createNotificationMcpServer() {
 
       // Tool 2: Schedule a task
       tool(
-        'codepilot_schedule_task',
+        'safeclaw_schedule_task',
         'Create a scheduled task. Supports cron expressions (e.g. "0 9 * * *" for daily 9am), fixed intervals (e.g. "30m", "2h"), or one-time timestamps (ISO format). The task prompt will be executed by AI when triggered.',
         {
           name: z.string().describe('Task name (e.g. "Drink water reminder")'),
@@ -138,7 +138,7 @@ export function createNotificationMcpServer() {
 
       // Tool 3: List tasks
       tool(
-        'codepilot_list_tasks',
+        'safeclaw_list_tasks',
         'List all scheduled tasks with their IDs, schedules, status, and next run time.',
         {
           status: z.enum(['active', 'paused', 'completed', 'disabled', 'all']).optional().default('all')
@@ -188,7 +188,7 @@ export function createNotificationMcpServer() {
 
       // Tool 4: Cancel task
       tool(
-        'codepilot_cancel_task',
+        'safeclaw_cancel_task',
         'Cancel (delete) a scheduled task by its ID.',
         {
           task_id: z.string().describe('The task ID to cancel'),
@@ -218,7 +218,7 @@ export function createNotificationMcpServer() {
 
       // Tool 5: Hatch / name buddy
       tool(
-        'codepilot_hatch_buddy',
+        'safeclaw_hatch_buddy',
         'Hatch a new buddy companion for the user, or update the buddy name. Call this when the user wants to adopt/hatch their buddy or give it a name.',
         {
           buddyName: z.string().optional().describe('Name for the buddy (user-given)'),

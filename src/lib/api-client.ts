@@ -3,7 +3,7 @@
  * from localStorage and handles 401 responses.
  */
 
-const AUTH_TOKEN_KEY = 'codepilot:auth_token';
+const AUTH_TOKEN_KEY = 'safeclaw:auth_token';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -13,7 +13,7 @@ function getToken(): string | null {
 /**
  * Authenticated fetch — same API as window.fetch but auto-attaches
  * Authorization: Bearer header when a token is stored.
- * On 401 response, dispatches 'codepilot:auth-required' event to trigger re-auth.
+ * On 401 response, dispatches 'safeclaw:auth-required' event to trigger re-auth.
  */
 export async function authFetch(
   input: RequestInfo | URL,
@@ -29,7 +29,7 @@ export async function authFetch(
   const response = await fetch(input, { ...init, headers });
 
   if (response.status === 401) {
-    window.dispatchEvent(new CustomEvent('codepilot:auth-required'));
+    window.dispatchEvent(new CustomEvent('safeclaw:auth-required'));
   }
 
   return response;

@@ -475,7 +475,7 @@ export function loadWorkspaceFiles(dir: string): AssistantWorkspaceFilesV2 {
   }
 
   // Daily memories and root docs are now accessed via MCP tools
-  // (codepilot_memory_search / codepilot_memory_get), not loaded into system prompt.
+  // (safeclaw_memory_search / safeclaw_memory_get), not loaded into system prompt.
 
   // Load HEARTBEAT.md
   const heartbeatPath = path.join(dir, 'HEARTBEAT.md');
@@ -504,7 +504,7 @@ export function assembleWorkspacePrompt(files: AssistantWorkspaceFilesV2, retrie
 
   // Identity layer only (claude + soul + user) — never drop claude
   // Memory, daily memories, root docs, and retrieval results are now
-  // accessed via codepilot_memory_search / codepilot_memory_get MCP tools
+  // accessed via safeclaw_memory_search / safeclaw_memory_get MCP tools
   // instead of being stuffed into the system prompt.
   if (files.claude) {
     sections.push({ tag: 'claude', content: files.claude, priority: 1, maxSize: PER_FILE_LIMIT });

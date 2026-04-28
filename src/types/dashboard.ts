@@ -1,6 +1,6 @@
 /**
  * Dashboard — Persisted generative UI widgets as project-level dashboard cards.
- * Storage: {projectDir}/.codepilot/dashboard/dashboard.json
+ * Storage: {projectDir}/.safeclaw/dashboard/dashboard.json
  */
 
 export type DashboardDataSource =

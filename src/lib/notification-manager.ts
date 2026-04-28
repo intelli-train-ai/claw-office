@@ -20,7 +20,7 @@ interface QueuedNotification {
   timestamp: number;
 }
 
-const QUEUE_KEY = '__codepilot_notification_queue__';
+const QUEUE_KEY = '__safeclaw_notification_queue__';
 const MAX_QUEUE_SIZE = 50;
 
 function getQueue(): QueuedNotification[] {

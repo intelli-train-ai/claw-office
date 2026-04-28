@@ -38,7 +38,7 @@ function UpdateCard() {
     <SettingsCard>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-medium">{t('settings.codepilot')}</h2>
+          <h2 className="text-sm font-medium">{t('settings.safeclaw')}</h2>
           <p className="text-xs text-muted-foreground">{t('settings.version', { version: currentVersion })}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -381,7 +381,7 @@ const sentrySubscribe = (cb: () => void) => {
   return () => window.removeEventListener('storage', cb);
 };
 const getSentryEnabled = () => {
-  try { return localStorage.getItem('codepilot:sentry-disabled') !== 'true'; } catch { return true; }
+  try { return localStorage.getItem('safeclaw:sentry-disabled') !== 'true'; } catch { return true; }
 };
 const getSentryEnabledServer = () => true; // SSR default
 
@@ -399,7 +399,7 @@ function SentryToggle({ locale, t }: { locale: string; t: (key: TranslationKey) 
         onCheckedChange={(checked) => {
           const disabled = !checked;
           try {
-            localStorage.setItem('codepilot:sentry-disabled', disabled ? 'true' : 'false');
+            localStorage.setItem('safeclaw:sentry-disabled', disabled ? 'true' : 'false');
             window.dispatchEvent(new StorageEvent('storage'));
           } catch { /* ignore */ }
           fetch('/api/settings/sentry', {

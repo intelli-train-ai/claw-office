@@ -371,7 +371,7 @@ export function PresetConnectDialog({
                   {isZh ? '获取 API Key' : 'Get API Key'}
                 </a>
               )}
-              <a href={isZh ? 'https://www.codepilot.sh/zh/docs/providers' : 'https://www.codepilot.sh/docs/providers'} target="_blank" rel="noopener noreferrer"
+              <a href={isZh ? 'https://www.safeclaw.sh/zh/docs/providers' : 'https://www.safeclaw.sh/docs/providers'} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline">
                 <ArrowSquareOut size={12} />
                 {isZh ? '配置指南' : 'Setup Guide'}

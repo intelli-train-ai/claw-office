@@ -204,8 +204,8 @@ export function AssistantWorkspaceSection() {
         }
 
         try {
-          const model = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-model') || '' : '';
-          const provider_id = typeof window !== 'undefined' ? localStorage.getItem('codepilot:last-provider-id') || '' : '';
+          const model = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-model') || '' : '';
+          const provider_id = typeof window !== 'undefined' ? localStorage.getItem('safeclaw:last-provider-id') || '' : '';
           const sessionMode = navigateMode === 'reuse' ? 'checkin' : 'onboarding';
           const sessionRes = await authFetch("/api/workspace/session", {
             method: "POST",

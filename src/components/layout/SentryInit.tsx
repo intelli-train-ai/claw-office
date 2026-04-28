@@ -14,7 +14,7 @@ export function SentryInit() {
 
     // Check user opt-out
     try {
-      if (localStorage.getItem("codepilot:sentry-disabled") === "true") return;
+      if (localStorage.getItem("safeclaw:sentry-disabled") === "true") return;
     } catch {
       /* ignore */
     }
@@ -25,7 +25,7 @@ export function SentryInit() {
       Sentry.init({
         dsn,
         environment: process.env.NODE_ENV,
-        release: `codepilot@${process.env.NEXT_PUBLIC_APP_VERSION}`,
+        release: `safeclaw@${process.env.NEXT_PUBLIC_APP_VERSION}`,
         tracesSampleRate: 0,
         beforeBreadcrumb(breadcrumb) {
           if (breadcrumb.category === "ui.input") return null;
@@ -44,7 +44,7 @@ export function SentryInit() {
         beforeSend(event) {
           // Respect opt-out
           try {
-            if (localStorage.getItem("codepilot:sentry-disabled") === "true") return null;
+            if (localStorage.getItem("safeclaw:sentry-disabled") === "true") return null;
           } catch {
             /* ignore */
           }

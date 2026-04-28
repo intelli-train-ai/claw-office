@@ -6,15 +6,15 @@
 export const siteConfig = {
   name: 'SafeClaw',
   description: 'A multi-model AI agent desktop client — connect any AI provider, extend with MCP & skills, control from your phone.',
-  url: 'https://www.codepilot.sh',
+  url: 'https://www.safeclaw.sh',
 
   // Canonical repository
   repo: {
     owner: 'intelli-train-ai',
     name: 'SafeClaw',
-    url: 'https://github.com/intelli-train-ai/CodePilot',
-    releases: 'https://github.com/intelli-train-ai/CodePilot/releases',
-    issues: 'https://github.com/intelli-train-ai/CodePilot/issues',
+    url: 'https://github.com/intelli-train-ai/claw-office',
+    releases: 'https://github.com/intelli-train-ai/claw-office/releases',
+    issues: 'https://github.com/intelli-train-ai/claw-office/issues',
   },
 
   // External links

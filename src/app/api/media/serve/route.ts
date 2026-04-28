@@ -37,8 +37,8 @@ const VIDEO_AUDIO_TYPES = new Set(
 );
 
 /**
- * Serve media files from .codepilot-media/ directory.
- * Only allows reading from paths that contain '.codepilot-media' to prevent directory traversal.
+ * Serve media files from .safeclaw-media/ directory.
+ * Only allows reading from paths that contain '.safeclaw-media' to prevent directory traversal.
  * Supports HTTP Range requests for video/audio seeking.
  */
 export async function GET(request: NextRequest) {
@@ -54,12 +54,12 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Security: only allow files within the canonical .codepilot-media directory.
+  // Security: only allow files within the canonical .safeclaw-media directory.
   // Use path.resolve to canonicalize, then verify it starts with the real media dir.
   const resolved = path.resolve(filePath);
   const os = await import('os');
-  const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.codepilot');
-  const canonicalMediaDir = path.resolve(dataDir, '.codepilot-media');
+  const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.safeclaw');
+  const canonicalMediaDir = path.resolve(dataDir, '.safeclaw-media');
   if (!resolved.startsWith(canonicalMediaDir + path.sep) && resolved !== canonicalMediaDir) {
     return new Response(JSON.stringify({ error: 'Access denied' }), {
       status: 403,

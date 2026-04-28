@@ -6,7 +6,7 @@ import { join } from 'path';
 // Check opt-out before init — reads a marker file that the renderer writes
 const sentryOptOutPath = join(
   process.env.HOME || process.env.USERPROFILE || '',
-  '.codepilot',
+  '.safeclaw',
   'sentry-disabled',
 );
 const sentryDisabled = existsSync(sentryOptOutPath) &&
@@ -591,7 +591,7 @@ function startServer(port: number): Electron.UtilityProcess {
     ...(!userShellEnv.HTTP_PROXY && !userShellEnv.HTTPS_PROXY ? resolvedProxyEnv : {}),
     PORT: String(port),
     HOSTNAME: '127.0.0.1',
-    CLAUDE_GUI_DATA_DIR: path.join(home, '.codepilot'),
+    CLAUDE_GUI_DATA_DIR: path.join(home, '.safeclaw'),
     CLAUDE_GUI_LOG_DIR: path.join(app.getPath('userData'), 'logs'),
     HOME: home,
     USERPROFILE: home,
@@ -604,7 +604,7 @@ function startServer(port: number): Electron.UtilityProcess {
     env,
     cwd: standaloneDir,
     stdio: 'pipe',
-    serviceName: 'codepilot-server',
+    serviceName: 'safeclaw-server',
   });
 
   child.stdout?.on('data', (data: Buffer) => {

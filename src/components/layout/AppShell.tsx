@@ -25,8 +25,8 @@ import { Toaster } from '@/components/ui/toast';
 import { useNotificationPoll } from '@/hooks/useNotificationPoll';
 import { authFetch } from '@/lib/api-client';
 
-const SPLIT_SESSIONS_KEY = "codepilot:split-sessions";
-const SPLIT_ACTIVE_COLUMN_KEY = "codepilot:split-active-column";
+const SPLIT_SESSIONS_KEY = "safeclaw:split-sessions";
+const SPLIT_ACTIVE_COLUMN_KEY = "safeclaw:split-active-column";
 
 function loadSplitSessions(): SplitSession[] {
   if (typeof window === "undefined") return [];
@@ -126,8 +126,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setAuthVerified(false);
       setAuthRequired(true);
     };
-    window.addEventListener('codepilot:auth-required', handler);
-    return () => window.removeEventListener('codepilot:auth-required', handler);
+    window.addEventListener('safeclaw:auth-required', handler);
+    return () => window.removeEventListener('safeclaw:auth-required', handler);
   }, []);
 
   const handleAuthenticated = useCallback((token: string) => {
@@ -178,7 +178,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Restore persisted width after hydration
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const saved = localStorage.getItem("codepilot_chatlist_width");
+    const saved = localStorage.getItem("safeclaw_chatlist_width");
     if (saved) setChatListWidth(parseInt(saved));
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -188,7 +188,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
   const handleChatListResizeEnd = useCallback(() => {
     setChatListWidth((w) => {
-      localStorage.setItem("codepilot_chatlist_width", String(w));
+      localStorage.setItem("safeclaw_chatlist_width", String(w));
       return w;
     });
   }, []);

@@ -59,7 +59,7 @@ describe('isPathSafe', () => {
 });
 
 describe('File API path traversal scenarios', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codepilot-test-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'safeclaw-test-'));
   const projectDir = path.join(tmpDir, 'myproject');
   const secretFile = path.join(tmpDir, 'secret.txt');
 

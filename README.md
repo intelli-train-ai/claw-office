@@ -3,8 +3,8 @@
 
 **A unified desktop client for Claude Code** -- multi-provider support, MCP extensions, custom skills, cross-platform bridge, and an assistant workspace that understands your projects.
 
-[![GitHub release](https://img.shields.io/github/v/release/intelli-train-ai/CodePilot)](https://github.com/intelli-train-ai/CodePilot/releases)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](https://github.com/intelli-train-ai/CodePilot/releases)
+[![GitHub release](https://img.shields.io/github/v/release/intelli-train-ai/claw-office)](https://github.com/intelli-train-ai/claw-office/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](https://github.com/intelli-train-ai/claw-office/releases)
 [![License](https://img.shields.io/badge/license-BSL--1.1-orange)](LICENSE)
 
 [中文文档](./README_CN.md) | [日本語](./README_JA.md)
@@ -37,7 +37,7 @@
 
 1. Install the Claude Code CLI: `npm install -g @anthropic-ai/claude-code`
 2. Authenticate: `claude login`
-3. Download the installer for your platform from the [Releases](https://github.com/intelli-train-ai/CodePilot/releases) page
+3. Download the installer for your platform from the [Releases](https://github.com/intelli-train-ai/claw-office/releases) page
 4. Launch SafeClaw
 
 ### Path B: Build from source (developers)
@@ -49,7 +49,7 @@
 | npm | 9+ (ships with Node 18) |
 
 ```bash
-git clone https://github.com/intelli-train-ai/CodePilot.git
+git clone https://github.com/intelli-train-ai/claw-office.git
 cd SafeClaw
 npm install
 npm run dev              # browser mode at http://localhost:3000
@@ -116,7 +116,7 @@ npm run electron:dev     # full desktop app
 | Windows | .exe (NSIS) | x64 + arm64 |
 | Linux | .AppImage / .deb / .rpm | x64 + arm64 |
 
-Download from the [Releases](https://github.com/intelli-train-ai/CodePilot/releases) page.
+Download from the [Releases](https://github.com/intelli-train-ai/claw-office/releases) page.
 
 macOS builds are code-signed with a Developer ID certificate but not notarized, so Gatekeeper may still prompt on first launch. Windows and Linux builds are unsigned.
 
@@ -145,20 +145,20 @@ xattr -cr /Applications/SafeClaw.app
 
 ## Documentation
 
-📖 **Full documentation:** [English](https://www.codepilot.sh/docs) | [中文](https://www.codepilot.sh/zh/docs)
+📖 **Full documentation:** [English](https://www.safeclaw.sh/docs) | [中文](https://www.safeclaw.sh/zh/docs)
 
 **Getting started:**
 - [Quick Start](#quick-start) -- Download or build from source
 - [First Launch](#first-launch) -- Authentication, providers, workspace setup
-- [Installation Guide](https://www.codepilot.sh/docs/installation) -- Detailed setup instructions
+- [Installation Guide](https://www.safeclaw.sh/docs/installation) -- Detailed setup instructions
 
 **User guides:**
-- [Providers](https://www.codepilot.sh/docs/providers) -- Configuring Anthropic, OpenRouter, Bedrock, Vertex, and custom endpoints
-- [MCP Servers](https://www.codepilot.sh/docs/mcp) -- Adding and managing Model Context Protocol servers
-- [Skills](https://www.codepilot.sh/docs/skills) -- Custom skills, project skills, and the skills.sh marketplace
-- [Bridge](https://www.codepilot.sh/docs/bridge) -- Remote control via Telegram, Feishu, Discord, QQ
-- [Assistant Workspace](https://www.codepilot.sh/docs/assistant-workspace) -- Persona files, onboarding, memory, daily check-ins
-- [FAQ](https://www.codepilot.sh/docs/faq) -- Common issues and solutions
+- [Providers](https://www.safeclaw.sh/docs/providers) -- Configuring Anthropic, OpenRouter, Bedrock, Vertex, and custom endpoints
+- [MCP Servers](https://www.safeclaw.sh/docs/mcp) -- Adding and managing Model Context Protocol servers
+- [Skills](https://www.safeclaw.sh/docs/skills) -- Custom skills, project skills, and the skills.sh marketplace
+- [Bridge](https://www.safeclaw.sh/docs/bridge) -- Remote control via Telegram, Feishu, Discord, QQ
+- [Assistant Workspace](https://www.safeclaw.sh/docs/assistant-workspace) -- Persona files, onboarding, memory, daily check-ins
+- [FAQ](https://www.safeclaw.sh/docs/faq) -- Common issues and solutions
 
 **Developer docs:**
 - [ARCHITECTURE.md](./ARCHITECTURE.md) -- Architecture, tech stack, directory structure, data flow
@@ -211,8 +211,8 @@ Each Bridge channel (Telegram, Feishu, Discord, QQ) requires its own bot token o
 
 Scan the QR code to join the WeChat user group for discussions, feedback, and updates.
 
-- [GitHub Issues](https://github.com/intelli-train-ai/CodePilot/issues) -- Bug reports and feature requests
-- [GitHub Discussions](https://github.com/intelli-train-ai/CodePilot/discussions) -- Questions and general discussion
+- [GitHub Issues](https://github.com/intelli-train-ai/claw-office/issues) -- Bug reports and feature requests
+- [GitHub Discussions](https://github.com/intelli-train-ai/claw-office/discussions) -- Questions and general discussion
 
 ---
 
@@ -242,7 +242,7 @@ npm run electron:pack:linux    # Linux AppImage, deb, rpm
 
 **Notes:**
 - Electron forks a Next.js standalone server on `127.0.0.1` with a random free port
-- Chat data is stored in `~/.codepilot/codepilot.db` (dev mode: `./data/`)
+- Chat data is stored in `~/.safeclaw/safeclaw.db` (dev mode: `./data/`)
 - SQLite uses WAL mode for fast concurrent reads
 </details>
 
