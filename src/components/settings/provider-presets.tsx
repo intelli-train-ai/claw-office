@@ -18,6 +18,7 @@ import Volcengine from "@lobehub/icons/es/Volcengine";
 import Bailian from "@lobehub/icons/es/Bailian";
 import XiaomiMiMo from "@lobehub/icons/es/XiaomiMiMo";
 import Ollama from "@lobehub/icons/es/Ollama";
+import DeepSeek from "@lobehub/icons/es/DeepSeek";
 
 // ---------------------------------------------------------------------------
 // Brand icon resolver
@@ -41,6 +42,8 @@ export function getProviderIcon(name: string, baseUrl: string): ReactNode {
   if (url.includes("xiaomimimo") || lower.includes("mimo") || lower.includes("小米"))
     return <XiaomiMiMo size={18} />;
   if (url.includes("11434") || lower.includes("ollama")) return <Ollama size={18} />;
+  if (url.includes("deepseek") || lower.includes("deepseek")) return <DeepSeek size={18} />;
+  if (url.includes("modelverse.cn") || lower.includes("ucloud") || lower.includes("modelverse")) return <Anthropic size={18} />;
   if (lower.includes("bedrock")) return <Bedrock size={18} />;
   if (lower.includes("vertex") || lower.includes("google")) return <Google size={18} />;
   if (lower.includes("aws")) return <Aws size={18} />;
@@ -86,6 +89,7 @@ function resolveIcon(iconKey: string): ReactNode {
     bailian: <Bailian size={18} />,
     'xiaomi-mimo': <XiaomiMiMo size={18} />,
     ollama: <Ollama size={18} />,
+    deepseek: <DeepSeek size={18} />,
     server: <HardDrives size={18} className="text-muted-foreground" />,
   };
   return ICON_MAP[iconKey] || <HardDrives size={18} className="text-muted-foreground" />;

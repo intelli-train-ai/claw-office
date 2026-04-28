@@ -65,6 +65,15 @@ export async function register() {
     const { initRuntimeLog } = await import('@/lib/runtime-log');
     initRuntimeLog();
 
+    // Seed providers from SEED_PROVIDERS_JSON / SEED_PROVIDERS_FILE so Docker
+    // operators can pre-populate vendor configs without going through the UI.
+    try {
+      const { seedProvidersFromEnv } = await import('@/lib/seed-providers');
+      seedProvidersFromEnv();
+    } catch (err) {
+      console.warn('[instrumentation] Provider seeding failed:', (err as Error).message);
+    }
+
     // Start the task scheduler so persisted tasks resume on cold boot
     // (previously only started as a side effect of /api/chat)
     const { ensureSchedulerRunning } = await import('@/lib/task-scheduler');

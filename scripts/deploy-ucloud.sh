@@ -16,6 +16,8 @@
 #   PORT=8080 ./scripts/deploy-ucloud.sh
 #   WORKSPACE_PATH=$HOME/projects ./scripts/deploy-ucloud.sh
 #   ENV_FILE=./prod.env ./scripts/deploy-ucloud.sh    # auto-load API keys etc.
+#   PROVIDERS_FILE=./providers.json ./scripts/deploy-ucloud.sh   # seed vendor providers
+#   PROVIDERS_FILE=./providers.json PROVIDERS_OVERWRITE=1 ./scripts/deploy-ucloud.sh
 # ============================================================
 set -euo pipefail
 
@@ -45,6 +47,8 @@ WORKSPACE_PATH="${WORKSPACE_PATH:-$HOME/claw-workspaces}"
 RESTART_POLICY="${RESTART_POLICY:-unless-stopped}"
 
 ENV_FILE="${ENV_FILE:-}"            # optional --env-file path (e.g. ./prod.env)
+PROVIDERS_FILE="${PROVIDERS_FILE:-}" # optional path to a providers.json (seeded at first start)
+PROVIDERS_OVERWRITE="${PROVIDERS_OVERWRITE:-0}"  # 1 = re-apply providers.json on every restart
 HEALTH_PATH="${HEALTH_PATH:-/api/health}"
 HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-90}"
 SKIP_LOGIN="${SKIP_LOGIN:-0}"        # 1 = trust existing docker auth
@@ -159,6 +163,20 @@ do_run() {
     echo "Using env-file: ${ENV_FILE}"
   fi
 
+  # Pre-seed providers from a host-side providers.json (mounted read-only)
+  if [ -n "${PROVIDERS_FILE}" ]; then
+    if [ ! -f "${PROVIDERS_FILE}" ]; then
+      echo "PROVIDERS_FILE='${PROVIDERS_FILE}' not found"
+      return 1
+    fi
+    local providers_abs
+    providers_abs="$(cd "$(dirname "${PROVIDERS_FILE}")" && pwd)/$(basename "${PROVIDERS_FILE}")"
+    args+=(-v "${providers_abs}:/etc/safeclaw/providers.json:ro")
+    args+=(-e "SEED_PROVIDERS_FILE=/etc/safeclaw/providers.json")
+    args+=(-e "SEED_PROVIDERS_OVERWRITE=${PROVIDERS_OVERWRITE}")
+    echo "Seeding providers from: ${providers_abs} (overwrite=${PROVIDERS_OVERWRITE})"
+  fi
+
   docker run "${args[@]}" "${FULL_TAG}"
 }
 
@@ -195,6 +213,7 @@ echo "Port       : ${PORT}"
 echo "Data vol   : ${DATA_VOLUME}"
 echo "Workspaces : ${WORKSPACE_PATH}"
 [ -n "${ENV_FILE}" ] && echo "Env file   : ${ENV_FILE}"
+[ -n "${PROVIDERS_FILE}" ] && echo "Providers  : ${PROVIDERS_FILE} (overwrite=${PROVIDERS_OVERWRITE})"
 
 run_step "docker login ${REGISTRY}"      do_login
 run_step "docker pull ${IMAGE_TAG}"      do_pull

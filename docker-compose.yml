@@ -27,6 +27,18 @@ services:
       # Uncomment and set your API keys as needed:
       # - ANTHROPIC_API_KEY=sk-ant-...
       # - OPENAI_API_KEY=sk-...
+      #
+      # ── Pre-seed vendor providers on first start ──
+      # Each entry can reference a built-in preset key (see src/lib/provider-catalog.ts:
+      # anthropic-official, anthropic-thirdparty, deepseek-anthropic, ucloud-claude,
+      # glm-cn, glm-global, openrouter, kimi, moonshot, minimax-cn, minimax-global,
+      # volcengine, xiaomi-mimo, bailian, bedrock, vertex, ollama, litellm) and just
+      # supply the api_key. Matched idempotently by `name`. Set
+      # SEED_PROVIDERS_OVERWRITE=1 to refresh existing entries on every restart.
+      # - SEED_PROVIDERS_JSON=[{"preset":"deepseek-anthropic","name":"DeepSeek V4 Pro","api_key":"sk-...","set_active":true},{"preset":"ucloud-claude","name":"UCloud Claude","api_key":"sk-..."},{"preset":"glm-cn","name":"GLM (CN)","api_key":"..."}]
+      # Or use a mounted file (recommended for multi-line / many providers):
+      # - SEED_PROVIDERS_FILE=/data/providers.json
+      # - SEED_PROVIDERS_OVERWRITE=0
     restart: unless-stopped
 
 volumes:
