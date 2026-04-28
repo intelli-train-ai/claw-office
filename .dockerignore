@@ -1,17 +1,56 @@
+# Build outputs / vendored deps — never copy into the image
 node_modules
 .next
 dist-electron
 release
+*.tsbuildinfo
+
+# VCS / IDE / docs / tooling — irrelevant for the runtime image
 .git
+.gitignore
 .claude
+.aigne
+.gstack
+.gstack-audit
+.husky
+.editorconfig
+.vscode
+.idea
 .env*
 *.md
 !package.json
+AGENTS.md
+LICENSE
+
+# Test / coverage / playwright artifacts
 playwright-report
 test-results
 coverage
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+playwright.config.ts
+
+# Local-only directories
 img_tmp
 资料
-.codepilot-uploads
+.safeclaw-uploads
+data
+
+# Workspaces (developer scratch dirs, not part of the server)
+workspaces
+workspaces-derek
+
+# Electron-only assets — runtime image is the Next.js standalone server,
+# never the Electron shell.
+electron
+build
+scripts
+themes/**/*.png
+themes/**/*.jpg
+
+# Apps and packages workspaces — site, etc., built separately
 apps
 packages

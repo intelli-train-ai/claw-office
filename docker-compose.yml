@@ -1,7 +1,11 @@
 services:
   safeclaw:
     build:
-      context: .
+      # Pull source from the intelli-train-ai/claw-office repo instead of the
+      # local working tree. BuildKit clones the repo into the build context and
+      # uses the Dockerfile shipped there. Override GIT_REF to build a tag/branch
+      # other than main, e.g. `GIT_REF=v0.54.0 docker compose build`.
+      context: https://github.com/intelli-train-ai/claw-office.git#${GIT_REF:-main}
       args:
         - CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION:-latest}
     ports:

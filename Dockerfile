@@ -1,11 +1,16 @@
+# syntax=docker/dockerfile:1.7
 # ============================================================
-# CodePilot Web — Production Docker Image (multi-stage)
+# SafeClaw Web — Production Docker Image (multi-stage)
 # ============================================================
-# Build:  docker build -t codepilot-web .
+# Build:  docker build -t safeclaw-web .
 # Build with specific Claude Code version:
-#         docker build --build-arg CLAUDE_CODE_VERSION=1.0.0 -t codepilot-web .
-# Run:    docker run -p 3811:3811 -v codepilot-data:/data -v ~/projects:/workspaces codepilot-web
-# Custom port: docker run -p 8080:8080 -e PORT=8080 -v codepilot-data:/data -v ~/projects:/workspaces codepilot-web
+#         docker build --build-arg CLAUDE_CODE_VERSION=2.1.121 -t safeclaw-web .
+# Run:    docker run -p 3811:3811 -v safeclaw-data:/data -v ~/projects:/workspaces safeclaw-web
+# Custom port: docker run -p 8080:8080 -e PORT=8080 -v safeclaw-data:/data -v ~/projects:/workspaces safeclaw-web
+#
+# Build optimizations (BuildKit required, default in Docker 23+):
+#   - npm cache + apt cache mounts persist tarballs between builds
+#   - CLAUDE_CODE_VERSION pinned (was 'latest' which never cache-hit)
 # ============================================================
 
 # ---------- Stage 1: install dependencies ----------
@@ -13,13 +18,19 @@ FROM node:22-slim AS deps
 
 WORKDIR /app
 
-# Native build tools for better-sqlite3 / zlib-sync
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 make g++ && \
-    rm -rf /var/lib/apt/lists/*
+# Native build tools for better-sqlite3 / zlib-sync. apt cache mount keeps
+# downloaded .debs across builds so re-pulls are skipped.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++
 
 COPY package.json package-lock.json ./
-RUN npm ci
+
+# Cache mount for npm tarballs — persisted across builds so npm ci re-runs
+# install from local cache instead of re-downloading from registry.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --fund=false
 
 COPY . .
 
@@ -41,13 +52,17 @@ FROM node:22-slim AS runner
 WORKDIR /app
 
 # Runtime deps: better-sqlite3, SSL certs, git (required by Claude Code CLI)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends libsqlite3-0 ca-certificates git && \
-    rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends libsqlite3-0 ca-certificates git
 
-# Install Claude Code CLI (version controlled via build arg)
-ARG CLAUDE_CODE_VERSION=latest
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+# Install Claude Code CLI. Pin to a concrete version so this layer caches
+# across builds — 'latest' would invalidate the cache on every build.
+ARG CLAUDE_CODE_VERSION=2.1.121
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g --prefer-offline --no-audit --fund=false \
+    @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
