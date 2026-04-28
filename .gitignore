@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env*.example
 
 # vercel
 .vercel
@@ -79,3 +80,7 @@ img_tmp/
 .gstack-audit/
 workspaces/
 tmp.txt
+docs/GLOSSARY.md
+
+# doc-smith local tooling output
+.aigne/
