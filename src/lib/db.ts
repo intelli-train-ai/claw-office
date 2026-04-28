@@ -6,6 +6,12 @@ import os from 'os';
 import type { ChatSession, Message, SettingsMap, TaskItem, TaskStatus, ApiProvider, CreateProviderRequest, UpdateProviderRequest, MediaJob, MediaJobStatus, MediaJobItem, MediaJobItemStatus, MediaContextEvent, BatchConfig, CustomCliTool, ScheduledTask } from '@/types';
 import type { ChannelType, ChannelBinding } from './bridge/types';
 import { getLocalDateString, localDayStartAsUTC } from './utils';
+import { migrateLegacyDataDir, migrateLegacyDbFile, migrateLegacyDbColumns } from './data-migration';
+
+// Rebrand: rename ~/.codepilot/ → ~/.safeclaw/ before computing dataDir,
+// so dev mode (no Electron) and any code path that imports db.ts inherits
+// the migrated location.
+migrateLegacyDataDir();
 
 const dataDir = process.env.CLAUDE_GUI_DATA_DIR || path.join(os.homedir(), '.safeclaw');
 const DB_PATH = path.join(dataDir, 'safeclaw.db');
@@ -55,19 +61,29 @@ export function getDb(): Database.Database {
       fs.mkdirSync(dir, { recursive: true });
     }
 
+    // Rebrand: rename codepilot.db → safeclaw.db inside the data dir if needed.
+    migrateLegacyDbFile(dir);
+
     // Migrate from old locations if the new DB doesn't exist yet
     if (!fs.existsSync(DB_PATH)) {
       const home = os.homedir();
       const oldPaths = [
-        // Old Electron userData paths (app.getPath('userData'))
+        // CodePilot (pre-rebrand) Application Support paths
+        path.join(home, 'Library', 'Application Support', 'CodePilot', 'codepilot.db'),
+        path.join(home, 'Library', 'Application Support', 'codepilot', 'codepilot.db'),
+        path.join(home, 'Library', 'Application Support', 'CodePilot', 'safeclaw.db'),
+        // SafeClaw Application Support paths
         path.join(home, 'Library', 'Application Support', 'SafeClaw', 'safeclaw.db'),
         path.join(home, 'Library', 'Application Support', 'safeclaw', 'safeclaw.db'),
         path.join(home, 'Library', 'Application Support', 'Claude GUI', 'safeclaw.db'),
-        // Old dev-mode fallback
+        // Dev-mode fallbacks
         path.join(process.cwd(), 'data', 'safeclaw.db'),
-        // Legacy name
+        path.join(process.cwd(), 'data', 'codepilot.db'),
+        // Legacy claude-gui.db name
         path.join(home, 'Library', 'Application Support', 'SafeClaw', 'claude-gui.db'),
         path.join(home, 'Library', 'Application Support', 'safeclaw', 'claude-gui.db'),
+        path.join(home, 'Library', 'Application Support', 'CodePilot', 'claude-gui.db'),
+        path.join(home, 'Library', 'Application Support', 'codepilot', 'claude-gui.db'),
       ];
       for (const oldPath of oldPaths) {
         if (fs.existsSync(oldPath)) {
@@ -329,6 +345,11 @@ function safeAddColumn(db: Database.Database, sql: string): void {
 }
 
 function migrateDb(db: Database.Database): void {
+  // Rebrand: rename codepilot_session_id → safeclaw_session_id where present.
+  // Must run before any subsequent column-add migrations that may reference
+  // the new name on existing tables.
+  migrateLegacyDbColumns(db);
+
   const columns = db.prepare("PRAGMA table_info(chat_sessions)").all() as { name: string }[];
   const colNames = columns.map(c => c.name);
 

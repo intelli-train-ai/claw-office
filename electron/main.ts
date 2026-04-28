@@ -2,6 +2,11 @@
 import * as Sentry from '@sentry/electron/main';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { migrateLegacyDataDir } from '../src/lib/data-migration';
+
+// Rebrand migration must run before the Sentry opt-out check, since the
+// opt-out marker may still be at the legacy path.
+migrateLegacyDataDir();
 
 // Check opt-out before init — reads a marker file that the renderer writes
 const sentryOptOutPath = join(
