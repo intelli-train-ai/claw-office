@@ -9,6 +9,7 @@ import {
   DotsThree,
   Copy,
   ArrowSquareOut,
+  FileZip,
   Plus,
 } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import type { TranslationKey } from "@/i18n";
 import { useState } from "react";
 import { SPECIES_IMAGE_URL, EGG_IMAGE_URL, type Species } from "@/lib/buddy";
 import { authFetch } from '@/lib/api-client';
+import { showToast, updateToast } from '@/hooks/useToast';
 
 interface ProjectGroupHeaderProps {
   workingDirectory: string;
@@ -65,7 +67,57 @@ export function ProjectGroupHeader({
 }: ProjectGroupHeaderProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const showActions = isFolderHovered || menuOpen;
+
+  const handleDownloadZip = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    const toastId = showToast({
+      type: 'loading',
+      message: t('chatList.downloadZipPreparing' as TranslationKey),
+      duration: 0,
+    });
+    try {
+      const params = new URLSearchParams({
+        path: workingDirectory,
+        baseDir: workingDirectory,
+      });
+      const res = await authFetch(`/api/files/zip?${params.toString()}`);
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data?.error) msg = data.error;
+        } catch {
+          // not json, keep default
+        }
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const fileName = `${workingDirectory.split(/[/\\]/).pop() || 'project'}.zip`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      updateToast(toastId, {
+        type: 'success',
+        message: t('chatList.downloadZipSuccess' as TranslationKey),
+      });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      updateToast(toastId, {
+        type: 'error',
+        message: t('chatList.downloadZipFailed' as TranslationKey, { error: detail }),
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const actionButtons = workingDirectory !== "" && (
     <div className={cn(
@@ -118,6 +170,17 @@ export function ProjectGroupHeader({
           }}>
             <Copy size={14} />
             <span>{t('chatList.copyFolderPath' as TranslationKey)}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={downloading}
+            onClick={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              void handleDownloadZip();
+            }}
+          >
+            <FileZip size={14} />
+            <span>{t('chatList.downloadZip' as TranslationKey)}</span>
           </DropdownMenuItem>
           {onRemoveProject && !isWorkspace && (
             <>
