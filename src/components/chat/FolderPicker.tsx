@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '@/lib/api-client';
-import { Folder, FolderOpen, FolderPlus, ArrowRight, CaretUp, Check, X } from "@/components/ui/icon";
+import { Folder, FolderOpen, FolderPlus, ArrowRight, CaretUp, Check, X, FileZip } from "@/components/ui/icon";
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -52,6 +52,9 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [createError, setCreateError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const browse = useCallback(async (dir?: string) => {
     setLoading(true);
@@ -130,6 +133,50 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
     setCreateError('');
   };
 
+  const handleImportZip = async (file: File) => {
+    setImporting(true);
+    setImportError('');
+    try {
+      const formData = new FormData();
+      formData.append('dir', currentDir);
+      formData.append('file', file);
+      const res = await authFetch('/api/files/import-zip', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        if (res.status === 409 && data?.folderName) {
+          setImportError(t('folderPicker.importZipExists', { name: data.folderName }));
+        } else {
+          setImportError(data?.error || t('folderPicker.importZipFailed', { error: `HTTP ${res.status}` }));
+        }
+        return;
+      }
+      if (data?.path) {
+        await browse(data.path);
+      } else {
+        await browse(currentDir);
+      }
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      setImportError(t('folderPicker.importZipFailed', { error: detail }));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleZipFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      setImportError(t('folderPicker.importZipNotZip'));
+      return;
+    }
+    void handleImportZip(file);
+  };
+
   const handleSelect = () => {
     onSelect(currentDir);
     onOpenChange(false);
@@ -200,6 +247,23 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
             <Button
               variant="ghost"
               size="icon-sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="shrink-0"
+              title={t('folderPicker.importZip')}
+            >
+              <FileZip size={16} />
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip,application/zip,application/x-zip-compressed"
+              className="hidden"
+              onChange={handleZipFileChange}
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => { setCreatingFolder(true); setNewFolderName(''); setCreateError(''); }}
               className="shrink-0"
               title={t('folderPicker.newFolder')}
@@ -207,6 +271,25 @@ export function FolderPicker({ open, onOpenChange, onSelect, initialPath }: Fold
               <FolderPlus size={16} />
             </Button>
           </div>
+          {(importing || importError) && (
+            <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-1.5 text-xs">
+              {importing ? (
+                <span className="text-muted-foreground">{t('folderPicker.importZipUploading')}</span>
+              ) : (
+                <>
+                  <span className="text-destructive truncate flex-1">{importError}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setImportError('')}
+                    className="shrink-0 h-5 w-5"
+                  >
+                    <X size={12} />
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Folder list */}
           <ScrollArea className="h-64">

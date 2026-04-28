@@ -342,6 +342,11 @@ const en = {
   'folderPicker.newFolderPlaceholder': 'Folder name',
   'folderPicker.folderExists': 'Folder already exists',
   'folderPicker.createFailed': 'Failed to create folder',
+  'folderPicker.importZip': 'Import ZIP',
+  'folderPicker.importZipUploading': 'Importing ZIP...',
+  'folderPicker.importZipFailed': 'Failed to import ZIP: {error}',
+  'folderPicker.importZipExists': 'Folder "{name}" already exists',
+  'folderPicker.importZipNotZip': 'Please select a .zip file',
 
   // ── Import session dialog ───────────────────────────────────
   'import.title': 'Import Session from Claude CLI',

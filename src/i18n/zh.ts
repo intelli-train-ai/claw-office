@@ -339,6 +339,11 @@ const zh: Record<TranslationKey, string> = {
   'folderPicker.newFolderPlaceholder': '文件夹名称',
   'folderPicker.folderExists': '文件夹已存在',
   'folderPicker.createFailed': '创建文件夹失败',
+  'folderPicker.importZip': '导入 ZIP',
+  'folderPicker.importZipUploading': '正在导入 ZIP…',
+  'folderPicker.importZipFailed': '导入 ZIP 失败：{error}',
+  'folderPicker.importZipExists': '文件夹「{name}」已存在',
+  'folderPicker.importZipNotZip': '请选择 .zip 文件',
 
   // ── Import session dialog ───────────────────────────────────
   'import.title': '从 Claude CLI 导入会话',
