@@ -199,11 +199,11 @@ function createTray(): void {
   const iconPath = getIconPath();
   const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
   tray = new Tray(trayIcon);
-  tray.setToolTip('CodePilot — Bridge Active');
+  tray.setToolTip('SafeClaw — Bridge Active');
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open CodePilot',
+      label: 'Open SafeClaw',
       click: () => {
         if (BrowserWindow.getAllWindows().length === 0) {
           createWindow(`http://127.0.0.1:${serverPort || 3000}`);
@@ -363,7 +363,7 @@ function checkNativeModuleABI(): void {
     if (msg.includes('NODE_MODULE_VERSION')) {
       console.error(`[ABI check] ABI mismatch detected: ${msg}`);
       dialog.showErrorBox(
-        'CodePilot - Native Module ABI Mismatch',
+        'SafeClaw - Native Module ABI Mismatch',
         `The bundled better-sqlite3 native module was compiled for a different Node.js version.\n\n` +
         `${msg}\n\n` +
         `This usually means the build process did not correctly recompile native modules for Electron.\n` +
@@ -673,7 +673,7 @@ const LOADING_HTML = `data:text/html;charset=utf-8,${encodeURIComponent(`<!DOCTY
 <body>
 <div class="container">
   <div class="spinner"></div>
-  <p>Starting CodePilot...</p>
+  <p>Starting SafeClaw...</p>
 </div>
 </body>
 </html>`)}`;
@@ -738,7 +738,7 @@ app.whenReady().then(async () => {
   // Initialize persistent file logger
   const logDir = path.join(app.getPath('userData'), 'logs');
   initFileLogger({ logDir, prefix: 'main' });
-  logInfo('main', `CodePilot v${app.getVersion()} starting on ${process.platform}`);
+  logInfo('main', `SafeClaw v${app.getVersion()} starting on ${process.platform}`);
 
   // Load user's full shell environment (API keys, PATH, etc.)
   userShellEnv = loadUserShellEnv();
@@ -1454,7 +1454,7 @@ app.whenReady().then(async () => {
     console.error('Failed to start:', err);
     logError('main', 'Failed to start', { error: err instanceof Error ? err.message : String(err) });
     dialog.showErrorBox(
-      'CodePilot - Failed to Start',
+      'SafeClaw - Failed to Start',
       `The internal server could not start.\n\n${err instanceof Error ? err.message : String(err)}\n\nPlease try restarting the application.`
     );
     app.quit();

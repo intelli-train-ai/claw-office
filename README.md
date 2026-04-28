@@ -1,4 +1,4 @@
-<img src="docs/icon-readme.png" width="32" height="32" alt="CodePilot" style="vertical-align: middle; margin-right: 8px;" /> CodePilot
+<img src="docs/icon-readme.png" width="32" height="32" alt="SafeClaw" style="vertical-align: middle; margin-right: 8px;" /> SafeClaw
 ===
 
 **A unified desktop client for Claude Code** -- multi-provider support, MCP extensions, custom skills, cross-platform bridge, and an assistant workspace that understands your projects.
@@ -9,7 +9,7 @@
 
 [中文文档](./README_CN.md) | [日本語](./README_JA.md)
 
-![CodePilot](docs/screenshot.png)
+![SafeClaw](docs/screenshot.png)
 
 ---
 
@@ -17,13 +17,13 @@
 
 ---
 
-## Why CodePilot
+## Why SafeClaw
 
 **Multi-provider, one interface.** Connect to Anthropic, OpenRouter, Bedrock, Vertex, or any custom endpoint. Switch providers and models mid-conversation without losing context.
 
 **MCP + Skills extensibility.** Add MCP servers (stdio / sse / http) with runtime status monitoring. Define reusable prompt-based skills -- global or per-project -- and invoke them as slash commands. Browse and install community skills from skills.sh.
 
-**Control from anywhere.** Bridge connects CodePilot to Telegram, Feishu, Discord, and QQ. Send a message from your phone, get the response on your desktop.
+**Control from anywhere.** Bridge connects SafeClaw to Telegram, Feishu, Discord, and QQ. Send a message from your phone, get the response on your desktop.
 
 **An assistant that knows your project.** Set up a workspace directory with persona files (soul.md, user.md), rules (claude.md), and persistent memory (memory.md). Claude uses these to adapt to your project's conventions over time, with onboarding flows and daily check-ins.
 
@@ -38,7 +38,7 @@
 1. Install the Claude Code CLI: `npm install -g @anthropic-ai/claude-code`
 2. Authenticate: `claude login`
 3. Download the installer for your platform from the [Releases](https://github.com/intelli-train-ai/CodePilot/releases) page
-4. Launch CodePilot
+4. Launch SafeClaw
 
 ### Path B: Build from source (developers)
 
@@ -50,7 +50,7 @@
 
 ```bash
 git clone https://github.com/intelli-train-ai/CodePilot.git
-cd CodePilot
+cd SafeClaw
 npm install
 npm run dev              # browser mode at http://localhost:3000
 # -- or --
@@ -64,7 +64,7 @@ npm run electron:dev     # full desktop app
 1. **Authenticate Claude** -- Run `claude login` in your terminal if you haven't already.
 2. **Configure a Provider** -- If you only use Anthropic via CLI authentication or `ANTHROPIC_API_KEY`, Providers setup is optional. For OpenRouter, Bedrock, Vertex, or custom endpoints, go to **Settings > Providers** and add the credentials first.
 3. **Create a conversation** -- Pick a working directory, select a mode (Code / Plan / Ask), and choose a model.
-4. **Set up Assistant Workspace** (optional) -- Go to **Settings > Assistant**, choose a workspace directory, and enable Onboarding. CodePilot creates `soul.md`, `user.md`, `claude.md`, and `memory.md` at the workspace root (state is tracked in the `.assistant/` subdirectory).
+4. **Set up Assistant Workspace** (optional) -- Go to **Settings > Assistant**, choose a workspace directory, and enable Onboarding. SafeClaw creates `soul.md`, `user.md`, `claude.md`, and `memory.md` at the workspace root (state is tracked in the `.assistant/` subdirectory).
 5. **Add MCP servers** (optional) -- Go to the **MCP** page in the sidebar to add and manage MCP servers. Custom skills are managed on the separate **Skills** page.
 
 ---
@@ -123,13 +123,13 @@ macOS builds are code-signed with a Developer ID certificate but not notarized, 
 <details>
 <summary>macOS: Gatekeeper warning on first launch</summary>
 
-**Option 1** -- Right-click `CodePilot.app` in Finder > Open > confirm.
+**Option 1** -- Right-click `SafeClaw.app` in Finder > Open > confirm.
 
 **Option 2** -- System Settings > Privacy & Security > scroll to Security > click Open Anyway.
 
 **Option 3** -- Run in Terminal:
 ```bash
-xattr -cr /Applications/CodePilot.app
+xattr -cr /Applications/SafeClaw.app
 ```
 </details>
 
@@ -176,7 +176,7 @@ Install the Claude Code CLI globally:
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
-Then authenticate with `claude login`. Make sure `claude --version` works before launching CodePilot.
+Then authenticate with `claude login`. Make sure `claude --version` works before launching SafeClaw.
 </details>
 
 <details>
@@ -188,19 +188,19 @@ Verify the API key is valid and the endpoint is reachable. Some providers (Bedro
 <details>
 <summary>What is the difference between <code>npm run dev</code> and <code>npm run electron:dev</code>?</summary>
 
-`npm run dev` starts only the Next.js dev server -- you use CodePilot in your browser at `http://localhost:3000`. `npm run electron:dev` starts both Next.js and the Electron shell, giving you the full desktop app experience with native window controls.
+`npm run dev` starts only the Next.js dev server -- you use SafeClaw in your browser at `http://localhost:3000`. `npm run electron:dev` starts both Next.js and the Electron shell, giving you the full desktop app experience with native window controls.
 </details>
 
 <details>
 <summary>Where are the Assistant Workspace files?</summary>
 
-When you set up a workspace, CodePilot creates four Markdown files at the **workspace root directory**: `soul.md` (personality), `user.md` (user profile), `claude.md` (rules), and `memory.md` (long-term notes). State tracking (onboarding progress, check-in dates) is stored in the `.assistant/` subdirectory. Daily memories go to `memory/daily/`.
+When you set up a workspace, SafeClaw creates four Markdown files at the **workspace root directory**: `soul.md` (personality), `user.md` (user profile), `claude.md` (rules), and `memory.md` (long-term notes). State tracking (onboarding progress, check-in dates) is stored in the `.assistant/` subdirectory. Daily memories go to `memory/daily/`.
 </details>
 
 <details>
 <summary>Bridge requires additional setup per platform</summary>
 
-Each Bridge channel (Telegram, Feishu, Discord, QQ) requires its own bot token or app credentials. Go to the **Bridge** page in the sidebar to configure channels. You will need to create a bot on the target platform first and provide the token to CodePilot.
+Each Bridge channel (Telegram, Feishu, Discord, QQ) requires its own bot token or app credentials. Go to the **Bridge** page in the sidebar to configure channels. You will need to create a bot on the target platform first and provide the token to SafeClaw.
 </details>
 
 ---

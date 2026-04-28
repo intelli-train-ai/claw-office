@@ -39,8 +39,8 @@ const zh: Record<TranslationKey, string> = {
   'chatList.showLess': '收起',
 
   // ── Message list ────────────────────────────────────────────
-  'messageList.claudeChat': 'CodePilot 对话',
-  'messageList.emptyDescription': '开始与 CodePilot 对话。提问、获取代码帮助或探索想法。',
+  'messageList.claudeChat': 'SafeClaw 对话',
+  'messageList.emptyDescription': '开始与 SafeClaw 对话。提问、获取代码帮助或探索想法。',
   'messageList.loadEarlier': '加载更早的消息',
   'messageList.loading': '加载中...',
 
@@ -73,11 +73,11 @@ const zh: Record<TranslationKey, string> = {
 
   // ── Settings: General ───────────────────────────────────────
   'settings.title': '设置',
-  'settings.description': '管理 CodePilot 和 Claude CLI 设置',
+  'settings.description': '管理 SafeClaw 和 Claude CLI 设置',
   'settings.general': '通用',
   'settings.providers': '服务商',
   'settings.claudeCli': 'Claude CLI',
-  'settings.codepilot': 'CodePilot',
+  'settings.codepilot': 'SafeClaw',
   'settings.version': '版本 {version}',
   'settings.checkForUpdates': '检查更新',
   'settings.checking': '检查中...',
@@ -96,7 +96,7 @@ const zh: Record<TranslationKey, string> = {
   'settings.cancel': '取消',
   'settings.enableAutoApprove': '启用自动批准',
   'settings.errorReporting': '匿名错误上报',
-  'settings.errorReportingDesc': '帮助改进 CodePilot：匿名上报错误信息，不包含对话内容和 API Key。更改后需重启应用才能完全生效。',
+  'settings.errorReportingDesc': '帮助改进 SafeClaw：匿名上报错误信息，不包含对话内容和 API Key。更改后需重启应用才能完全生效。',
   'settings.generativeUITitle': '生成式 UI',
   'settings.generativeUIDesc': '启用聊天中的交互式可视化功能（图表、流程图、原型图等）。关闭后可节省 token，但将无法生成可视化内容。',
   'settings.defaultPanelTitle': '默认侧边面板',
@@ -111,7 +111,7 @@ const zh: Record<TranslationKey, string> = {
 
   // ── Settings: Appearance ──────────────────────────────────────
   'settings.appearance': '外观',
-  'settings.appearanceDesc': '自定义 CodePilot 的外观和风格',
+  'settings.appearanceDesc': '自定义 SafeClaw 的外观和风格',
   'settings.themeMode': '主题模式',
   'settings.themeModeDesc': '选择浅色、深色或跟随系统',
   'settings.themeFamily': '颜色主题',
@@ -187,7 +187,7 @@ const zh: Record<TranslationKey, string> = {
   'provider.disconnecting': '断开中...',
   'provider.disconnectProvider': '断开提供商',
   'provider.disconnectConfirm': '确定要断开"{name}"吗？此操作无法撤销。',
-  'provider.ccSwitchHint': '通过类似 cc switch 等工具添加的 Claude Code 配置可能无法被 CodePilot 读取，建议在此处重新添加。',
+  'provider.ccSwitchHint': '通过类似 cc switch 等工具添加的 Claude Code 配置可能无法被 SafeClaw 读取，建议在此处重新添加。',
   'provider.addProviderSection': '添加提供商',
   'provider.addProviderDesc': '选择要连接的提供商。大多数预设只需填写 API 密钥。',
 
@@ -370,7 +370,7 @@ const zh: Record<TranslationKey, string> = {
   'connection.missingGitDesc': 'Claude Code 需要 Git for Windows 才能正常运行。缺少 Git 会导致所有命令以 exit code 1 失败。',
   'connection.installGit': '一键安装 Git',
   'connection.gitInstalling': '安装中...',
-  'connection.gitInstallSuccess': 'Git 安装成功！请重启 CodePilot。',
+  'connection.gitInstallSuccess': 'Git 安装成功！请重启 SafeClaw。',
   'connection.gitInstallFailed': '自动安装失败，请手动下载安装。',
   'connection.downloadGit': '手动下载',
   'connection.recheck': '重新检测',
@@ -381,7 +381,7 @@ const zh: Record<TranslationKey, string> = {
   'connection.versionCompare': 'v{current} → v{latest}',
   'connection.upgradeButton': '升级 CLI',
   'connection.upgrading': '升级中...',
-  'connection.upgradeSuccess': '升级成功！请重启 CodePilot 以应用更新。',
+  'connection.upgradeSuccess': '升级成功！请重启 SafeClaw 以应用更新。',
   'connection.upgradeFailed': '升级失败，请手动执行：',
   'connection.checkUpgrade': '检查更新',
   'connection.manualUpdateHint': '当前安装渠道不会自动更新，点击下方按钮检查并安装新版本。',
@@ -455,10 +455,10 @@ const zh: Record<TranslationKey, string> = {
   'update.downloading': '下载中',
   'update.restartToUpdate': '重启以更新',
   'update.restartNow': '立即重启',
-  'update.readyToInstall': 'CodePilot v{version} 已就绪 — 重启以完成更新',
+  'update.readyToInstall': 'SafeClaw v{version} 已就绪 — 重启以完成更新',
   'update.installUpdate': '下载并安装',
   'update.later': '稍后',
-  'update.rosettaWarning': 'CodePilot 当前正通过 Rosetta 在这台 Apple Silicon Mac 上运行。安装 arm64 版本可获得更好的响应速度。',
+  'update.rosettaWarning': 'SafeClaw 当前正通过 Rosetta 在这台 Apple Silicon Mac 上运行。安装 arm64 版本可获得更好的响应速度。',
   'update.recommendedAsset': '推荐下载：{asset}',
   'update.getRecommendedBuild': '下载推荐版本',
 
@@ -1101,7 +1101,7 @@ const zh: Record<TranslationKey, string> = {
   'mcp.enable': '启用',
   'mcp.enabled': '已启用',
   'mcp.disabled': '已禁用',
-  'mcp.managerDesc': '开关控制 CodePilot 注入的 MCP 服务。Claude Code 自身配置中的服务仍可能被 SDK 通过 settingSources 自动加载。',
+  'mcp.managerDesc': '开关控制 SafeClaw 注入的 MCP 服务。Claude Code 自身配置中的服务仍可能被 SDK 通过 settingSources 自动加载。',
 
   // ── SDK Capabilities: Thinking ────────────────────────────
   'settings.thinkingMode': '思考模式',
@@ -1146,7 +1146,7 @@ const zh: Record<TranslationKey, string> = {
   'cliTools.brewInstallGuide': '大部分推荐工具依赖 Homebrew 安装，请先在终端中运行以下命令安装：',
   'cliTools.noPkgManager': '未检测到包管理器',
   'cliTools.noPkgManagerGuide': '未找到支持的包管理器（apt、brew），请手动安装工具或配置包管理器。',
-  'cliTools.viewDocs': '查看 CodePilot 官方文档',
+  'cliTools.viewDocs': '查看 SafeClaw 官方文档',
   'cliTools.searchPlaceholder': '搜索 CLI 工具...',
   'cliTools.noToolsDetected': '还没有检测到已安装的 CLI 工具',
   'cliTools.goInstall': '去安装 CLI 工具',
@@ -1288,7 +1288,7 @@ const zh: Record<TranslationKey, string> = {
   'terminal.exited': '进程已退出',
 
   // ── Setup Center ──────────────────────────────────────────────
-  'setup.title': '欢迎使用 CodePilot',
+  'setup.title': '欢迎使用 SafeClaw',
   'setup.subtitle': '让我们快速完成几个设置步骤。',
   'setup.skipAndEnter': '跳过并进入',
   'setup.progress': '{completed}/3 已完成',
@@ -1298,11 +1298,11 @@ const zh: Record<TranslationKey, string> = {
 
   // Setup: Welcome card
   'setup.welcome.title': '欢迎',
-  'setup.welcome.description': 'CodePilot 是多模型 AI Agent 桌面客户端。连接任意 AI 服务商，通过 MCP 和 Skills 扩展能力，让你的助理学会你的工作方式。',
+  'setup.welcome.description': 'SafeClaw 是多模型 AI Agent 桌面客户端。连接任意 AI 服务商，通过 MCP 和 Skills 扩展能力，让你的助理学会你的工作方式。',
 
   // Setup: Claude Code card
   'setup.claude.title': 'Claude Code CLI',
-  'setup.claude.description': 'CodePilot 需要 Claude Code CLI 才能正常工作。',
+  'setup.claude.description': 'SafeClaw 需要 Claude Code CLI 才能正常工作。',
   'setup.claude.detected': '已检测到 Claude Code',
   'setup.claude.notFound': '未找到 Claude Code',
   'setup.claude.conflict': '检测到多个安装版本，可能导致版本冲突',
@@ -1319,7 +1319,7 @@ const zh: Record<TranslationKey, string> = {
 
   // Setup: Provider card
   'setup.provider.title': 'API 服务商',
-  'setup.provider.description': '配置 CodePilot 连接 AI 模型的方式。',
+  'setup.provider.description': '配置 SafeClaw 连接 AI 模型的方式。',
   'setup.provider.envDetected': '检测到环境变量 — 使用 Claude Code 环境变量作为服务商。',
   'setup.provider.useEnv': '使用 Claude Code 环境',
   'setup.provider.noProvider': '未配置服务商。选择一个预设开始。',
@@ -1418,7 +1418,7 @@ const zh: Record<TranslationKey, string> = {
   'share.noMessages': '没有消息可分享',
   'share.replayTitle': '对话回放',
   'share.replayOf': '回放: {title}',
-  'share.generatedBy': '由 CodePilot 生成',
+  'share.generatedBy': '由 SafeClaw 生成',
   'share.skipReplay': '跳过回放',
   'share.startReplay': '开始回放',
   'share.sessionNotFound': '会话不存在',
@@ -1483,7 +1483,7 @@ const zh: Record<TranslationKey, string> = {
   // ── Settings: Security ──────────────────────────────────────
   'settings.security': '安全',
   'settings.security.accessToken': '访问令牌',
-  'settings.security.accessTokenDesc': '设置访问令牌后，需要输入令牌才能使用 CodePilot。适用于公网部署场景。',
+  'settings.security.accessTokenDesc': '设置访问令牌后，需要输入令牌才能使用 SafeClaw。适用于公网部署场景。',
   'settings.security.tokenConfigured': '令牌已配置',
   'settings.security.tokenNotConfigured': '未配置令牌（开放访问）',
   'settings.security.tokenFromEnv': '令牌通过 CODEPILOT_ACCESS_TOKEN 环境变量设置',

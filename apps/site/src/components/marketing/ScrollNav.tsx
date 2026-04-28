@@ -48,13 +48,13 @@ export function ScrollNav({ locale }: { locale: string }) {
         >
           <Image
             src="/logo.png"
-            alt="CodePilot"
+            alt="SafeClaw"
             width={28}
             height={28}
             className="h-7 w-7"
           />
           <span className="text-[15px] font-bold text-foreground">
-            CodePilot
+            SafeClaw
           </span>
         </Link>
 

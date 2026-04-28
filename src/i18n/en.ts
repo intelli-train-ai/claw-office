@@ -42,8 +42,8 @@ const en = {
   'chatList.showLess': 'Show less',
 
   // ── Message list ────────────────────────────────────────────
-  'messageList.claudeChat': 'CodePilot Chat',
-  'messageList.emptyDescription': 'Start a conversation with CodePilot. Ask questions, get help with code, or explore ideas.',
+  'messageList.claudeChat': 'SafeClaw Chat',
+  'messageList.emptyDescription': 'Start a conversation with SafeClaw. Ask questions, get help with code, or explore ideas.',
   'messageList.loadEarlier': 'Load earlier messages',
   'messageList.loading': 'Loading...',
 
@@ -76,11 +76,11 @@ const en = {
 
   // ── Settings: General ───────────────────────────────────────
   'settings.title': 'Settings',
-  'settings.description': 'Manage CodePilot and Claude CLI settings',
+  'settings.description': 'Manage SafeClaw and Claude CLI settings',
   'settings.general': 'General',
   'settings.providers': 'Providers',
   'settings.claudeCli': 'Claude CLI',
-  'settings.codepilot': 'CodePilot',
+  'settings.codepilot': 'SafeClaw',
   'settings.version': 'Version {version}',
   'settings.checkForUpdates': 'Check for Updates',
   'settings.checking': 'Checking...',
@@ -99,7 +99,7 @@ const en = {
   'settings.cancel': 'Cancel',
   'settings.enableAutoApprove': 'Enable Auto-approve',
   'settings.errorReporting': 'Anonymous Error Reporting',
-  'settings.errorReportingDesc': 'Help improve CodePilot by anonymously reporting errors. No conversation content or API keys are included. Restart the app for the change to fully take effect.',
+  'settings.errorReportingDesc': 'Help improve SafeClaw by anonymously reporting errors. No conversation content or API keys are included. Restart the app for the change to fully take effect.',
   'settings.generativeUITitle': 'Generative UI',
   'settings.generativeUIDesc': 'Enable interactive visualizations (charts, diagrams, mockups) in chat responses. Disabling saves tokens but removes visual generation capability.',
   'settings.defaultPanelTitle': 'Default Side Panel',
@@ -114,7 +114,7 @@ const en = {
 
   // ── Settings: Appearance ──────────────────────────────────────
   'settings.appearance': 'Appearance',
-  'settings.appearanceDesc': 'Customize the look and feel of CodePilot',
+  'settings.appearanceDesc': 'Customize the look and feel of SafeClaw',
   'settings.themeMode': 'Theme Mode',
   'settings.themeModeDesc': 'Choose between light, dark, or system preference',
   'settings.themeFamily': 'Color Theme',
@@ -190,7 +190,7 @@ const en = {
   'provider.disconnecting': 'Disconnecting...',
   'provider.disconnectProvider': 'Disconnect Provider',
   'provider.disconnectConfirm': 'Are you sure you want to disconnect "{name}"? This action cannot be undone.',
-  'provider.ccSwitchHint': 'Claude Code configurations added via tools like cc switch may not be readable by CodePilot. We recommend re-adding your provider here.',
+  'provider.ccSwitchHint': 'Claude Code configurations added via tools like cc switch may not be readable by SafeClaw. We recommend re-adding your provider here.',
   'provider.addProviderSection': 'Add Provider',
   'provider.addProviderDesc': 'Select a provider to connect. Most presets only require an API key.',
 
@@ -373,7 +373,7 @@ const en = {
   'connection.missingGitDesc': 'Claude Code requires Git for Windows to run properly. Without it, all commands will fail with exit code 1.',
   'connection.installGit': 'Install Git',
   'connection.gitInstalling': 'Installing...',
-  'connection.gitInstallSuccess': 'Git installed successfully! Please restart CodePilot.',
+  'connection.gitInstallSuccess': 'Git installed successfully! Please restart SafeClaw.',
   'connection.gitInstallFailed': 'Auto-install failed. Please download and install manually.',
   'connection.downloadGit': 'Download',
   'connection.recheck': 'Recheck',
@@ -384,7 +384,7 @@ const en = {
   'connection.versionCompare': 'v{current} → v{latest}',
   'connection.upgradeButton': 'Upgrade CLI',
   'connection.upgrading': 'Upgrading...',
-  'connection.upgradeSuccess': 'Upgrade successful! Please restart CodePilot to apply the update.',
+  'connection.upgradeSuccess': 'Upgrade successful! Please restart SafeClaw to apply the update.',
   'connection.upgradeFailed': 'Upgrade failed. Please try manually:',
   'connection.checkUpgrade': 'Check for Updates',
   'connection.manualUpdateHint': 'This install channel does not auto-update. Run the upgrade to check for new versions.',
@@ -458,10 +458,10 @@ const en = {
   'update.downloading': 'Downloading',
   'update.restartToUpdate': 'Restart to Update',
   'update.restartNow': 'Restart Now',
-  'update.readyToInstall': 'CodePilot v{version} is ready — restart to update',
+  'update.readyToInstall': 'SafeClaw v{version} is ready — restart to update',
   'update.installUpdate': 'Download & Install',
   'update.later': 'Later',
-  'update.rosettaWarning': 'CodePilot is running through Rosetta on this Apple Silicon Mac. Install the arm64 build for better responsiveness.',
+  'update.rosettaWarning': 'SafeClaw is running through Rosetta on this Apple Silicon Mac. Install the arm64 build for better responsiveness.',
   'update.recommendedAsset': 'Recommended download: {asset}',
   'update.getRecommendedBuild': 'Get Recommended Build',
 
@@ -1104,7 +1104,7 @@ const en = {
   'mcp.enable': 'Enable',
   'mcp.enabled': 'Enabled',
   'mcp.disabled': 'Disabled',
-  'mcp.managerDesc': 'Toggle controls CodePilot MCP injection. Servers in your Claude Code config may still be loaded by the SDK via its own settings sources.',
+  'mcp.managerDesc': 'Toggle controls SafeClaw MCP injection. Servers in your Claude Code config may still be loaded by the SDK via its own settings sources.',
 
   // ── SDK Capabilities: Thinking ────────────────────────────
   'settings.thinkingMode': 'Thinking Mode',
@@ -1149,7 +1149,7 @@ const en = {
   'cliTools.brewInstallGuide': 'Most recommended tools require Homebrew. Run this command in your terminal to install it:',
   'cliTools.noPkgManager': 'No package manager detected',
   'cliTools.noPkgManagerGuide': 'No supported package manager (apt, brew) was found. Please install tools manually or set up a package manager.',
-  'cliTools.viewDocs': 'View CodePilot documentation',
+  'cliTools.viewDocs': 'View SafeClaw documentation',
   'cliTools.searchPlaceholder': 'Search CLI tools...',
   'cliTools.noToolsDetected': 'No installed CLI tools detected',
   'cliTools.goInstall': 'Go install CLI tools',
@@ -1291,7 +1291,7 @@ const en = {
   'terminal.exited': 'Process exited',
 
   // ── Setup Center ──────────────────────────────────────────────
-  'setup.title': 'Welcome to CodePilot',
+  'setup.title': 'Welcome to SafeClaw',
   'setup.subtitle': 'Let\'s get you set up in a few quick steps.',
   'setup.skipAndEnter': 'Skip and Enter',
   'setup.progress': '{completed}/3 completed',
@@ -1301,11 +1301,11 @@ const en = {
 
   // Setup: Welcome card
   'setup.welcome.title': 'Welcome',
-  'setup.welcome.description': 'CodePilot is a multi-model AI agent desktop client. Connect any AI provider, extend with MCP & skills, and let your assistant learn your workflow.',
+  'setup.welcome.description': 'SafeClaw is a multi-model AI agent desktop client. Connect any AI provider, extend with MCP & skills, and let your assistant learn your workflow.',
 
   // Setup: Claude Code card
   'setup.claude.title': 'Claude Code CLI',
-  'setup.claude.description': 'CodePilot requires the Claude Code CLI to function.',
+  'setup.claude.description': 'SafeClaw requires the Claude Code CLI to function.',
   'setup.claude.detected': 'Claude Code detected',
   'setup.claude.notFound': 'Claude Code not found',
   'setup.claude.conflict': 'Multiple installations detected — this may cause version conflicts',
@@ -1322,7 +1322,7 @@ const en = {
 
   // Setup: Provider card
   'setup.provider.title': 'API Provider',
-  'setup.provider.description': 'Configure how CodePilot connects to AI models.',
+  'setup.provider.description': 'Configure how SafeClaw connects to AI models.',
   'setup.provider.envDetected': 'Environment variables detected — use Claude Code env as your provider.',
   'setup.provider.useEnv': 'Use Claude Code Env',
   'setup.provider.noProvider': 'No provider configured. Select a preset to get started.',
@@ -1421,7 +1421,7 @@ const en = {
   'share.noMessages': 'No messages to share',
   'share.replayTitle': 'Conversation Replay',
   'share.replayOf': 'Replay: {title}',
-  'share.generatedBy': 'Generated by CodePilot',
+  'share.generatedBy': 'Generated by SafeClaw',
   'share.skipReplay': 'Skip Replay',
   'share.startReplay': 'Start Replay',
   'share.sessionNotFound': 'Session not found',
@@ -1486,7 +1486,7 @@ const en = {
   // ── Settings: Security ──────────────────────────────────────
   'settings.security': 'Security',
   'settings.security.accessToken': 'Access Token',
-  'settings.security.accessTokenDesc': 'Require a token to access CodePilot. Useful when exposed on a public network.',
+  'settings.security.accessTokenDesc': 'Require a token to access SafeClaw. Useful when exposed on a public network.',
   'settings.security.tokenConfigured': 'Token is configured',
   'settings.security.tokenNotConfigured': 'No token configured (open access)',
   'settings.security.tokenFromEnv': 'Token is set via CODEPILOT_ACCESS_TOKEN environment variable',

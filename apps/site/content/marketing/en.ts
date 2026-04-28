@@ -65,7 +65,7 @@ export interface MarketingContent {
 
 export const en: MarketingContent = {
   hero: {
-    title: 'CodePilot',
+    title: 'SafeClaw',
     tagline: 'Your multi-model AI agent for',
     cta: 'Download',
     secondaryCta: 'Documentation',
@@ -152,8 +152,8 @@ export const en: MarketingContent = {
     titleLight: 'Everything you need to know before getting started.',
     items: [
       {
-        q: 'Is CodePilot really free?',
-        a: 'Yes. CodePilot is completely free and open source. You only pay for the API usage from your chosen provider.',
+        q: 'Is SafeClaw really free?',
+        a: 'Yes. SafeClaw is completely free and open source. You only pay for the API usage from your chosen provider.',
       },
       {
         q: 'Which AI providers are supported?',
@@ -161,15 +161,15 @@ export const en: MarketingContent = {
       },
       {
         q: 'Do I need a Claude Code subscription?',
-        a: 'No. CodePilot works with your own API key directly — no Claude Code subscription required.',
+        a: 'No. SafeClaw works with your own API key directly — no Claude Code subscription required.',
       },
       {
-        q: 'Is my data sent to CodePilot servers?',
-        a: 'No. All API calls go directly from your machine to the provider. CodePilot never sees your code or conversations.',
+        q: 'Is my data sent to SafeClaw servers?',
+        a: 'No. All API calls go directly from your machine to the provider. SafeClaw never sees your code or conversations.',
       },
       {
         q: 'Which platforms are supported?',
-        a: 'CodePilot supports macOS (Apple Silicon & Intel), Windows (x64), and Linux (x64 & arm64). Download the latest version for your platform from the GitHub releases page.',
+        a: 'SafeClaw supports macOS (Apple Silicon & Intel), Windows (x64), and Linux (x64 & arm64). Download the latest version for your platform from the GitHub releases page.',
       },
     ],
   },
@@ -200,7 +200,7 @@ export const en: MarketingContent = {
     steps: [
       {
         step: '1',
-        title: 'Download CodePilot',
+        title: 'Download SafeClaw',
         description: 'Available for macOS, Windows, and Linux.',
       },
       {
@@ -227,17 +227,17 @@ export const en: MarketingContent = {
   },
   releases: {
     title: 'What\'s New',
-    titleLight: 'in CodePilot',
+    titleLight: 'in SafeClaw',
     viewAll: 'View all releases on GitHub',
   },
   cta: {
-    title: 'Ready to try CodePilot?',
+    title: 'Ready to try SafeClaw?',
     description: 'Download and connect your favorite AI provider in minutes.',
     primary: 'Download',
     secondary: 'Read the docs',
   },
   footer: {
-    copyright: '\u00a9 2026 CodePilot',
+    copyright: '\u00a9 2026 SafeClaw',
     links: [
       { text: 'GitHub', url: 'https://github.com/intelli-train-ai/CodePilot' },
       { text: 'Docs', url: '/docs' },

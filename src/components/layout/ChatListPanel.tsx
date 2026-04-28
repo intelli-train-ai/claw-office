@@ -455,7 +455,7 @@ export function ChatListPanel({ open, width, hasUpdate, readyToInstall }: ChatLi
     >
       {/* Logo + Connection Status */}
       <div className="flex shrink-0 items-center justify-between px-3 mt-5 mb-3">
-        <img src="/logo.png" alt="CodePilot" className="h-6 object-contain" />
+        <img src="/logo.png" alt="SafeClaw" className="h-6 object-contain" />
         <ConnectionStatus />
       </div>
 

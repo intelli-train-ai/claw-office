@@ -1,4 +1,4 @@
-## CodePilot v0.47.0
+## SafeClaw v0.47.0
 
 > 服务商系统全面治理，新增连接测试和匿名错误上报，品牌重定位为多模型 AI Agent 桌面客户端。
 
@@ -13,7 +13,7 @@
 ### 修复问题
 
 - 修复智谱 GLM、Moonshot、OpenRouter、百炼等 6 个服务商的认证方式配置错误，大幅减少首次连接失败
-- 修复用户终端 Claude Code 的 settings.json 配置覆盖 CodePilot 服务商选择的问题
+- 修复用户终端 Claude Code 的 settings.json 配置覆盖 SafeClaw 服务商选择的问题
 - 修复运行时报错缺少恢复操作建议的问题，现在会显示"重新获取 Key"等可点击链接
 - 修复模型选择下拉框出现横向滚动条的问题
 - 修复"管理服务商"按钮跳转到通用设置而非服务商页面的问题

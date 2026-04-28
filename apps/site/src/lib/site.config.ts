@@ -4,14 +4,14 @@
  * to avoid drift across layout, marketing content, and documentation.
  */
 export const siteConfig = {
-  name: 'CodePilot',
+  name: 'SafeClaw',
   description: 'A multi-model AI agent desktop client — connect any AI provider, extend with MCP & skills, control from your phone.',
   url: 'https://www.codepilot.sh',
 
   // Canonical repository
   repo: {
     owner: 'intelli-train-ai',
-    name: 'CodePilot',
+    name: 'SafeClaw',
     url: 'https://github.com/intelli-train-ai/CodePilot',
     releases: 'https://github.com/intelli-train-ai/CodePilot/releases',
     issues: 'https://github.com/intelli-train-ai/CodePilot/issues',
