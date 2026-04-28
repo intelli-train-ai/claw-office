@@ -18,6 +18,12 @@ interface EffortSelectorDropdownProps {
   supportedEffortLevels?: string[];
 }
 
+// Only these levels have i18n translations and match the SDK's official type
+// (`'low' | 'medium' | 'high' | 'max'`). Anything else from the SDK
+// (e.g. transient or custom provider values like `xh`) is filtered out so we
+// don't leak raw i18n keys into the UI.
+const KNOWN_EFFORT_LEVELS = ['low', 'medium', 'high', 'max'] as const;
+
 export function EffortSelectorDropdown({
   selectedEffort,
   onEffortChange,
@@ -27,7 +33,9 @@ export function EffortSelectorDropdown({
   const effortMenuRef = useRef<HTMLDivElement>(null);
   const [effortMenuOpen, setEffortMenuOpen] = useState(false);
 
-  const levels = supportedEffortLevels || ['low', 'medium', 'high', 'max'];
+  const levels = supportedEffortLevels
+    ? supportedEffortLevels.filter((l) => (KNOWN_EFFORT_LEVELS as readonly string[]).includes(l))
+    : [...KNOWN_EFFORT_LEVELS];
 
   // Close effort menu on outside click
   useEffect(() => {
