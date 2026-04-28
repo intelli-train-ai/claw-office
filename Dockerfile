@@ -18,6 +18,10 @@ FROM node:22-slim AS deps
 
 WORKDIR /app
 
+# Optional npm registry mirror — set to https://registry.npmmirror.com (China)
+# or any internal proxy. Default is the official registry.
+ARG NPM_REGISTRY=https://registry.npmjs.org
+
 # Native build tools for better-sqlite3 / zlib-sync. apt cache mount keeps
 # downloaded .debs across builds so re-pulls are skipped.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -30,6 +34,7 @@ COPY package.json package-lock.json ./
 # Cache mount for npm tarballs — persisted across builds so npm ci re-runs
 # install from local cache instead of re-downloading from registry.
 RUN --mount=type=cache,target=/root/.npm \
+    npm config set registry "${NPM_REGISTRY}" && \
     npm ci --prefer-offline --no-audit --fund=false
 
 COPY . .
@@ -60,7 +65,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Install Claude Code CLI. Pin to a concrete version so this layer caches
 # across builds — 'latest' would invalidate the cache on every build.
 ARG CLAUDE_CODE_VERSION=2.1.121
+ARG NPM_REGISTRY=https://registry.npmjs.org
 RUN --mount=type=cache,target=/root/.npm \
+    npm config set registry "${NPM_REGISTRY}" && \
     npm install -g --prefer-offline --no-audit --fund=false \
     @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 

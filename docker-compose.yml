@@ -7,7 +7,12 @@ services:
       # other than main, e.g. `GIT_REF=v0.54.0 docker compose build`.
       context: https://github.com/intelli-train-ai/claw-office.git#${GIT_REF:-main}
       args:
-        - CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION:-latest}
+        # Pin to a concrete version so this layer caches across builds.
+        # `latest` defeats BuildKit cache because npm resolves it on every build.
+        - CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION:-2.1.121}
+        # npm registry mirror — defaults to npmmirror (China) for faster installs.
+        # Override with NPM_REGISTRY=https://registry.npmjs.org for upstream.
+        - NPM_REGISTRY=${NPM_REGISTRY:-https://registry.npmmirror.com}
     ports:
       - "${PORT:-3811}:${PORT:-3811}"
     volumes:
