@@ -14,6 +14,8 @@ import { WorkspaceConfirmDialogs, type ConfirmDialogType } from "./WorkspaceConf
 import { OnboardingCard, CheckInCard } from "./WorkspaceStatusCards";
 import { OnboardingWizard } from "@/components/assistant/OnboardingWizard";
 import { AssistantAvatar } from "@/components/ui/AssistantAvatar";
+import { FolderPicker } from "@/components/chat/FolderPicker";
+import { useNativeFolderPicker } from "@/hooks/useNativeFolderPicker";
 import type { TranslationKey } from "@/i18n/en";
 import type { TaxonomyCategoryInfo, IndexStats, WorkspaceInfo, TabId, PathValidationStatus } from "./workspace-types";
 import { authFetch } from '@/lib/api-client';
@@ -55,6 +57,8 @@ export function AssistantWorkspaceSection() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [resettingAll, setResettingAll] = useState(false);
+  const [folderPickerOpen, setFolderPickerOpen] = useState(false);
+  const { isElectron, openNativePicker } = useNativeFolderPicker();
 
   const fetchWorkspace = useCallback(async () => {
     try {
@@ -295,23 +299,25 @@ export function AssistantWorkspaceSection() {
 
   const handleSelectFolder = useCallback(async () => {
     try {
-      if (window.electronAPI?.dialog?.openFolder) {
-        const result = await window.electronAPI.dialog.openFolder({ title: t('assistant.selectFolder') });
-        if (!result.canceled && result.filePaths[0]) {
-          setPathInput(result.filePaths[0]);
-          validatePath(result.filePaths[0]);
+      if (isElectron) {
+        const picked = await openNativePicker({ title: t('assistant.selectFolder') });
+        if (picked) {
+          setPathInput(picked);
+          validatePath(picked);
         }
       } else {
-        const input = prompt("Enter workspace directory path:");
-        if (input) {
-          setPathInput(input);
-          validatePath(input);
-        }
+        setFolderPickerOpen(true);
       }
     } catch (e) {
       console.error("Failed to select folder:", e);
     }
-  }, [validatePath, t]);
+  }, [isElectron, openNativePicker, validatePath, t]);
+
+  const handleFolderPickerSelect = useCallback((picked: string) => {
+    setPathInput(picked);
+    validatePath(picked);
+    setFolderPickerOpen(false);
+  }, [validatePath]);
 
   const handleRefreshDocs = useCallback(async () => {
     setRefreshingDocs(true);
@@ -714,6 +720,14 @@ export function AssistantWorkspaceSection() {
           }}
         />
       )}
+
+      {/* Browser fallback folder picker (when not in Electron) */}
+      <FolderPicker
+        open={folderPickerOpen}
+        onOpenChange={setFolderPickerOpen}
+        onSelect={handleFolderPickerSelect}
+        initialPath={pathInput || workspace?.path || undefined}
+      />
     </div>
   );
 }
