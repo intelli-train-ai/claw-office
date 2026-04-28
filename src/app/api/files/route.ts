@@ -58,9 +58,14 @@ export async function GET(request: NextRequest) {
       );
     }
   } else {
-    // Fallback: without a baseDir, restrict to the user's home directory
-    // to prevent scanning arbitrary system directories like /etc
-    if (!isPathSafe(homeDir, resolvedDir)) {
+    // Fallback: without a baseDir, restrict to SAFECLAW_WORKSPACE (Docker mount)
+    // or the user's home directory to prevent scanning arbitrary system dirs.
+    const workspaceDir = process.env.SAFECLAW_WORKSPACE;
+    const fallbackBases = [
+      workspaceDir ? path.resolve(workspaceDir) : null,
+      homeDir,
+    ].filter((b): b is string => !!b);
+    if (!fallbackBases.some((b) => isPathSafe(b, resolvedDir))) {
       return NextResponse.json<ErrorResponse>(
         { error: 'Directory is outside the allowed scope' },
         { status: 403 }

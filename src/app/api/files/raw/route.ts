@@ -95,6 +95,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   const filePath = request.nextUrl.searchParams.get('path');
+  const baseDir = request.nextUrl.searchParams.get('baseDir');
 
   if (!filePath) {
     return new Response(JSON.stringify({ error: 'path parameter is required' }), {
@@ -105,9 +106,17 @@ export async function GET(request: NextRequest) {
 
   const resolved = path.resolve(filePath);
   const homeDir = os.homedir();
+  const workspaceDir = process.env.SAFECLAW_WORKSPACE;
 
-  // Only allow reading files within the user's home directory
-  if (!isPathSafe(homeDir, resolved)) {
+  // Trust the session's working directory first; fall back to SAFECLAW_WORKSPACE
+  // (Docker mount root) and finally to the user's home directory.
+  const allowedBases = [
+    baseDir ? path.resolve(baseDir) : null,
+    workspaceDir ? path.resolve(workspaceDir) : null,
+    homeDir,
+  ].filter((b): b is string => !!b);
+
+  if (!allowedBases.some((b) => isPathSafe(b, resolved))) {
     return new Response(JSON.stringify({ error: 'File is outside the allowed scope' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },

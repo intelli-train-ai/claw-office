@@ -27,14 +27,24 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   const filePath = request.nextUrl.searchParams.get('path');
+  const baseDir = request.nextUrl.searchParams.get('baseDir');
   if (!filePath) {
     return Response.json({ error: 'path parameter is required' }, { status: 400 });
   }
 
   const resolved = path.resolve(filePath);
   const homeDir = os.homedir();
+  const workspaceDir = process.env.SAFECLAW_WORKSPACE;
 
-  if (!isPathSafe(homeDir, resolved)) {
+  // Trust the session's working directory first; fall back to SAFECLAW_WORKSPACE
+  // (Docker mount root) and finally to the user's home directory.
+  const allowedBases = [
+    baseDir ? path.resolve(baseDir) : null,
+    workspaceDir ? path.resolve(workspaceDir) : null,
+    homeDir,
+  ].filter((b): b is string => !!b);
+
+  if (!allowedBases.some((b) => isPathSafe(b, resolved))) {
     return Response.json({ error: 'File is outside the allowed scope' }, { status: 403 });
   }
 

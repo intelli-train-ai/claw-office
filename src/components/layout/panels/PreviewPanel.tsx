@@ -303,7 +303,7 @@ export function PreviewPanel() {
   // Use /api/files/raw which accepts an absolute path and works with
   // browser-initiated requests (img/video/audio src) without auth headers.
   const fileServeUrl = filePath
-    ? `/api/files/raw?path=${encodeURIComponent(filePath)}`
+    ? `/api/files/raw?path=${encodeURIComponent(filePath)}${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}`
     : '';
 
   // Reset feedback state when switching files
@@ -628,13 +628,14 @@ export function PreviewPanel() {
       {/* Content */}
       <div className="relative flex-1 min-h-0 overflow-auto" ref={contentRef}>
         {isMedia ? (
-          <MediaView filePath={filePath} fileServeUrl={fileServeUrl} />
+          <MediaView filePath={filePath} fileServeUrl={fileServeUrl} baseDir={workingDirectory} />
         ) : imageFile ? (
-          <ImageView filePath={filePath} />
+          <ImageView filePath={filePath} baseDir={workingDirectory} />
         ) : pdfFile ? (
           <PdfView
             filePath={filePath}
-            fetchUrl={pptxFile ? `/api/files/convert-pdf?path=${encodeURIComponent(filePath)}` : undefined}
+            baseDir={workingDirectory}
+            fetchUrl={pptxFile ? `/api/files/convert-pdf?path=${encodeURIComponent(filePath)}${workingDirectory ? `&baseDir=${encodeURIComponent(workingDirectory)}` : ''}` : undefined}
             onPageOffsets={(offsets) => { pdfPageOffsetsRef.current = offsets; }}
           />
         ) : officeFile ? (
@@ -844,9 +845,9 @@ function SourceView({ preview, isDark }: { preview: FilePreviewType; isDark: boo
 }
 
 /** Direct media preview — images use authFetch + blob, video/audio use direct URL */
-function MediaView({ filePath, fileServeUrl }: { filePath: string; fileServeUrl: string }) {
+function MediaView({ filePath, fileServeUrl, baseDir }: { filePath: string; fileServeUrl: string; baseDir?: string }) {
   if (isImagePreview(filePath)) {
-    return <ImageView filePath={filePath} />;
+    return <ImageView filePath={filePath} baseDir={baseDir} />;
   }
 
   if (isVideoPreview(filePath)) {
@@ -874,14 +875,15 @@ function MediaView({ filePath, fileServeUrl }: { filePath: string; fileServeUrl:
 }
 
 /** Image preview view */
-function ImageView({ filePath }: { filePath: string }) {
+function ImageView({ filePath, baseDir }: { filePath: string; baseDir?: string }) {
   const fileName = filePath.split("/").pop() || filePath;
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let revoked = false;
-    authFetch(`/api/files/raw?path=${encodeURIComponent(filePath)}`)
+    const url = `/api/files/raw?path=${encodeURIComponent(filePath)}${baseDir ? `&baseDir=${encodeURIComponent(baseDir)}` : ''}`;
+    authFetch(url)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.blob();
@@ -900,7 +902,7 @@ function ImageView({ filePath }: { filePath: string }) {
         return null;
       });
     };
-  }, [filePath]);
+  }, [filePath, baseDir]);
 
   if (error) {
     return (
@@ -941,10 +943,12 @@ interface PdfPageData {
 function PdfView({
   filePath,
   fetchUrl,
+  baseDir,
   onPageOffsets,
 }: {
   filePath: string;
   fetchUrl?: string;
+  baseDir?: string;
   onPageOffsets?: (offsets: number[]) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -962,7 +966,7 @@ function PdfView({
         const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
-        const url = fetchUrl || `/api/files/raw?path=${encodeURIComponent(filePath)}`;
+        const url = fetchUrl || `/api/files/raw?path=${encodeURIComponent(filePath)}${baseDir ? `&baseDir=${encodeURIComponent(baseDir)}` : ''}`;
         const res = await authFetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const arrayBuffer = await res.arrayBuffer();
@@ -1004,7 +1008,7 @@ function PdfView({
     })();
 
     return () => { cancelled = true; };
-  }, [filePath, fetchUrl]);
+  }, [filePath, fetchUrl, baseDir]);
 
   // Report page offsets after pages render in DOM
   useEffect(() => {
@@ -1337,25 +1341,36 @@ function RenderedView({
 import { forwardRef } from "react";
 import { getStoredAuthToken } from "@/components/auth/TokenGate";
 
+/** Encode an absolute path to base64url so it survives as a single URL path segment. */
+function encodeRootBase64Url(root: string): string {
+  // btoa expects latin-1; encode utf-8 first via TextEncoder
+  const bytes = new TextEncoder().encode(root);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 const InteractiveHtmlView = forwardRef<
   HTMLIFrameElement,
   { filePath: string; workingDirectory: string; recording: boolean }
 >(function InteractiveHtmlView({ filePath, workingDirectory, recording }, ref) {
   const token = getStoredAuthToken();
   const root = workingDirectory || filePath.substring(0, filePath.lastIndexOf("/"));
-  // Make path relative to root
   const resolvedRoot = root.endsWith("/") ? root : root + "/";
   const relativePath = filePath.startsWith(resolvedRoot)
     ? filePath.slice(resolvedRoot.length)
     : filePath.split("/").pop() || filePath;
 
-  const params = new URLSearchParams({
-    root,
-    path: relativePath,
+  // Path-based URL: each path segment becomes a real URL path segment so that
+  // <base href> in the served HTML resolves sub-resources (./data.js, ./pic.png)
+  // back through this same endpoint correctly.
+  const encodedRoot = encodeRootBase64Url(root);
+  const segments = relativePath.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  const query = new URLSearchParams({
     ...(recording ? { record: "1" } : {}),
     ...(token ? { token } : {}),
-  });
-  const src = `/api/files/serve?${params.toString()}`;
+  }).toString();
+  const src = `/api/files/serve/${encodedRoot}/${segments}${query ? `?${query}` : ""}`;
 
   return (
     <iframe

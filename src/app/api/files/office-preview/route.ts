@@ -26,9 +26,14 @@ export async function GET(request: NextRequest) {
 
   const resolved = path.resolve(filePath);
   const homeDir = os.homedir();
-  const allowedBase = baseDir ? path.resolve(baseDir) : homeDir;
+  const workspaceDir = process.env.SAFECLAW_WORKSPACE;
+  const allowedBases = [
+    baseDir ? path.resolve(baseDir) : null,
+    workspaceDir ? path.resolve(workspaceDir) : null,
+    homeDir,
+  ].filter((b): b is string => !!b);
 
-  if (!resolved.startsWith(allowedBase) && !resolved.startsWith(homeDir)) {
+  if (!allowedBases.some((b) => resolved.startsWith(b))) {
     return Response.json({ error: 'Access denied: path outside allowed directory' }, { status: 403 });
   }
 
