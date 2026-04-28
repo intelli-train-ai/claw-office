@@ -266,7 +266,6 @@ export function GeneralSection() {
             <SelectContent>
               <SelectItem value="none">{t('settings.defaultPanelNone')}</SelectItem>
               <SelectItem value="file_tree">{t('settings.defaultPanelFileTree')}</SelectItem>
-              <SelectItem value="dashboard">{t('settings.defaultPanelDashboard')}</SelectItem>
               <SelectItem value="git">{t('settings.defaultPanelGit')}</SelectItem>
             </SelectContent>
           </Select>

@@ -7,7 +7,6 @@ import {
   TreeStructure,
   PencilSimple,
   DotOutline,
-  ChartBar,
   Brain,
 } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
@@ -252,27 +251,25 @@ export function UnifiedTopBar() {
                 <TooltipContent side="bottom">{t('topBar.fileTree')}</TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={dashboardPanelOpen ? "secondary" : "ghost"}
-                    size="icon-sm"
-                    className={dashboardPanelOpen ? "" : "text-muted-foreground hover:text-foreground"}
-                    onClick={() => setDashboardPanelOpen(!dashboardPanelOpen)}
-                  >
-                    {isAssistantWorkspace
-                      ? <img
-                          src={buddySpecies ? (SPECIES_IMAGE_URL[buddySpecies as Species] || '') : EGG_IMAGE_URL}
-                          alt="" width={16} height={16} className="rounded-sm"
-                        />
-                      : <ChartBar size={16} />}
-                    <span className="sr-only">{t('topBar.dashboard')}</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {isAssistantWorkspace ? 'Assistant' : t('topBar.dashboard')}
-                </TooltipContent>
-              </Tooltip>
+              {isAssistantWorkspace && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={dashboardPanelOpen ? "secondary" : "ghost"}
+                      size="icon-sm"
+                      className={dashboardPanelOpen ? "" : "text-muted-foreground hover:text-foreground"}
+                      onClick={() => setDashboardPanelOpen(!dashboardPanelOpen)}
+                    >
+                      <img
+                        src={buddySpecies ? (SPECIES_IMAGE_URL[buddySpecies as Species] || '') : EGG_IMAGE_URL}
+                        alt="" width={16} height={16} className="rounded-sm"
+                      />
+                      <span className="sr-only">Assistant</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Assistant</TooltipContent>
+                </Tooltip>
+              )}
             </>
           )}
           {isWindows && <div style={{ width: 138 }} className="shrink-0" />}

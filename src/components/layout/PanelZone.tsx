@@ -10,9 +10,14 @@ const DashboardPanel = dynamic(() => import("./panels/DashboardPanel").then(m =>
 const AssistantPanel = dynamic(() => import("./panels/AssistantPanel").then(m => ({ default: m.AssistantPanel })), { ssr: false });
 
 export function PanelZone() {
-  const { previewOpen, previewFile, gitPanelOpen, fileTreeOpen, dashboardPanelOpen, assistantPanelOpen } = usePanel();
+  const { previewOpen, previewFile, gitPanelOpen, fileTreeOpen, dashboardPanelOpen, assistantPanelOpen, isAssistantWorkspace } = usePanel();
 
-  const anyOpen = (previewOpen && !!previewFile) || gitPanelOpen || fileTreeOpen || dashboardPanelOpen || assistantPanelOpen;
+  // Dashboard panel is hidden for non-assistant workspaces; the button toggle in
+  // the top bar is also gated on isAssistantWorkspace, but we additionally guard
+  // here so URL-driven (?panel=dashboard) and default-panel-preference triggers
+  // don't accidentally surface the panel.
+  const showDashboard = dashboardPanelOpen && isAssistantWorkspace;
+  const anyOpen = (previewOpen && !!previewFile) || gitPanelOpen || fileTreeOpen || showDashboard || assistantPanelOpen;
 
   if (!anyOpen) return null;
 
@@ -22,7 +27,7 @@ export function PanelZone() {
       {previewOpen && previewFile && <PreviewPanel />}
       {gitPanelOpen && <GitPanelContainer />}
       {fileTreeOpen && <FileTreePanel />}
-      {dashboardPanelOpen && <DashboardPanel />}
+      {showDashboard && <DashboardPanel />}
     </div>
   );
 }
