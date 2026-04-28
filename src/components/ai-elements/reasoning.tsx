@@ -25,6 +25,7 @@ import {
   useState,
 } from "react";
 import { Streamdown } from "streamdown";
+import { streamdownComponents } from "@/lib/streamdown-components";
 
 import { Shimmer } from "./shimmer";
 
@@ -217,7 +218,7 @@ export const ReasoningContent = memo(
       )}
       {...props}
     >
-      <Streamdown plugins={streamdownPlugins} {...props}>
+      <Streamdown plugins={streamdownPlugins} components={streamdownComponents} {...props}>
         {children}
       </Streamdown>
     </CollapsibleContent>

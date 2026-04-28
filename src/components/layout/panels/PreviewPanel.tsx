@@ -17,6 +17,7 @@ import { RegionSelector, type SelectionRect } from "@/components/project/RegionS
 import { FeedbackPopover } from "@/components/project/FeedbackPopover";
 import { RecordingPanel } from "@/components/project/RecordingPanel";
 import type { FilePreview as FilePreviewType, RecordedEvent, RecordingSession, FileAttachment } from "@/types";
+import { streamdownComponents } from "@/lib/streamdown-components";
 
 // Lazy-load Streamdown and plugins — only loaded when rendered markdown is needed
 let _StreamdownComponent: typeof import("streamdown").Streamdown | null = null;
@@ -1324,6 +1325,7 @@ function RenderedView({
       <Sd
         className="size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_ul]:pl-6 [&_ol]:pl-6"
         plugins={_streamdownPlugins}
+        components={streamdownComponents}
       >
         {resolved}
       </Sd>
