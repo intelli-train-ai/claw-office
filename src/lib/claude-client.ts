@@ -442,6 +442,22 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
       // Flag to prevent infinite PTL retry loops (at most one retry per request)
       let ptlRetryAttempted = false;
 
+      // Unconditional SSE heartbeat to keep intermediate proxies (nginx ingress,
+      // CDN) from idle-timing-out the connection during model thinking phases
+      // when no other bytes flow. Without this, browsers see TypeError: network
+      // error and the server sees request.signal abort.
+      let heartbeatInterval: ReturnType<typeof setInterval> | null = setInterval(() => {
+        try {
+          controller.enqueue(formatSSE({ type: 'keep_alive', data: '' }));
+        } catch {
+          // Controller already closed — clear ourselves to avoid further attempts
+          if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+          }
+        }
+      }, 15000);
+
       // Resolve provider via the unified resolver. The caller may pass an explicit
       // provider (from resolveProvider().provider), or undefined when 'env' mode is
       // intended. We do NOT fall back to getActiveProvider() here — that's handled
@@ -1600,6 +1616,10 @@ export function streamClaude(options: ClaudeStreamOptions): ReadableStream<strin
 
         controller.close();
       } finally {
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+          heartbeatInterval = null;
+        }
         unregisterConversation(sessionId);
       }
     },

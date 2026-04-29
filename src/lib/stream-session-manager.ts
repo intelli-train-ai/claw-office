@@ -622,13 +622,22 @@ async function runStream(stream: ActiveStream, params: StartStreamParams): Promi
       }
     } else {
       // Non-abort error
-      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      const rawMsg = error instanceof Error ? error.message : 'Unknown error';
+      // Browsers throw TypeError("network error" / "Failed to fetch" / "Load failed" /
+      // "The network connection was lost.") when the SSE body stream is dropped by an
+      // intermediate proxy (idle timeout, gateway close). Translate to something
+      // actionable instead of leaking the raw browser message into the chat bubble.
+      const isNetworkDrop = error instanceof TypeError
+        && /network|fetch|connection|load failed/i.test(rawMsg);
+      const displayMsg = isNetworkDrop
+        ? '与服务器的连接被中断（可能是网关空闲超时）。请重试。'
+        : rawMsg;
       stream.snapshot = {
         ...buildSnapshot(stream),
         phase: 'error',
         completedAt: Date.now(),
-        error: errMsg,
-        finalMessageContent: buildFinalContent(`**Error:** ${errMsg}`),
+        error: rawMsg,
+        finalMessageContent: buildFinalContent(`**Error:** ${displayMsg}`),
         statusText: undefined,
         pendingPermission: null,
         permissionResolved: null,
