@@ -14,7 +14,6 @@ import {
   type RoleModels,
   inferProtocolFromLegacy,
   inferAuthStyleFromLegacy,
-  getDefaultModelsForProvider,
   findPresetForLegacy,
 } from './provider-catalog';
 import {
@@ -516,19 +515,26 @@ function buildResolution(
   const envOverrides = safeParseJson(provider.env_overrides_json || provider.extra_env);
   let roleModels = safeParseJson(provider.role_models_json) as RoleModels;
 
+  // Resolve preset once — reused for defaultRoleModels fallback and availableModels.
+  const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
+
   // Fall back to catalog preset's defaultRoleModels when DB has no role mappings.
   // This ensures sdkProxyOnly providers (MiniMax, Xiaomi MiMo, etc.) get correct
   // ANTHROPIC_MODEL / ANTHROPIC_DEFAULT_*_MODEL env vars even when role_models_json
   // was saved as '{}' by the preset connect dialog.
   if (!roleModels.default && !roleModels.sonnet) {
-    const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
     if (preset?.defaultRoleModels) {
       roleModels = { ...preset.defaultRoleModels, ...roleModels };
     }
   }
 
-  // Get available models: DB provider_models take priority, then catalog defaults
-  let availableModels = getDefaultModelsForProvider(protocol, provider.base_url);
+  // Get available models — only when a preset matched. We deliberately avoid
+  // the protocol-based fallback (generic ANTHROPIC_DEFAULT_MODELS) for unmatched
+  // providers, since advertising 'sonnet'/'opus'/'haiku' as valid would silently
+  // forward those names to upstream endpoints (e.g. DeepSeek) that don't support
+  // them. DB provider_models, role_models_json, and ANTHROPIC_MODEL env override
+  // are the source of truth for those providers.
+  let availableModels: CatalogModel[] = preset?.defaultModels ?? [];
   try {
     const dbModels = getModelsForProvider(provider.id);
     if (dbModels.length > 0) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllProviders, getDefaultProviderId, setDefaultProviderId, getProvider, getModelsForProvider, getSetting } from '@/lib/db';
 import { getContextWindow } from '@/lib/model-context';
-import { getDefaultModelsForProvider, inferProtocolFromLegacy, findPresetForLegacy } from '@/lib/provider-catalog';
+import { inferProtocolFromLegacy, findPresetForLegacy } from '@/lib/provider-catalog';
 import type { Protocol } from '@/lib/provider-catalog';
 import type { ErrorResponse, ProviderModelGroup } from '@/types';
 import { requireAuth } from '@/lib/auth';
@@ -99,6 +99,17 @@ export async function GET(request: NextRequest) {
       // Skip media-only providers in chat model selector
       if (MEDIA_PROTOCOLS.has(protocol) || MEDIA_PROVIDER_TYPES.has(provider.provider_type)) continue;
 
+      // Resolve preset once. Used for both catalog defaults and the sdkProxyOnly flag.
+      // We deliberately avoid getDefaultModelsForProvider's protocol-based fallback
+      // (which returns generic ANTHROPIC_DEFAULT_MODELS for any anthropic-compatible URL)
+      // because providers without a matching preset (e.g. custom anthropic-thirdparty,
+      // or DeepSeek/UCloud after their presets were removed) would otherwise get
+      // Sonnet 4.6 / Opus 4.6 / Haiku 4.5 advertised in the dropdown — model names
+      // that don't actually work on the upstream endpoint. role_models_json,
+      // provider_models, and ANTHROPIC_MODEL env overrides remain the source of truth
+      // for those providers.
+      const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
+
       // Get models: DB provider_models first, then catalog defaults, then env fallback
       let rawModels: ModelEntry[];
 
@@ -123,8 +134,8 @@ export async function GET(request: NextRequest) {
         }
       } catch { /* table may not exist in old DBs */ }
 
-      // 2) Catalog defaults
-      const catalogModels = getDefaultModelsForProvider(protocol, provider.base_url);
+      // 2) Catalog defaults — only when a preset actually matched.
+      const catalogModels = preset?.defaultModels ?? [];
       const catalogRaw = catalogModels.map(m => ({
         value: m.modelId,
         label: m.displayName,
@@ -182,7 +193,6 @@ export async function GET(request: NextRequest) {
       });
 
       // Detect SDK-proxy-only providers via preset match
-      const preset = findPresetForLegacy(provider.base_url, provider.provider_type, protocol);
       const sdkProxyOnly = preset?.sdkProxyOnly === true;
 
       groups.push({
