@@ -154,6 +154,11 @@ do_run() {
     --restart "${RESTART_POLICY}"
   )
 
+  if [ -n "${SAFECLAW_ACCESS_TOKEN:-}" ]; then
+    args+=(-e "SAFECLAW_ACCESS_TOKEN=${SAFECLAW_ACCESS_TOKEN}")
+    echo "Forwarding SAFECLAW_ACCESS_TOKEN to container"
+  fi
+
   if [ -n "${ENV_FILE}" ]; then
     if [ ! -f "${ENV_FILE}" ]; then
       echo "ENV_FILE='${ENV_FILE}' not found"
