@@ -31,6 +31,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 COPY package.json package-lock.json ./
 
+# Web image doesn't need electron — its postinstall tries to download a
+# Chromium binary from GitHub releases, which is slow/flaky in CI and
+# wasted bytes for a server-only build.
+ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
+
 # Cache mount for npm tarballs — persisted across builds so npm ci re-runs
 # install from local cache instead of re-downloading from registry.
 RUN --mount=type=cache,target=/root/.npm \
