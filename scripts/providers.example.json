@@ -1,18 +1,8 @@
 [
   {
-    "preset": "deepseek-anthropic",
-    "name": "DeepSeek V4 Pro",
-    "api_key": "sk-REPLACE-ME",
-    "set_active": true
-  },
-  {
-    "preset": "ucloud-claude",
-    "name": "UCloud Claude",
-    "api_key": "sk-REPLACE-ME"
-  },
-  {
     "preset": "glm-cn",
     "name": "GLM (CN)",
-    "api_key": "REPLACE-ME"
+    "api_key": "REPLACE-ME",
+    "set_active": true
   }
 ]

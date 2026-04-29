@@ -105,6 +105,13 @@ export interface VendorPreset {
   /** Icon key for UI */
   iconKey: string;
   /**
+   * Hide this preset from the "Add provider" catalog UI. The preset is still
+   * resolvable by key (for seeded providers) and still participates in
+   * base_url-based authStyle inference at request time — it just won't appear
+   * in the list users browse to add a new provider.
+   */
+  hidden?: boolean;
+  /**
    * True for providers that only support the Claude Code SDK wire protocol
    * (e.g. Kimi /coding/, GLM /api/anthropic).
    * These providers cannot be used with the Vercel AI SDK text generation path
@@ -164,6 +171,7 @@ export const PresetSchema = z.object({
   })),
   fields: z.array(z.string()),
   iconKey: z.string(),
+  hidden: z.boolean().optional(),
   sdkProxyOnly: z.boolean().optional(),
   category: z.enum(['chat', 'media']).optional(),
   defaultRoleModels: z.record(z.string(), z.string()).optional(),
@@ -228,78 +236,6 @@ export const VENDOR_PRESETS: VendorPreset[] = [
     defaultModels: ANTHROPIC_DEFAULT_MODELS,
     fields: ['name', 'api_key', 'base_url', 'env_overrides', 'model_names'],
     iconKey: 'anthropic',
-  },
-
-  // ── DeepSeek (Anthropic-compatible) ──
-  {
-    key: 'deepseek-anthropic',
-    name: 'DeepSeek V4 Pro',
-    description: 'DeepSeek Anthropic-compatible API — V4 Pro / V4 Flash',
-    descriptionZh: 'DeepSeek Anthropic 兼容 API — V4 Pro / V4 Flash',
-    protocol: 'anthropic',
-    authStyle: 'auth_token',
-    baseUrl: 'https://api.deepseek.com/anthropic',
-    defaultEnvOverrides: {
-      ANTHROPIC_MODEL: 'deepseek-v4-pro',
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'deepseek-v4-flash',
-      ANTHROPIC_DEFAULT_SONNET_MODEL: 'deepseek-v4-pro',
-      ANTHROPIC_DEFAULT_OPUS_MODEL: 'deepseek-v4-pro',
-      ANTHROPIC_REASONING_MODEL: 'deepseek-v4-pro',
-    },
-    defaultModels: [
-      { modelId: 'sonnet', upstreamModelId: 'deepseek-v4-pro', displayName: 'DeepSeek V4 Pro', role: 'default' },
-      { modelId: 'opus', upstreamModelId: 'deepseek-v4-pro', displayName: 'DeepSeek V4 Pro', role: 'opus' },
-      { modelId: 'haiku', upstreamModelId: 'deepseek-v4-flash', displayName: 'DeepSeek V4 Flash', role: 'haiku' },
-    ],
-    defaultRoleModels: {
-      default: 'deepseek-v4-pro',
-      sonnet: 'deepseek-v4-pro',
-      opus: 'deepseek-v4-pro',
-      haiku: 'deepseek-v4-flash',
-      reasoning: 'deepseek-v4-pro',
-    },
-    fields: ['api_key'],
-    iconKey: 'deepseek',
-    sdkProxyOnly: true,
-    meta: {
-      apiKeyUrl: 'https://platform.deepseek.com/api_keys',
-      docsUrl: 'https://api-docs.deepseek.com/',
-      billingModel: 'pay_as_you_go',
-    },
-  },
-
-  // ── UCloud ModelVerse (Anthropic-compatible Claude) ──
-  {
-    key: 'ucloud-claude',
-    name: 'UCloud ModelVerse (Claude)',
-    description: 'UCloud ModelVerse — Claude via Anthropic-compatible API',
-    descriptionZh: 'UCloud ModelVerse — Anthropic 兼容协议接入 Claude',
-    protocol: 'anthropic',
-    authStyle: 'auth_token',
-    baseUrl: 'https://api.modelverse.cn',
-    defaultEnvOverrides: {
-      CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: '1',
-    },
-    defaultModels: [
-      { modelId: 'sonnet', upstreamModelId: 'claude-sonnet-4-5-20250929', displayName: 'Claude Sonnet 4.5', role: 'sonnet' },
-      { modelId: 'opus', upstreamModelId: 'claude-sonnet-4-5-20250929', displayName: 'Claude Sonnet 4.5', role: 'opus' },
-      { modelId: 'haiku', upstreamModelId: 'claude-sonnet-4-5-20250929', displayName: 'Claude Sonnet 4.5', role: 'haiku' },
-    ],
-    defaultRoleModels: {
-      default: 'claude-sonnet-4-5-20250929',
-      sonnet: 'claude-sonnet-4-5-20250929',
-      opus: 'claude-sonnet-4-5-20250929',
-      haiku: 'claude-sonnet-4-5-20250929',
-    },
-    fields: ['api_key'],
-    iconKey: 'anthropic',
-    sdkProxyOnly: true,
-    meta: {
-      apiKeyUrl: 'https://console.ucloud.cn/modelverse/experience/api-key',
-      docsUrl: 'https://docs.ucloud.cn/modelverse/api/anthropic',
-      billingModel: 'pay_as_you_go',
-      notes: ['控制台需先开通 Claude 模型并申请 API Key'],
-    },
   },
 
   // ── OpenRouter ──

@@ -4,7 +4,7 @@
  * Designed for Docker / headless deployments — operators can pre-populate
  * the providers list (base_url, env overrides, model mapping) via:
  *
- *   SEED_PROVIDERS_JSON='[{"preset":"deepseek-anthropic","api_key":"sk-..."}]'
+ *   SEED_PROVIDERS_JSON='[{"preset":"glm-cn","api_key":"sk-..."}]'
  *
  *   or
  *
