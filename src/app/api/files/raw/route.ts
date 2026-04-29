@@ -143,6 +143,13 @@ export async function GET(request: NextRequest) {
   const ext = path.extname(resolved).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
+  // HTTP header values must be ASCII (ByteString). Non-ASCII filenames (e.g. Chinese)
+  // are encoded per RFC 5987 via filename*=UTF-8''..., with an ASCII-safe filename= fallback.
+  const baseName = path.basename(resolved);
+  const safeName = baseName.replace(/[^\w.\-]+/g, '_') || 'file';
+  const encodedName = encodeURIComponent(baseName);
+  const contentDisposition = `inline; filename="${safeName}"; filename*=UTF-8''${encodedName}`;
+
   // Stream large files (>10 MB) to avoid buffering into memory
   const MAX_BUFFERED_SIZE = 10 * 1024 * 1024;
 
@@ -165,7 +172,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': contentType,
         'Content-Length': String(stat.size),
-        'Content-Disposition': `inline; filename="${path.basename(resolved)}"`,
+        'Content-Disposition': contentDisposition,
       },
     });
   }
@@ -175,7 +182,7 @@ export async function GET(request: NextRequest) {
   return new Response(buffer, {
     headers: {
       'Content-Type': contentType,
-      'Content-Disposition': `inline; filename="${path.basename(resolved)}"`,
+      'Content-Disposition': contentDisposition,
     },
   });
 }
